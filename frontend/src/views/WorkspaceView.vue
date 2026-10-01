@@ -52,6 +52,11 @@
       </template>
       <template #item.actions="{ item }">
         <div class="row-actions">
+          <v-tooltip text="Edit CV content">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`Edit content for ${item.name}`" icon="mdi-text-box-edit-outline" size="small" variant="text" :to="`/cvs/${item.id}/content`" />
+            </template>
+          </v-tooltip>
           <v-tooltip text="Edit CV">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="`Edit ${item.name}`" icon="mdi-pencil-outline" size="small" variant="text" :to="`/cvs/${item.id}/edit`" />
