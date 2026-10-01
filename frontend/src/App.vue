@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-navigation-drawer permanent width="248" class="app-drawer">
+    <v-navigation-drawer permanent :width="drawerWidth" class="app-drawer">
       <div class="brand-lockup">
         <div class="brand-mark"><v-icon icon="mdi-file-account-outline" /></div>
         <div>
@@ -49,7 +49,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useDisplay } from 'vuetify'
 
 const route = useRoute()
+const { mobile } = useDisplay()
+const drawerWidth = computed(() => mobile.value ? 76 : 248)
 const pageTitle = computed(() => route.meta.title ?? 'People')
 </script>
