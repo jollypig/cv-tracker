@@ -61,6 +61,11 @@
       </template>
       <template #item.actions="{ item }">
         <div class="row-actions">
+          <v-tooltip text="View CVs">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`View CVs for ${item.firstName} ${item.lastName}`" icon="mdi-file-document-multiple-outline" size="small" variant="text" :to="`/people/${item.id}/cvs`" />
+            </template>
+          </v-tooltip>
           <v-tooltip text="Edit person">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="`Edit ${item.firstName} ${item.lastName}`" icon="mdi-pencil-outline" size="small" variant="text" :to="`/people/${item.id}/edit`" />

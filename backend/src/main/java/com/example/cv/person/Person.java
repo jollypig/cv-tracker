@@ -10,6 +10,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import com.example.cv.cv.Cv;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,6 +49,9 @@ public class Person {
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PersonContact> contacts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "person")
+    private List<Cv> cvs = new ArrayList<>();
 
     protected Person() {
     }
@@ -95,4 +99,5 @@ public class Person {
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public List<PersonContact> getContacts() { return contacts; }
+    public List<Cv> getCvs() { return cvs; }
 }
