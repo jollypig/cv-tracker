@@ -11,7 +11,7 @@ Starter monorepo for the CV management application described in [the architectur
 
 ## Run locally
 
-The defaults are for local development only. Override them with environment variables if needed; `.env` is ignored by Git.
+The defaults are for local development only. The backend uses the `local` Spring profile by default; override these settings with environment variables as needed. `.env` is ignored by Git.
 
 1. Start PostgreSQL: `docker compose up -d postgres`.
 2. Start the backend from `backend/`: `mvn spring-boot:run`.
@@ -25,3 +25,5 @@ The frontend is available at <http://localhost:5173>, the API status endpoint at
 - Backend tests: `mvn test` from `backend/`.
 
 Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on backend startup. PostgreSQL data is kept in the Compose named volume `postgres_data`.
+
+Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.

@@ -1,10 +1,12 @@
 spring:
   application:
     name: cv-management
+  profiles:
+    default: local
   datasource:
-    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/cv_management}
-    username: ${DATABASE_USERNAME:cv_app}
-    password: ${DATABASE_PASSWORD:cv_local_password}
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
   jpa:
     open-in-view: false
     hibernate:
