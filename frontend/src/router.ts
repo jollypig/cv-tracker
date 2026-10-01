@@ -3,6 +3,7 @@ import PeopleView from './views/PeopleView.vue'
 import PersonFormView from './views/PersonFormView.vue'
 import WorkspaceView from './views/WorkspaceView.vue'
 import CvFormView from './views/CvFormView.vue'
+import CvContentView from './views/CvContentView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,6 +14,7 @@ const router = createRouter({
     { path: '/cvs', component: WorkspaceView, meta: { title: 'CV library' } },
     { path: '/cvs/new', component: CvFormView, meta: { title: 'Create CV' } },
     { path: '/cvs/:id/edit', component: CvFormView, meta: { title: 'Edit CV' } },
+    { path: '/cvs/:id/content', component: CvContentView, meta: { title: 'Edit CV content' } },
     { path: '/people/:personId/cvs', component: WorkspaceView, meta: { title: 'Person CVs' } },
     { path: '/people/:personId/cvs/new', component: CvFormView, meta: { title: 'Create CV' } },
   ],
