@@ -9,6 +9,10 @@ Starter monorepo for the CV management application described in [the architectur
 - Node.js 22.18+ and npm
 - Docker Compose
 
+## GitHub MCP
+
+VS Code loads the GitHub MCP servers from `.vscode/mcp.json`. The `github-milestones` server provides read-only `list_milestones` and `list_issues_by_milestone` tools. Set `GITHUB_TOKEN` in the workspace `.env` file; it is read by the MCP process and must not be committed. Install the server dependency once with `npm ci --prefix agent/mcp`, then restart the MCP server in VS Code.
+
 ## Run locally
 
 The defaults are for local development only. The backend uses the `local` Spring profile by default; override these settings with environment variables as needed. `.env` is ignored by Git.
