@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "github": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/.vscode/github-mcp-launcher.cjs"],
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  }
+}

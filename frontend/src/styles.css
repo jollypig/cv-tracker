@@ -1,0 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #202b27;
+  background: #f6f5f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+.v-application { font-family: 'DM Sans', sans-serif; }
+.app-drawer { border-right: 1px solid #e8e8e1; background: #fff !important; }
+.brand-lockup { display: flex; align-items: center; gap: 11px; padding: 27px 22px 33px; }
+.brand-mark { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; color: #fff; background: #205c50; }
+.brand-name { font: 800 21px/1 'Manrope', sans-serif; letter-spacing: 0; }
+.brand-caption { margin-top: 5px; color: #83918a; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; }
+.nav-label { padding: 0 24px 10px; color: #9aa39e; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+.nav-list { padding: 0 12px; }
+.nav-list .v-list-item { min-height: 42px; margin-bottom: 4px; color: #66736d; font-size: 13px; }
+.nav-list .v-list-item--active { color: #205c50; background: #eaf2ed; }
+.drawer-footer { display: flex; align-items: center; gap: 9px; padding: 18px 22px; border-top: 1px solid #eeeee9; color: #76827b; font-size: 12px; }
+.topbar { display: flex; height: 64px; align-items: center; justify-content: space-between; padding: 0 34px; border-bottom: 1px solid #e8e8e1; background: rgba(255,255,255,.72); }
+.breadcrumb { color: #7c8982; font-size: 12px; }
+.breadcrumb span { padding: 0 9px; color: #bdc4be; }
+.local-status { display: flex; align-items: center; gap: 8px; color: #68766f; font-size: 11px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: #4d9a6e; box-shadow: 0 0 0 3px #e5f1e9; }
+.page-frame { max-width: 1180px; margin: 0 auto; padding: 42px 42px 72px; }
+.page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 27px; border-bottom: 1px solid #e4e5de; }
+.eyebrow, .empty-kicker { color: #87968e; font-size: 10px; font-weight: 700; letter-spacing: 1.15px; }
+h1, h2 { font-family: 'Manrope', sans-serif; letter-spacing: 0; }
+h1 { margin: 8px 0 5px; font-size: 31px; font-weight: 700; }
+.page-heading p { margin: 0; color: #78847e; font-size: 13px; }
+.empty-state { display: flex; min-height: 365px; align-items: center; justify-content: center; gap: 52px; padding: 35px 20px; }
+.empty-illustration { position: relative; width: 170px; height: 160px; flex: 0 0 170px; }
+.paper { position: absolute; width: 91px; height: 119px; border: 1px solid #dce4dc; border-radius: 8px; background: #fff; box-shadow: 0 10px 24px #28423912; }
+.paper-back { top: 14px; left: 49px; transform: rotate(8deg); background: #e5eee7; }
+.paper-front { top: 26px; left: 28px; padding: 17px 14px; transform: rotate(-5deg); }
+.paper-avatar { display: grid; width: 30px; height: 30px; margin-bottom: 13px; place-items: center; border-radius: 50%; color: #205c50; background: #e8f0e9; }
+.paper-line { display: block; height: 5px; margin-bottom: 7px; border-radius: 4px; background: #e5e9e4; }
+.line-long { width: 57px; background: #a7c7b1; }
+.line-medium { width: 48px; }
+.line-short { width: 35px; }
+.illustration-spark { position: absolute; top: 4px; right: 16px; display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; color: #fff; background: #c99048; }
+.empty-copy { max-width: 340px; }
+.empty-copy h2 { margin: 9px 0 8px; font-size: 20px; font-weight: 700; }
+.empty-copy p { max-width: 320px; margin: 0; color: #78847e; font-size: 13px; line-height: 1.65; }
+@media (max-width: 680px) {
+  .v-navigation-drawer { width: 76px !important; }
+  .brand-lockup { justify-content: center; padding: 18px 0 28px; }
+  .brand-lockup > div:last-child, .nav-label, .nav-list .v-list-item-title, .drawer-footer span { display: none; }
+  .nav-list { padding: 0 8px; }
+  .nav-list .v-list-item { justify-content: center; padding: 0; }
+  .drawer-footer { justify-content: center; padding: 16px 0; }
+  .topbar { height: 56px; padding: 0 17px; }
+  .page-frame { padding: 30px 20px; }
+  .page-heading { align-items: flex-start; }
+  .page-heading .v-btn { min-width: 42px; padding: 0 10px; font-size: 0; }
+  .empty-state { min-height: 330px; flex-direction: column; gap: 16px; text-align: center; }
+}

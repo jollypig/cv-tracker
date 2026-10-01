@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: cv-management
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/cv_management}
+    username: ${DATABASE_USERNAME:cv_app}
+    password: ${DATABASE_PASSWORD:cv_local_password}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

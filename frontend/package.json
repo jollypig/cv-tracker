@@ -1,0 +1,30 @@
+{
+  "name": "cv-management-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc -b"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.4.47",
+    "axios": "^1.12.2",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.22",
+    "vue-router": "^4.5.1",
+    "vuetify": "^3.10.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.6",
+    "@vitejs/plugin-vue": "^6.0.1",
+    "@vue/tsconfig": "^0.8.1",
+    "sass": "^1.93.2",
+    "typescript": "~5.9.2",
+    "vite": "^7.1.7",
+    "vite-plugin-vuetify": "^2.1.2",
+    "vue-tsc": "^3.0.8"
+  }
+}
