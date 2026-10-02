@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Cv, CvContent, CvInput, CvVersion, CvVersionDetail } from './cvTypes'
+import type { Cv, CvContent, CvInput, CvTemplate, CvVersion, CvVersionDetail } from './cvTypes'
 
 const cvApi = {
   async list(personId?: string): Promise<Cv[]> {
@@ -21,6 +21,16 @@ const cvApi = {
 
   async update(id: string, input: CvInput): Promise<Cv> {
     const response = await apiClient.put<Cv>(`/cvs/${id}`, input)
+    return response.data
+  },
+
+  async selectTemplate(id: string, templateId: string): Promise<Cv> {
+    const response = await apiClient.put<Cv>(`/cvs/${id}/template`, { templateId })
+    return response.data
+  },
+
+  async listTemplates(): Promise<CvTemplate[]> {
+    const response = await apiClient.get<CvTemplate[]>('/templates')
     return response.data
   },
 
