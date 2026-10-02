@@ -12,7 +12,11 @@ public record PersonRequest(
         @NotBlank @Size(max = 100) String firstName,
         @NotBlank @Size(max = 100) String lastName,
         @PastOrPresent LocalDate dateOfBirth,
-        @Size(max = 255) String headline,
+        @Size(max = 255) String position,
+        @Size(max = 20) String gender,
+        @Size(max = 20) String maritalStatus,
+        @Size(max = 30) String militaryStatus,
+        @Size(max = 255) String location,
         @Size(max = 500) String photoStorageKey,
         List<@Valid PersonContactRequest> contacts) {
 }

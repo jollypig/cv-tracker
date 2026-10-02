@@ -40,10 +40,22 @@
             />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field v-model="form.headline" label="Professional headline" maxlength="255" />
+            <v-text-field v-model="form.position" label="Position" maxlength="255" />
           </v-col>
           <v-col cols="12" sm="6">
             <v-text-field v-model="form.dateOfBirth" label="Date of birth" type="date" />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-select v-model="form.gender" :items="genderOptions" label="Gender" clearable />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-select v-model="form.maritalStatus" :items="maritalStatusOptions" label="Marital status" clearable />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-select v-model="form.militaryStatus" :items="militaryStatusOptions" label="Military status" clearable />
+          </v-col>
+          <v-col cols="12" sm="6">
+            <v-text-field v-model="form.location" label="Location" maxlength="255" />
           </v-col>
         </v-row>
       </section>
@@ -106,9 +118,16 @@ const isEditing = computed(() => typeof route.params.id === 'string')
 const loadingPerson = ref(false)
 const saving = ref(false)
 const error = ref('')
-const form = reactive({ firstName: '', lastName: '', dateOfBirth: '', headline: '' })
+const form = reactive({
+  firstName: '', lastName: '', dateOfBirth: '', position: '',
+  gender: '', maritalStatus: '', militaryStatus: '', location: '',
+})
 const contacts = ref<Array<PersonContactInput & { key: number }>>([])
 let nextContactKey = 0
+
+const genderOptions = ['Male', 'Female']
+const maritalStatusOptions = ['Single', 'Married']
+const militaryStatusOptions = ['Completed', 'Not Completed', 'Exempt', 'Currently Serving', 'Not Applicable']
 
 const contactTypes: Array<{ title: string; value: ContactType }> = [
   { title: 'Email', value: 'EMAIL' },
@@ -116,6 +135,11 @@ const contactTypes: Array<{ title: string; value: ContactType }> = [
   { title: 'LinkedIn', value: 'LINKEDIN' },
   { title: 'GitHub', value: 'GITHUB' },
   { title: 'Website', value: 'WEBSITE' },
+  { title: 'Facebook', value: 'FACEBOOK' },
+  { title: 'WhatsApp', value: 'WHATSAPP' },
+  { title: 'Viber', value: 'VIBER' },
+  { title: 'Telegram', value: 'TELEGRAM' },
+  { title: 'Instagram', value: 'INSTAGRAM' },
   { title: 'Address', value: 'ADDRESS' },
   { title: 'Other', value: 'OTHER' },
 ]
@@ -128,7 +152,11 @@ onMounted(async () => {
     form.firstName = person.firstName
     form.lastName = person.lastName
     form.dateOfBirth = person.dateOfBirth ?? ''
-    form.headline = person.headline ?? ''
+    form.position = person.position ?? ''
+    form.gender = person.gender ?? ''
+    form.maritalStatus = person.maritalStatus ?? ''
+    form.militaryStatus = person.militaryStatus ?? ''
+    form.location = person.location ?? ''
     contacts.value = person.contacts.map((contact) => ({
       key: nextContactKey++,
       type: contact.type,
@@ -173,7 +201,11 @@ async function savePerson() {
     firstName: form.firstName.trim(),
     lastName: form.lastName.trim(),
     dateOfBirth: form.dateOfBirth || null,
-    headline: form.headline.trim() || null,
+    position: form.position.trim() || null,
+    gender: form.gender || null,
+    maritalStatus: form.maritalStatus || null,
+    militaryStatus: form.militaryStatus || null,
+    location: form.location.trim() || null,
     photoStorageKey: null,
     contacts: contacts.value.map(({ key: _key, ...contact }) => contact),
   }

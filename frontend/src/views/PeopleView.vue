@@ -52,8 +52,8 @@
           {{ item.firstName }} {{ item.lastName }}
         </RouterLink>
       </template>
-      <template #item.headline="{ item }">
-        <span class="muted-cell">{{ item.headline || '—' }}</span>
+      <template #item.position="{ item }">
+        <span class="muted-cell">{{ item.position || '—' }}</span>
       </template>
       <template #item.contacts="{ item }">
         <span class="contact-count">{{ item.contacts.length }}</span>
@@ -114,7 +114,7 @@ const deleting = ref(false)
 const selectedPerson = ref<Person | null>(null)
 const headers = [
   { title: 'Name', key: 'name' },
-  { title: 'Headline', key: 'headline' },
+  { title: 'Position', key: 'position' },
   { title: 'Contacts', key: 'contacts', sortable: false },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]

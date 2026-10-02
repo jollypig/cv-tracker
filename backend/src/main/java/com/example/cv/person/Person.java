@@ -36,7 +36,19 @@ public class Person {
     private LocalDate dateOfBirth;
 
     @Column(length = 255)
-    private String headline;
+    private String position;
+
+    @Column(length = 20)
+    private String gender;
+
+    @Column(name = "marital_status", length = 20)
+    private String maritalStatus;
+
+    @Column(name = "military_status", length = 30)
+    private String militaryStatus;
+
+    @Column(length = 255)
+    private String location;
 
     @Column(name = "photo_storage_key", length = 500)
     private String photoStorageKey;
@@ -92,8 +104,16 @@ public class Person {
     public void setLastName(String lastName) { this.lastName = lastName; }
     public LocalDate getDateOfBirth() { return dateOfBirth; }
     public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
-    public String getHeadline() { return headline; }
-    public void setHeadline(String headline) { this.headline = headline; }
+    public String getPosition() { return position; }
+    public void setPosition(String position) { this.position = position; }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    public String getMaritalStatus() { return maritalStatus; }
+    public void setMaritalStatus(String maritalStatus) { this.maritalStatus = maritalStatus; }
+    public String getMilitaryStatus() { return militaryStatus; }
+    public void setMilitaryStatus(String militaryStatus) { this.militaryStatus = militaryStatus; }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
     public String getPhotoStorageKey() { return photoStorageKey; }
     public void setPhotoStorageKey(String photoStorageKey) { this.photoStorageKey = photoStorageKey; }
     public Instant getCreatedAt() { return createdAt; }

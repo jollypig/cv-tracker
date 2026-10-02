@@ -1,4 +1,4 @@
-export type ContactType = 'EMAIL' | 'PHONE' | 'LINKEDIN' | 'GITHUB' | 'WEBSITE' | 'ADDRESS' | 'OTHER'
+export type ContactType = 'EMAIL' | 'PHONE' | 'LINKEDIN' | 'GITHUB' | 'WEBSITE' | 'FACEBOOK' | 'WHATSAPP' | 'VIBER' | 'TELEGRAM' | 'INSTAGRAM' | 'ADDRESS' | 'OTHER'
 
 export interface PersonContact {
   id: string
@@ -20,7 +20,11 @@ export interface Person {
   firstName: string
   lastName: string
   dateOfBirth: string | null
-  headline: string | null
+  position: string | null
+  gender: string | null
+  maritalStatus: string | null
+  militaryStatus: string | null
+  location: string | null
   photoStorageKey: string | null
   contacts: PersonContact[]
   createdAt: string
@@ -31,7 +35,11 @@ export interface PersonInput {
   firstName: string
   lastName: string
   dateOfBirth: string | null
-  headline: string | null
+  position: string | null
+  gender: string | null
+  maritalStatus: string | null
+  militaryStatus: string | null
+  location: string | null
   photoStorageKey: string | null
   contacts: PersonContactInput[]
 }

@@ -58,7 +58,11 @@ public class PersonService {
 
     private void apply(Person person, PersonRequest request) {
         person.setDateOfBirth(request.dateOfBirth());
-        person.setHeadline(blankToNull(request.headline()));
+        person.setPosition(blankToNull(request.position()));
+        person.setGender(blankToNull(request.gender()));
+        person.setMaritalStatus(blankToNull(request.maritalStatus()));
+        person.setMilitaryStatus(blankToNull(request.militaryStatus()));
+        person.setLocation(blankToNull(request.location()));
         person.setPhotoStorageKey(blankToNull(request.photoStorageKey()));
         List<PersonContact> contacts = request.contacts() == null ? List.of() : request.contacts().stream()
                 .map(contact -> new PersonContact(
@@ -75,7 +79,9 @@ public class PersonService {
                         contact.isPrimary(), contact.getSortOrder()))
                 .toList();
         return new PersonResponse(person.getId(), person.getFirstName(), person.getLastName(),
-                person.getDateOfBirth(), person.getHeadline(), person.getPhotoStorageKey(), contacts,
+            person.getDateOfBirth(), person.getPosition(), person.getGender(),
+            person.getMaritalStatus(), person.getMilitaryStatus(), person.getLocation(),
+            person.getPhotoStorageKey(), contacts,
                 person.getCreatedAt(), person.getUpdatedAt());
     }
 

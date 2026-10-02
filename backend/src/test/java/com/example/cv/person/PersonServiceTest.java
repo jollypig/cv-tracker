@@ -31,7 +31,7 @@ class PersonServiceTest {
     @Test
     void createsPersonWithContacts() {
         PersonRequest request = new PersonRequest(" Ada ", " Lovelace ", LocalDate.of(1815, 12, 10),
-                "Mathematician", null,
+            "Analyst", "Female", "Single", "Completed", "London", null,
                 List.of(new PersonContactRequest(ContactType.EMAIL, "ada@example.com", true, 0)));
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -41,6 +41,11 @@ class PersonServiceTest {
         verify(personRepository).save(captor.capture());
         assertEquals("Ada", captor.getValue().getFirstName());
         assertEquals("Lovelace", captor.getValue().getLastName());
+        assertEquals("Analyst", response.position());
+        assertEquals("Female", response.gender());
+        assertEquals("Single", response.maritalStatus());
+        assertEquals("Completed", response.militaryStatus());
+        assertEquals("London", response.location());
         assertEquals("EMAIL", captor.getValue().getContacts().get(0).getType());
         assertEquals("ada@example.com", response.contacts().get(0).value());
     }
@@ -51,7 +56,8 @@ class PersonServiceTest {
         Person person = new Person("Ada", "Lovelace");
         when(personRepository.findById(id)).thenReturn(Optional.of(person));
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        PersonRequest request = new PersonRequest("Augusta", "King", null, null, null, List.of());
+        PersonRequest request = new PersonRequest("Augusta", "King", null, null,
+            null, null, null, null, null, List.of());
 
         PersonResponse response = personService.update(id, request);
 
