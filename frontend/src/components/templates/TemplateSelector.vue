@@ -4,7 +4,6 @@
       :model-value="modelValue"
       :disabled="disabled"
       color="primary"
-      density="compact"
       divided
       mandatory
       class="template-options"
@@ -37,8 +36,9 @@ const emit = defineEmits<{
 <style scoped>
 .template-selector { min-width: 0; }
 .template-options { display: flex; width: 100%; }
-.template-option { display: flex; min-width: 0; min-height: 58px; flex: 1 1 0; flex-direction: column; gap: 4px; padding: 6px 4px; border-radius: 4px; }
+.template-option { display: flex; width: 0; min-width: 0; height: auto; min-height: 48px; flex: 1 1 0; flex-direction: column; gap: 4px; padding: 6px 4px; border-radius: 4px; }
 .template-option-name { overflow: hidden; max-width: 100%; color: #33433a; font-size: 11px; line-height: 1.2; text-overflow: ellipsis; }
+.template-option.v-btn--active .template-option-name { color: #fff; }
 .template-sample { display: flex; width: 30px; height: 22px; flex-direction: column; justify-content: center; gap: 3px; padding: 4px; border: 1px solid #c8d2ca; border-radius: 2px; background: #fff; }
 .template-sample span { display: block; height: 2px; background: #83978a; }
 .template-sample span:first-child { width: 70%; height: 3px; background: #347463; }

@@ -1,10 +1,10 @@
 <template>
   <section class="preview-panel" aria-labelledby="preview-title">
     <div class="preview-toolbar">
-      <div class="preview-toolbar-heading">
+      <!-- <div class="preview-toolbar-heading">
         <h2 id="preview-title">Live preview</h2>
         <span v-if="activeTemplate">{{ activeTemplate.name }}</span>
-      </div>
+      </div> -->
       <TemplateSelector
         v-if="templates.length"
         :templates="templates"
