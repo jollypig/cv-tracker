@@ -21,7 +21,8 @@
     </v-alert>
     <v-progress-linear v-if="loading" class="form-loading" color="primary" indeterminate />
 
-    <v-form v-else ref="editorForm" @submit.prevent="saveContent">
+    <div v-if="!loading && cv && person" class="content-workspace">
+    <v-form ref="editorForm" class="content-editor" @submit.prevent="saveContent">
       <section class="content-order-section">
         <div class="form-section-heading">
           <h2>Section order and visibility</h2>
@@ -226,23 +227,40 @@
         <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save-outline">Save content</v-btn>
       </div>
     </v-form>
+    <CvPreview
+      :cv="cv"
+      :person="person"
+      :content="content"
+      :templates="templates"
+      :selected-template-id="selectedTemplateId"
+      :disabled="selectingTemplate"
+      @select-template="selectTemplate"
+    />
+    </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import CvPreview from '../components/templates/CvPreview.vue'
 import cvApi from '../shared/api/cvApi'
+import personApi from '../shared/api/personApi'
 import type {
-  Cv, CvCertification, CvContent, CvCustomSection, CvEducation, CvExperience, CvExperienceProject,
+  Cv, CvCertification, CvContent, CvCustomSection, CvEducation, CvExperience, CvExperienceProject, CvTemplate,
   CvLanguage, CvProject, CvSection, CvSectionType, CvSkill, CvSkillGroup,
 } from '../shared/api/cvTypes'
+import type { Person } from '../shared/api/personTypes'
 
 const route = useRoute()
 const cvId = typeof route.params.id === 'string' ? route.params.id : ''
 const cv = ref<Cv | null>(null)
+const person = ref<Person | null>(null)
+const templates = ref<CvTemplate[]>([])
+const selectedTemplateId = ref('')
 const loading = ref(true)
 const saving = ref(false)
+const selectingTemplate = ref(false)
 const error = ref('')
 const saved = ref(false)
 const draggedSection = ref<number | null>(null)
@@ -261,8 +279,14 @@ const content = reactive<CvContent>(emptyContent())
 
 onMounted(async () => {
   try {
-    const [cvData, contentData] = await Promise.all([cvApi.get(cvId), cvApi.getContent(cvId)])
+    const [cvData, contentData, templateData] = await Promise.all([
+      cvApi.get(cvId), cvApi.getContent(cvId), cvApi.listTemplates(),
+    ])
+    const personData = await personApi.get(cvData.personId)
     cv.value = cvData
+    person.value = personData
+    templates.value = templateData
+    selectedTemplateId.value = cvData.templateId ?? ''
     Object.assign(content, contentData)
     content.sections.sort((left, right) => left.sortOrder - right.sortOrder)
   } catch (cause) {
@@ -282,6 +306,20 @@ function emptyContent(): CvContent {
 
 function sectionTitle(type: CvSectionType) {
   return sectionDefinitions.find((section) => section.type === type)?.title ?? type
+}
+
+async function selectTemplate(templateId: string) {
+  if (!cv.value || !templateId || templateId === selectedTemplateId.value) return
+  selectingTemplate.value = true
+  error.value = ''
+  try {
+    cv.value = await cvApi.selectTemplate(cvId, templateId)
+    selectedTemplateId.value = templateId
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to select this template.'
+  } finally {
+    selectingTemplate.value = false
+  }
 }
 
 function requiredRule(value: string | null) {
@@ -392,7 +430,9 @@ async function saveContent() {
 </script>
 
 <style scoped>
-.cv-content-view { max-width: 1080px; margin: 0 auto; }
+.cv-content-view { max-width: 1440px; margin: 0 auto; }
+.content-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 42%); align-items: start; gap: 30px; }
+.content-editor { min-width: 0; }
 .content-heading-actions { display: flex; align-items: center; gap: 8px; }
 .content-order-section { padding: 24px 0; border-bottom: 1px solid #e4e5de; }
 .content-section-order { display: grid; max-width: 660px; gap: 5px; }
@@ -424,5 +464,9 @@ async function saveContent() {
   .content-field-grid, .skill-entry, .list-entry { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .skill-entry .entry-actions, .list-entry .entry-actions { justify-content: flex-end; margin: -10px 0 8px; }
   .nested-editor { padding: 10px; }
+}
+@media (max-width: 980px) {
+  .content-workspace { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  .content-workspace > .preview-panel { grid-row: 1; }
 }
 </style>

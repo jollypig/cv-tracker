@@ -21,6 +21,16 @@ export interface CvInput {
   status: CvStatus
 }
 
+export interface CvTemplate {
+  id: string
+  name: string
+  description: string | null
+  templateKey: string
+  version: number
+  active: boolean
+  createdAt: string
+}
+
 export interface CvContent {
   summary: string | null
   experiences: CvExperience[]
