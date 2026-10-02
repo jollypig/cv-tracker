@@ -9,5 +9,13 @@ public record CvVersionDetailResponse(
         int versionNumber,
         String description,
         Instant createdAt,
-        CvVersionSnapshot snapshot) {
+        CvVersionSnapshot snapshot,
+        UUID parentVersionId,
+        UUID parentCvId,
+        Integer parentVersionNumber) {
+
+    public CvVersionDetailResponse(UUID id, UUID cvId, int versionNumber, String description,
+            Instant createdAt, CvVersionSnapshot snapshot) {
+        this(id, cvId, versionNumber, description, createdAt, snapshot, null, null, null);
+    }
 }

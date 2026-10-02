@@ -33,6 +33,10 @@ public class CvVersion {
     @JoinColumn(name = "cv_id", nullable = false, updatable = false)
     private Cv cv;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_version_id", updatable = false)
+    private CvVersion parentVersion;
+
     @Column(name = "version_number", nullable = false, updatable = false)
     private int versionNumber;
 
@@ -50,7 +54,12 @@ public class CvVersion {
     }
 
     public CvVersion(Cv cv, int versionNumber, String description, JsonNode snapshot) {
+        this(cv, versionNumber, description, snapshot, null);
+    }
+
+    public CvVersion(Cv cv, int versionNumber, String description, JsonNode snapshot, CvVersion parentVersion) {
         this.cv = cv;
+        this.parentVersion = parentVersion;
         this.versionNumber = versionNumber;
         this.description = description;
         this.snapshot = snapshot.deepCopy();
@@ -63,6 +72,7 @@ public class CvVersion {
 
     public UUID getId() { return id; }
     public Cv getCv() { return cv; }
+    public CvVersion getParentVersion() { return parentVersion; }
     public int getVersionNumber() { return versionNumber; }
     public String getDescription() { return description; }
     public JsonNode getSnapshot() { return snapshot.deepCopy(); }

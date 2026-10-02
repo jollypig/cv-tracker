@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,6 +34,12 @@ public class CvVersionController {
     @GetMapping
     public List<CvVersionResponse> findAll(@PathVariable UUID cvId) {
         return versionService.findAll(cvId);
+    }
+
+    @GetMapping("/diff")
+    public CvVersionDiffResponse diff(@PathVariable UUID cvId,
+            @RequestParam int fromVersion, @RequestParam int toVersion) {
+        return versionService.diff(cvId, fromVersion, toVersion);
     }
 
     @GetMapping("/{versionNumber}")

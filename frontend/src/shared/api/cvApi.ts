@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Cv, CvContent, CvInput, CvTemplate, CvVersion, CvVersionDetail } from './cvTypes'
+import type { Cv, CvContent, CvInput, CvTemplate, CvVersion, CvVersionDetail, CvVersionDiff } from './cvTypes'
 
 const cvApi = {
   async list(personId?: string): Promise<Cv[]> {
@@ -38,6 +38,16 @@ const cvApi = {
     await apiClient.delete(`/cvs/${id}`)
   },
 
+  async duplicate(id: string, name: string): Promise<Cv> {
+    const response = await apiClient.post<Cv>(`/cvs/${id}/duplicate`, { name })
+    return response.data
+  },
+
+  async branchVersion(id: string, versionNumber: number, name: string): Promise<Cv> {
+    const response = await apiClient.post<Cv>(`/cvs/${id}/versions/${versionNumber}/branch`, { name })
+    return response.data
+  },
+
   async getContent(id: string): Promise<CvContent> {
     const response = await apiClient.get<CvContent>(`/cvs/${id}/content`)
     return response.data
@@ -55,6 +65,13 @@ const cvApi = {
 
   async getVersion(id: string, versionNumber: number): Promise<CvVersionDetail> {
     const response = await apiClient.get<CvVersionDetail>(`/cvs/${id}/versions/${versionNumber}`)
+    return response.data
+  },
+
+  async getVersionDiff(id: string, fromVersion: number, toVersion: number): Promise<CvVersionDiff> {
+    const response = await apiClient.get<CvVersionDiff>(`/cvs/${id}/versions/diff`, {
+      params: { fromVersion, toVersion },
+    })
     return response.data
   },
 
