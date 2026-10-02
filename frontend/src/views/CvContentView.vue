@@ -7,6 +7,7 @@
         <p>{{ cv?.personName ?? 'Build each section of this CV.' }}</p>
       </div>
       <div class="content-heading-actions">
+        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">Versions</v-btn>
         <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">CV details</v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">Save content</v-btn>
       </div>
