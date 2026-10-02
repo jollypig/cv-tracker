@@ -6,6 +6,13 @@
       "args": ["${workspaceFolder}/.vscode/github-mcp-launcher.cjs"],
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/.env"
+    },
+    "github-milestones": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["server.js"],
+      "cwd": "${workspaceFolder}/agent/mcp",
+      "envFile": "${workspaceFolder}/.env"
     }
   }
 }
