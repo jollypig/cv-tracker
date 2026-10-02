@@ -50,6 +50,7 @@ public record CvContent(
     public record Education(
             @NotBlank @Size(max = 255) String institution,
             @Size(max = 255) String degree,
+            @Size(max = 10000) String diplomaDegreeWork,
             @Size(max = 255) String fieldOfStudy,
             LocalDate startDate,
             LocalDate endDate,
@@ -72,6 +73,9 @@ public record CvContent(
     public record Language(
             @NotBlank @Size(max = 100) String language,
             @Size(max = 50) String level,
+            @Size(max = 50) String reading,
+            @Size(max = 50) String writing,
+            @Size(max = 50) String speaking,
             @PositiveOrZero int sortOrder) {
     }
 

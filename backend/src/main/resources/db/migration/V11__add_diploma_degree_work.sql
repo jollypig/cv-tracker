@@ -1,0 +1,1 @@
+ALTER TABLE cv_education ADD COLUMN diploma_degree_work TEXT;

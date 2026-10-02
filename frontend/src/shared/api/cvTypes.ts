@@ -94,6 +94,7 @@ export interface CvExperienceProject {
 export interface CvEducation {
   institution: string
   degree: string | null
+  diplomaDegreeWork: string | null
   fieldOfStudy: string | null
   startDate: string | null
   endDate: string | null
@@ -116,6 +117,9 @@ export interface CvSkill {
 export interface CvLanguage {
   language: string
   level: string | null
+  reading: string | null
+  writing: string | null
+  speaking: string | null
   sortOrder: number
 }
 

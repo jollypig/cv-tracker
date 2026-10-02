@@ -30,6 +30,15 @@ public class CvLanguage {
     @Column(length = 50)
     private String level;
 
+    @Column(length = 50)
+    private String reading;
+
+    @Column(length = 50)
+    private String writing;
+
+    @Column(length = 50)
+    private String speaking;
+
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
@@ -47,6 +56,12 @@ public class CvLanguage {
     public void setLanguage(String language) { this.language = language; }
     public String getLevel() { return level; }
     public void setLevel(String level) { this.level = level; }
+    public String getReading() { return reading; }
+    public void setReading(String reading) { this.reading = reading; }
+    public String getWriting() { return writing; }
+    public void setWriting(String writing) { this.writing = writing; }
+    public String getSpeaking() { return speaking; }
+    public void setSpeaking(String speaking) { this.speaking = speaking; }
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
 }
