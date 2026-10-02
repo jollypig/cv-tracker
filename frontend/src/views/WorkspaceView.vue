@@ -62,6 +62,11 @@
               <v-btn v-bind="props" :aria-label="`View versions for ${item.name}`" icon="mdi-history" size="small" variant="text" :to="`/cvs/${item.id}/versions`" />
             </template>
           </v-tooltip>
+          <v-tooltip text="Export current CV as PDF; saves a version">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`Export ${item.name} as PDF`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id" icon="mdi-file-pdf-box" size="small" variant="text" @click="exportCv(item)" />
+            </template>
+          </v-tooltip>
           <v-tooltip text="Edit CV">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="`Edit ${item.name}`" icon="mdi-pencil-outline" size="small" variant="text" :to="`/cvs/${item.id}/edit`" />
@@ -102,6 +107,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import cvApi from '../shared/api/cvApi'
 import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
 import type { Cv, CvStatus } from '../shared/api/cvTypes'
@@ -117,6 +123,7 @@ const search = ref('')
 const error = ref('')
 const deleteDialog = ref(false)
 const deleting = ref(false)
+const exportingCvId = ref('')
 const selectedCv = ref<Cv | null>(null)
 const headers = computed(() => [
   { title: 'CV', key: 'name' },
@@ -150,6 +157,28 @@ function statusColor(status: CvStatus) {
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
+}
+
+async function exportCv(cv: Cv) {
+  if (exportingCvId.value) return
+  exportingCvId.value = cv.id
+  error.value = ''
+  try {
+    const version = await cvApi.createVersion(cv.id, 'Exported from CV library')
+    const file = await cvApi.exportVersionPdf(version.id)
+    const url = URL.createObjectURL(file.content)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.fileName
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to export this CV.'
+  } finally {
+    exportingCvId.value = ''
+  }
 }
 
 function openDelete(cv: Cv) {
