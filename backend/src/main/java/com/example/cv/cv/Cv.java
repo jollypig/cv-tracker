@@ -118,7 +118,9 @@ public class Cv {
     public CvStatus getStatus() { return status; }
     public void setStatus(CvStatus status) { this.status = status; }
     public UUID getTemplateId() { return templateId; }
+    public void setTemplateId(UUID templateId) { this.templateId = templateId; }
     public UUID getCurrentVersionId() { return currentVersionId; }
+    public void setCurrentVersionId(UUID currentVersionId) { this.currentVersionId = currentVersionId; }
     public String getSummary() { return summary; }
     public void setSummary(String summary) { this.summary = summary; }
     public List<CvExperience> getExperiences() { return experiences; }

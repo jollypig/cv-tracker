@@ -57,6 +57,11 @@
               <v-btn v-bind="props" :aria-label="`Edit content for ${item.name}`" icon="mdi-text-box-edit-outline" size="small" variant="text" :to="`/cvs/${item.id}/content`" />
             </template>
           </v-tooltip>
+          <v-tooltip text="Version history">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`View versions for ${item.name}`" icon="mdi-history" size="small" variant="text" :to="`/cvs/${item.id}/versions`" />
+            </template>
+          </v-tooltip>
           <v-tooltip text="Edit CV">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="`Edit ${item.name}`" icon="mdi-pencil-outline" size="small" variant="text" :to="`/cvs/${item.id}/edit`" />

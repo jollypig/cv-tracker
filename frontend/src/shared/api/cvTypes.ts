@@ -33,6 +33,27 @@ export interface CvContent {
   sections: CvSection[]
 }
 
+export interface CvVersion {
+  id: string
+  cvId: string
+  versionNumber: number
+  description: string | null
+  createdAt: string
+}
+
+export interface CvVersionSnapshot {
+  templateId: string | null
+  name: string
+  description: string | null
+  language: string
+  status: CvStatus
+  content: CvContent
+}
+
+export interface CvVersionDetail extends CvVersion {
+  snapshot: CvVersionSnapshot
+}
+
 export interface CvExperience {
   company: string
   position: string
