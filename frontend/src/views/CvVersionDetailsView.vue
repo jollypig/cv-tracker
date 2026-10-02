@@ -50,6 +50,7 @@
             <article v-for="(item, index) in snapshot.content.education" :key="index" class="snapshot-entry">
               <h3>{{ item.institution }}</h3>
               <p>{{ [item.degree, item.fieldOfStudy].filter(Boolean).join(' · ') }}</p>
+              <p v-if="item.diplomaDegreeWork" class="snapshot-copy">{{ item.diplomaDegreeWork }}</p>
               <p v-if="item.description" class="snapshot-copy">{{ item.description }}</p>
             </article>
           </v-expansion-panel-text>
@@ -66,6 +67,9 @@
           <v-expansion-panel-text>
             <p v-for="(item, index) in snapshot.content.languages" :key="index" class="snapshot-line">
               {{ item.language }}<span v-if="item.level"> · {{ item.level }}</span>
+              <span v-if="item.reading"> · Reading: {{ item.reading }}</span>
+              <span v-if="item.writing"> · Writing: {{ item.writing }}</span>
+              <span v-if="item.speaking"> · Speaking: {{ item.speaking }}</span>
             </p>
           </v-expansion-panel-text>
         </v-expansion-panel>

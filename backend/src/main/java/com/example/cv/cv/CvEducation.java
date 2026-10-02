@@ -31,6 +31,9 @@ public class CvEducation {
     @Column(length = 255)
     private String degree;
 
+    @Column(name = "diploma_degree_work", columnDefinition = "text")
+    private String diplomaDegreeWork;
+
     @Column(name = "field_of_study", length = 255)
     private String fieldOfStudy;
 
@@ -60,6 +63,8 @@ public class CvEducation {
     public void setInstitution(String institution) { this.institution = institution; }
     public String getDegree() { return degree; }
     public void setDegree(String degree) { this.degree = degree; }
+    public String getDiplomaDegreeWork() { return diplomaDegreeWork; }
+    public void setDiplomaDegreeWork(String diplomaDegreeWork) { this.diplomaDegreeWork = diplomaDegreeWork; }
     public String getFieldOfStudy() { return fieldOfStudy; }
     public void setFieldOfStudy(String fieldOfStudy) { this.fieldOfStudy = fieldOfStudy; }
     public LocalDate getStartDate() { return startDate; }

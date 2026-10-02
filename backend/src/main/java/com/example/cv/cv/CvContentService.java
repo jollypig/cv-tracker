@@ -75,6 +75,7 @@ public class CvContentService {
     private CvEducation education(Cv cv, CvContent.Education input) {
         CvEducation entity = new CvEducation(cv, input.institution().trim());
         entity.setDegree(blankToNull(input.degree()));
+        entity.setDiplomaDegreeWork(blankToNull(input.diplomaDegreeWork()));
         entity.setFieldOfStudy(blankToNull(input.fieldOfStudy()));
         entity.setStartDate(input.startDate());
         entity.setEndDate(input.endDate());
@@ -98,6 +99,9 @@ public class CvContentService {
     private CvLanguage language(Cv cv, CvContent.Language input) {
         CvLanguage entity = new CvLanguage(cv, input.language().trim());
         entity.setLevel(blankToNull(input.level()));
+        entity.setReading(blankToNull(input.reading()));
+        entity.setWriting(blankToNull(input.writing()));
+        entity.setSpeaking(blankToNull(input.speaking()));
         entity.setSortOrder(input.sortOrder());
         return entity;
     }
@@ -168,13 +172,13 @@ public class CvContentService {
                                 project.getPosition(), project.getResponsibilities(), project.getTechnologies(),
                                 project.getTeamSize(), project.getExternalLink(), project.getSortOrder())).toList())).toList(),
                 ordered(cv.getEducation(), CvEducation::getSortOrder).stream().map(item -> new CvContent.Education(item.getInstitution(), item.getDegree(),
-                        item.getFieldOfStudy(), item.getStartDate(), item.getEndDate(), item.getDescription(),
+                    item.getDiplomaDegreeWork(), item.getFieldOfStudy(), item.getStartDate(), item.getEndDate(), item.getDescription(),
                         item.getSortOrder())).toList(),
                 ordered(cv.getSkillGroups(), CvSkillGroup::getSortOrder).stream().map(item -> new CvContent.SkillGroup(item.getName(), item.getSortOrder(),
                     ordered(item.getSkills(), CvSkill::getSortOrder).stream().map(skill -> new CvContent.Skill(skill.getName(), skill.getLevel(),
                                 skill.getSortOrder())).toList())).toList(),
                 ordered(cv.getLanguages(), CvLanguage::getSortOrder).stream().map(item -> new CvContent.Language(item.getLanguage(), item.getLevel(),
-                        item.getSortOrder())).toList(),
+                    item.getReading(), item.getWriting(), item.getSpeaking(), item.getSortOrder())).toList(),
                 ordered(cv.getProjects(), CvProject::getSortOrder).stream().map(item -> new CvContent.Project(item.getName(), item.getRole(),
                         item.getDescription(), item.getTechnologies(), item.getUrl(), item.getSortOrder())).toList(),
                 ordered(cv.getCertifications(), CvCertification::getSortOrder).stream().map(item -> new CvContent.Certification(item.getName(), item.getIssuer(),

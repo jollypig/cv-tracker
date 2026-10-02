@@ -33,6 +33,7 @@
             <span>{{ period(education.startDate, education.endDate) }}</span>
           </div>
           <p class="preview-meta">{{ [education.institution, education.fieldOfStudy].filter(Boolean).join(' · ') }}</p>
+          <p v-if="education.diplomaDegreeWork">{{ education.diplomaDegreeWork }}</p>
           <p v-if="education.description">{{ education.description }}</p>
         </article>
       </section>
@@ -47,7 +48,7 @@
 
       <section v-else-if="section.visible && section.type === 'LANGUAGES' && content.languages.some((language) => language.language)" class="preview-section">
         <h3>Languages</h3>
-        <p>{{ content.languages.filter((language) => language.language).map((language) => language.level ? `${language.language} · ${language.level}` : language.language).join('  |  ') }}</p>
+        <p>{{ content.languages.filter((language) => language.language).map(languageSummary).join('  |  ') }}</p>
       </section>
 
       <section v-else-if="section.visible && section.type === 'PROJECTS' && content.projects.length" class="preview-section">
@@ -89,7 +90,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CvContent, CvExperience } from '../../shared/api/cvTypes'
+import type { CvContent, CvExperience, CvLanguage } from '../../shared/api/cvTypes'
 
 const props = defineProps<{
   content: CvContent
@@ -100,6 +101,15 @@ const orderedSections = computed(() => [...props.content.sections].sort((left, r
 
 function hasExperience(experience: CvExperience) {
   return Boolean(experience.position || experience.company || experience.description || experience.projects.length)
+}
+
+function languageSummary(language: CvLanguage) {
+  const details = [
+    language.reading && `Reading: ${language.reading}`,
+    language.writing && `Writing: ${language.writing}`,
+    language.speaking && `Speaking: ${language.speaking}`,
+  ].filter(Boolean)
+  return [language.language, language.level, details.length ? details.join(', ') : ''].filter(Boolean).join(' · ')
 }
 
 function formatDate(value: string | null) {

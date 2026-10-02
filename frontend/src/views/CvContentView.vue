@@ -110,11 +110,12 @@
               </div></div>
               <div class="content-field-grid">
                 <v-text-field v-model="education.institution" label="Institution" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="education.degree" label="Degree" variant="outlined" />
+                <v-select v-model="education.degree" :items="degreeOptions" label="Degree" clearable variant="outlined" />
                 <v-text-field v-model="education.fieldOfStudy" label="Field of study" variant="outlined" />
                 <v-text-field v-model="education.startDate" label="Start date" type="date" variant="outlined" />
                 <v-text-field v-model="education.endDate" label="End date" type="date" variant="outlined" :rules="[() => dateOrderRule(education.startDate, education.endDate)]" />
               </div>
+              <v-textarea v-model="education.diplomaDegreeWork" label="Diploma/Degree Work" rows="2" variant="outlined" />
               <v-textarea v-model="education.description" label="Description" rows="2" variant="outlined" />
             </div>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addEducation">Add education</v-btn>
@@ -149,13 +150,21 @@
         <v-expansion-panel value="languages">
           <v-expansion-panel-title>Languages <span class="panel-count">{{ content.languages.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
-            <div v-for="(language, index) in content.languages" :key="index" class="content-field-grid list-entry">
-              <v-text-field v-model="language.language" label="Language" variant="outlined" :rules="[requiredRule]" />
-              <v-text-field v-model="language.level" label="Proficiency" placeholder="Fluent" variant="outlined" />
-              <div class="entry-actions">
-                <v-btn :disabled="index === 0" aria-label="Move language up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.languages, index, -1)" />
-                <v-btn :disabled="index === content.languages.length - 1" aria-label="Move language down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.languages, index, 1)" />
-                <v-btn :aria-label="`Remove language ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.languages, index)" />
+            <div v-for="(language, index) in content.languages" :key="index" class="language-entry">
+              <div class="content-field-grid list-entry">
+                <v-text-field v-model="language.language" label="Language" variant="outlined" :rules="[requiredRule]" />
+                <v-select v-model="language.level" :items="languageLevels" label="Proficiency" variant="outlined" />
+                <div class="entry-actions">
+                  <v-btn :disabled="index === 0" aria-label="Move language up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.languages, index, -1)" />
+                  <v-btn :disabled="index === content.languages.length - 1" aria-label="Move language down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.languages, index, 1)" />
+                  <v-btn :aria-label="`Remove language ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.languages, index)" />
+                </div>
+              </div>
+              <v-checkbox :model-value="hasDetailedLevels(language)" density="compact" hide-details label="Add skill-specific levels" @update:model-value="setDetailedLevels(language, $event)" />
+              <div v-if="hasDetailedLevels(language)" class="language-detail-grid">
+                <v-select v-model="language.reading" :items="languageLevels" label="Reading" variant="outlined" />
+                <v-select v-model="language.writing" :items="languageLevels" label="Writing" variant="outlined" />
+                <v-select v-model="language.speaking" :items="languageLevels" label="Speaking" variant="outlined" />
               </div>
             </div>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addLanguage">Add language</v-btn>
@@ -275,6 +284,16 @@ const sectionDefinitions: Array<{ type: CvSectionType; title: string }> = [
   { type: 'CERTIFICATIONS', title: 'Certifications' },
   { type: 'CUSTOM', title: 'Custom sections' },
 ]
+const languageLevels = ['Native (C2)', 'Fluent (C1)', 'Advanced (B2)', 'Intermediate (B1)', 'Basic (A1–A2)']
+const degreeOptions = [
+  'High School',
+  'Vocational / Professional',
+  'Associate Degree',
+  'Bachelor’s Degree',
+  'Master’s Degree',
+  'Doctorate (PhD)',
+]
+const detailedLanguages = reactive(new Set<CvLanguage>())
 const content = reactive<CvContent>(emptyContent())
 
 onMounted(async () => {
@@ -381,7 +400,7 @@ function addExperienceProject(experience: CvExperience) {
 }
 
 function addEducation() {
-  content.education.push({ institution: '', degree: '', fieldOfStudy: '', startDate: null, endDate: null,
+  content.education.push({ institution: '', degree: '', diplomaDegreeWork: '', fieldOfStudy: '', startDate: null, endDate: null,
     description: '', sortOrder: content.education.length })
 }
 
@@ -394,7 +413,23 @@ function addSkill(group: CvSkillGroup) {
 }
 
 function addLanguage() {
-  content.languages.push({ language: '', level: '', sortOrder: content.languages.length })
+  content.languages.push({ language: '', level: '', reading: '', writing: '', speaking: '', sortOrder: content.languages.length })
+}
+
+function hasDetailedLevels(language: CvLanguage) {
+  return detailedLanguages.has(language) || [language.reading, language.writing, language.speaking]
+    .some((level) => Boolean(level?.trim()))
+}
+
+function setDetailedLevels(language: CvLanguage, enabled: boolean | null) {
+  if (enabled) {
+    detailedLanguages.add(language)
+    return
+  }
+  detailedLanguages.delete(language)
+  language.reading = ''
+  language.writing = ''
+  language.speaking = ''
 }
 
 function addProject() {
@@ -453,6 +488,8 @@ async function saveContent() {
 .entry-heading h4 { font-size: 13px; }
 .entry-actions { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
 .content-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+.language-entry { padding-bottom: 12px; }
+.language-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; padding-left: 12px; }
 .nested-editor { margin: 14px 0 4px; padding: 14px; border-left: 3px solid #d9e6dc; background: #f8faf8; }
 .nested-entry { padding: 12px 0; border-top: 1px solid #e4e5de; }
 .nested-entry > .entry-heading { color: #52635a; font-size: 12px; }
@@ -462,6 +499,7 @@ async function saveContent() {
   .content-heading-actions { align-items: flex-start; flex-direction: column-reverse; }
   .content-order-row { grid-template-columns: 20px 22px minmax(0, 1fr) 66px 32px 32px; gap: 2px; padding: 4px; }
   .content-field-grid, .skill-entry, .list-entry { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .language-detail-grid { grid-template-columns: minmax(0, 1fr); gap: 0; padding-left: 0; }
   .skill-entry .entry-actions, .list-entry .entry-actions { justify-content: flex-end; margin: -10px 0 8px; }
   .nested-editor { padding: 10px; }
 }
