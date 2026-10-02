@@ -54,7 +54,8 @@ class CvVersionControllerTest {
         UUID cvId = UUID.randomUUID();
         CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
                 new CvContent("Saved", java.util.List.of(), java.util.List.of(), java.util.List.of(),
-                        java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of()));
+                        java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of(), java.util.List.of()),
+                null);
         when(versionService.find(cvId, 1)).thenReturn(new CvVersionDetailResponse(UUID.randomUUID(), cvId, 1,
                 "Initial", Instant.parse("2026-01-01T00:00:00Z"), snapshot));
 
