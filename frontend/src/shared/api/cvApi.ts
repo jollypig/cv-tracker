@@ -67,6 +67,12 @@ const cvApi = {
     const response = await apiClient.post<CvVersion>(`/cvs/${id}/versions/${versionNumber}/restore`, { description })
     return response.data
   },
+
+  async exportVersionPdf(versionId: string): Promise<{ fileName: string; content: Blob }> {
+    const created = await apiClient.post<{ id: string; fileName: string }>(`/cv-versions/${versionId}/exports/pdf`)
+    const downloaded = await apiClient.get<Blob>(`/exports/${created.data.id}/download`, { responseType: 'blob' })
+    return { fileName: created.data.fileName, content: downloaded.data }
+  },
 }
 
 export default cvApi
