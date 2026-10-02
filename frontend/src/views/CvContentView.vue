@@ -70,6 +70,8 @@
                 <v-text-field v-model="experience.company" label="Company" variant="outlined" :rules="[requiredRule]" />
                 <v-text-field v-model="experience.position" label="Position" variant="outlined" :rules="[requiredRule]" />
                 <v-text-field v-model="experience.location" label="Location" variant="outlined" />
+                <v-select v-model="experience.employmentType" :items="employmentTypes" label="Employment type" variant="outlined" clearable />
+                <v-select v-model="experience.employmentLocation" :items="employmentLocations" label="Employment location" variant="outlined" clearable />
                 <v-text-field v-model="experience.startDate" label="Start date" type="date" variant="outlined" />
                 <v-text-field v-model="experience.endDate" label="End date" type="date" variant="outlined" :rules="[() => dateOrderRule(experience.startDate, experience.endDate)]" />
                 <v-checkbox v-model="experience.current" label="I currently work here" hide-details />
@@ -80,8 +82,16 @@
                 <div v-for="(project, projectIndex) in experience.projects" :key="projectIndex" class="nested-entry">
                   <div class="entry-heading"><span>Project {{ projectIndex + 1 }}</span><v-btn :aria-label="`Remove project ${projectIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(experience.projects, projectIndex)" /></div>
                   <div class="content-field-grid">
+                    <v-checkbox
+                        :model-value="project.showProjectName === false && project.showCustomerCompany === false"
+                        class="project-visibility-toggle"
+                        label="Hide Project Name and Company"
+                        hide-details
+                        @update:model-value="setProjectNameAndCompanyHidden(project, $event)"
+                    />
                     <v-text-field v-model="project.projectName" label="Project name" variant="outlined" :rules="[requiredRule]" />
                     <v-text-field v-model="project.company" label="Customer company" variant="outlined" />
+                    <v-textarea v-model="project.projectDescription" class="project-description-field" label="Project description" rows="2" variant="outlined" />
                     <v-text-field v-model="project.industries" label="Industries" variant="outlined" />
                     <v-text-field v-model="project.position" label="Project position" variant="outlined" />
                     <v-text-field v-model="project.periodFrom" label="From" type="date" variant="outlined" />
@@ -89,7 +99,6 @@
                     <v-text-field v-model.number="project.teamSize" label="Team size" type="number" min="0" variant="outlined" />
                     <v-text-field v-model="project.externalLink" label="External link" type="url" variant="outlined" :rules="[optionalUrlRule]" />
                   </div>
-                  <v-textarea v-model="project.projectDescription" label="Project description" rows="2" variant="outlined" />
                   <v-textarea v-model="project.responsibilities" label="Responsibilities" rows="2" variant="outlined" />
                   <v-textarea v-model="project.technologies" label="Technologies and tools" rows="2" variant="outlined" />
                 </div>
@@ -114,6 +123,7 @@
                 <v-text-field v-model="education.fieldOfStudy" label="Field of study" variant="outlined" />
                 <v-text-field v-model="education.startDate" label="Start date" type="date" variant="outlined" />
                 <v-text-field v-model="education.endDate" label="End date" type="date" variant="outlined" :rules="[() => dateOrderRule(education.startDate, education.endDate)]" />
+                <v-checkbox v-model="education.current" label="I currently study here" hide-details />
               </div>
               <v-textarea v-model="education.diplomaDegreeWork" label="Diploma/Degree Work" rows="2" variant="outlined" />
               <v-textarea v-model="education.description" label="Description" rows="2" variant="outlined" />
@@ -125,24 +135,35 @@
         <v-expansion-panel value="skills">
           <v-expansion-panel-title>Skill groups <span class="panel-count">{{ content.skillGroups.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
-            <div v-for="(group, groupIndex) in content.skillGroups" :key="groupIndex" class="editor-entry">
-              <div class="entry-heading"><h3>{{ group.name || `Skill group ${groupIndex + 1}` }}</h3><div class="entry-actions">
-                <v-btn :disabled="groupIndex === 0" aria-label="Move skill group up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, -1)" />
-                <v-btn :disabled="groupIndex === content.skillGroups.length - 1" aria-label="Move skill group down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, 1)" />
-                <v-btn :aria-label="`Remove ${group.name || 'skill group'}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.skillGroups, groupIndex)" />
-              </div></div>
-              <v-text-field v-model="group.name" label="Group name" variant="outlined" :rules="[requiredRule]" />
-              <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="content-field-grid skill-entry">
-                <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="skill.level" label="Level" placeholder="Advanced" variant="outlined" />
-                <div class="entry-actions">
-                  <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
-                  <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
-                  <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
-                </div>
-              </div>
-              <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">Add skill</v-btn>
-            </div>
+            <v-expansion-panels multiple class="skill-group-panels">
+              <v-expansion-panel v-for="(group, groupIndex) in content.skillGroups" :key="groupIndex" :value="groupIndex">
+                <v-expansion-panel-title>
+                  <span>{{ group.name || `Skill group ${groupIndex + 1}` }}</span>
+                  <span class="panel-count">{{ group.skills.length }}</span>
+                  <template #actions>
+                    <div class="entry-actions" @click.stop>
+                      <v-btn :disabled="groupIndex === 0" aria-label="Move skill group up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, -1)" />
+                      <v-btn :disabled="groupIndex === content.skillGroups.length - 1" aria-label="Move skill group down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, 1)" />
+                      <v-btn :aria-label="`Remove ${group.name || 'skill group'}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.skillGroups, groupIndex)" />
+                      <v-icon class="skill-group-expand-icon" icon="mdi-chevron-down" aria-hidden="true" />
+                    </div>
+                  </template>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <v-text-field v-model="group.name" label="Group name" variant="outlined" :rules="[requiredRule]" />
+                  <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="content-field-grid skill-entry">
+                    <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
+                    <v-select v-model="skill.level" :items="skillLevels" label="Level" variant="outlined" />
+                    <div class="entry-actions">
+                      <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
+                      <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
+                      <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                    </div>
+                  </div>
+                  <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">Add skill</v-btn>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addSkillGroup">Add skill group</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
@@ -209,6 +230,7 @@
                 <v-text-field v-model="certification.credentialId" label="Credential ID" variant="outlined" />
                 <v-text-field v-model="certification.credentialUrl" label="Credential URL" type="url" variant="outlined" :rules="[optionalUrlRule]" />
               </div>
+              <v-textarea v-model="certification.description" label="Description" variant="outlined" rows="3" auto-grow />
             </div>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addCertification">Add certification</v-btn>
           </v-expansion-panel-text>
@@ -285,9 +307,12 @@ const sectionDefinitions: Array<{ type: CvSectionType; title: string }> = [
   { type: 'CUSTOM', title: 'Custom sections' },
 ]
 const languageLevels = ['Native (C2)', 'Fluent (C1)', 'Advanced (B2)', 'Intermediate (B1)', 'Basic (A1–A2)']
+const skillLevels = ['Basic', 'Intermediate', 'Advanced', 'Expert']
+const employmentTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship', 'Self-employed']
+const employmentLocations = ['On-site', 'Hybrid', 'Remote']
 const degreeOptions = [
   'High School',
-  'Vocational / Professional',
+  'Professional',
   'Associate Degree',
   'Bachelor’s Degree',
   'Master’s Degree',
@@ -389,18 +414,23 @@ function dropSection(target: number) {
 }
 
 function addExperience() {
-  content.experiences.push({ company: '', position: '', location: '', startDate: null, endDate: null,
+  content.experiences.push({ company: '', position: '', location: '', employmentType: null, employmentLocation: null, startDate: null, endDate: null,
     current: false, description: '', sortOrder: content.experiences.length, projects: [] })
 }
 
 function addExperienceProject(experience: CvExperience) {
-  experience.projects.push({ company: '', industries: '', projectName: '', projectDescription: '',
+  experience.projects.push({ company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
     periodFrom: null, periodTo: null, position: '', responsibilities: '', technologies: '',
     teamSize: null, externalLink: '', sortOrder: experience.projects.length })
 }
 
+function setProjectNameAndCompanyHidden(project: CvExperienceProject, hidden: boolean | null) {
+  project.showProjectName = !hidden
+  project.showCustomerCompany = !hidden
+}
+
 function addEducation() {
-  content.education.push({ institution: '', degree: '', diplomaDegreeWork: '', fieldOfStudy: '', startDate: null, endDate: null,
+  content.education.push({ institution: '', degree: '', diplomaDegreeWork: '', fieldOfStudy: '', startDate: null, endDate: null, current: false,
     description: '', sortOrder: content.education.length })
 }
 
@@ -437,7 +467,7 @@ function addProject() {
 }
 
 function addCertification() {
-  content.certifications.push({ name: '', issuer: '', issueDate: null, expiryDate: null,
+  content.certifications.push({ name: '', description: '', issuer: '', issueDate: null, expiryDate: null,
     credentialId: '', credentialUrl: '', sortOrder: content.certifications.length })
 }
 
@@ -480,6 +510,11 @@ async function saveContent() {
 .content-panels { margin-top: 20px; border: 1px solid #e4e5de; border-radius: 6px; background: #fff; }
 .content-panels :deep(.v-expansion-panel) { border-bottom: 1px solid #e8e9e3; }
 .content-panels :deep(.v-expansion-panel-title) { min-height: 56px; font-weight: 700; }
+.skill-group-panels { margin: 0 0 12px; border: 1px solid #e8e9e3; border-radius: 4px; }
+.skill-group-panels :deep(.v-expansion-panel-title) { min-height: 48px; font-size: 13px; }
+.skill-group-panels :deep(.v-expansion-panel-text__wrapper) { padding: 16px 16px 8px; }
+.skill-group-expand-icon { margin-left: 4px; transition: transform 180ms ease; }
+.skill-group-panels :deep(.v-expansion-panel-title--active .skill-group-expand-icon) { transform: rotate(180deg); }
 .panel-count { margin-left: 8px; color: #78847e; font-size: 12px; font-weight: 500; }
 .editor-entry { padding: 17px 0 12px; border-bottom: 1px solid #e8e9e3; }
 .editor-entry:first-child { padding-top: 0; }
@@ -488,6 +523,8 @@ async function saveContent() {
 .entry-heading h4 { font-size: 13px; }
 .entry-actions { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
 .content-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+.project-description-field { grid-column: 1 / -1; }
+.project-visibility-toggle { grid-column: 1 / -1; }
 .language-entry { padding-bottom: 12px; }
 .language-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; padding-left: 12px; }
 .nested-editor { margin: 14px 0 4px; padding: 14px; border-left: 3px solid #d9e6dc; background: #f8faf8; }

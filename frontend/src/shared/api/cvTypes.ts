@@ -68,6 +68,8 @@ export interface CvExperience {
   company: string
   position: string
   location: string | null
+  employmentType: 'Full-time' | 'Part-time' | 'Contract' | 'Freelance' | 'Internship' | 'Self-employed' | null
+  employmentLocation: 'On-site' | 'Hybrid' | 'Remote' | null
   startDate: string | null
   endDate: string | null
   current: boolean
@@ -81,6 +83,8 @@ export interface CvExperienceProject {
   industries: string | null
   projectName: string
   projectDescription: string | null
+  showProjectName?: boolean
+  showCustomerCompany?: boolean
   periodFrom: string | null
   periodTo: string | null
   position: string | null
@@ -98,6 +102,7 @@ export interface CvEducation {
   fieldOfStudy: string | null
   startDate: string | null
   endDate: string | null
+  current: boolean
   description: string | null
   sortOrder: number
 }
@@ -134,6 +139,7 @@ export interface CvProject {
 
 export interface CvCertification {
   name: string
+  description: string | null
   issuer: string | null
   issueDate: string | null
   expiryDate: string | null

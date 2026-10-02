@@ -1,0 +1,2 @@
+ALTER TABLE cv_education
+    ADD COLUMN current BOOLEAN NOT NULL DEFAULT FALSE;

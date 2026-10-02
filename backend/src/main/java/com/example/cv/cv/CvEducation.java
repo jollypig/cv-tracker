@@ -43,6 +43,9 @@ public class CvEducation {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    @Column(name = "current", nullable = false)
+    private boolean current;
+
     @Column(columnDefinition = "text")
     private String description;
 
@@ -71,6 +74,8 @@ public class CvEducation {
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+    public boolean isCurrent() { return current; }
+    public void setCurrent(boolean current) { this.current = current; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public int getSortOrder() { return sortOrder; }

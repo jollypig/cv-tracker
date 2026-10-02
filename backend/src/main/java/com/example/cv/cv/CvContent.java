@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
@@ -24,6 +25,8 @@ public record CvContent(
             @NotBlank @Size(max = 255) String company,
             @NotBlank @Size(max = 255) String position,
             @Size(max = 255) String location,
+            @Pattern(regexp = "Full-time|Part-time|Contract|Freelance|Internship|Self-employed") String employmentType,
+            @Pattern(regexp = "On-site|Hybrid|Remote") String employmentLocation,
             LocalDate startDate,
             LocalDate endDate,
             boolean current,
@@ -37,6 +40,8 @@ public record CvContent(
             @Size(max = 10000) String industries,
             @NotBlank @Size(max = 255) String projectName,
             @Size(max = 10000) String projectDescription,
+            Boolean showProjectName,
+            Boolean showCustomerCompany,
             LocalDate periodFrom,
             LocalDate periodTo,
             @Size(max = 255) String position,
@@ -54,6 +59,7 @@ public record CvContent(
             @Size(max = 255) String fieldOfStudy,
             LocalDate startDate,
             LocalDate endDate,
+            boolean current,
             @Size(max = 10000) String description,
             @PositiveOrZero int sortOrder) {
     }
@@ -90,6 +96,7 @@ public record CvContent(
 
     public record Certification(
             @NotBlank @Size(max = 255) String name,
+            @Size(max = 10000) String description,
             @Size(max = 255) String issuer,
             LocalDate issueDate,
             LocalDate expiryDate,

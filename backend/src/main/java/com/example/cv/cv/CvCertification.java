@@ -28,6 +28,9 @@ public class CvCertification {
     @Column(nullable = false, length = 255)
     private String name;
 
+    @Column(columnDefinition = "text")
+    private String description;
+
     @Column(length = 255)
     private String issuer;
 
@@ -58,6 +61,8 @@ public class CvCertification {
     public Cv getCv() { return cv; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
     public String getIssuer() { return issuer; }
     public void setIssuer(String issuer) { this.issuer = issuer; }
     public LocalDate getIssueDate() { return issueDate; }

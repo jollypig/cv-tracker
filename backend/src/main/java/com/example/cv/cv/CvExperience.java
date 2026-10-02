@@ -38,6 +38,12 @@ public class CvExperience {
     @Column(length = 255)
     private String location;
 
+    @Column(name = "employment_type", length = 50)
+    private String employmentType;
+
+    @Column(name = "employment_location", length = 50)
+    private String employmentLocation;
+
     @Column(name = "start_date")
     private LocalDate startDate;
 
@@ -73,6 +79,10 @@ public class CvExperience {
     public void setPosition(String position) { this.position = position; }
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+    public String getEmploymentType() { return employmentType; }
+    public void setEmploymentType(String employmentType) { this.employmentType = employmentType; }
+    public String getEmploymentLocation() { return employmentLocation; }
+    public void setEmploymentLocation(String employmentLocation) { this.employmentLocation = employmentLocation; }
     public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public LocalDate getEndDate() { return endDate; }

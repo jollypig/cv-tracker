@@ -47,6 +47,8 @@ public class CvContentService {
     private CvExperience experience(Cv cv, CvContent.Experience input) {
         CvExperience entity = new CvExperience(cv, input.company().trim(), input.position().trim());
         entity.setLocation(blankToNull(input.location()));
+        entity.setEmploymentType(input.employmentType());
+        entity.setEmploymentLocation(input.employmentLocation());
         entity.setStartDate(input.startDate());
         entity.setEndDate(input.endDate());
         entity.setCurrent(input.current());
@@ -61,6 +63,8 @@ public class CvContentService {
         entity.setCompany(blankToNull(input.company()));
         entity.setIndustries(blankToNull(input.industries()));
         entity.setProjectDescription(blankToNull(input.projectDescription()));
+        entity.setShowProjectName(input.showProjectName() == null || input.showProjectName());
+        entity.setShowCustomerCompany(input.showCustomerCompany() == null || input.showCustomerCompany());
         entity.setPeriodFrom(input.periodFrom());
         entity.setPeriodTo(input.periodTo());
         entity.setPosition(blankToNull(input.position()));
@@ -79,6 +83,7 @@ public class CvContentService {
         entity.setFieldOfStudy(blankToNull(input.fieldOfStudy()));
         entity.setStartDate(input.startDate());
         entity.setEndDate(input.endDate());
+        entity.setCurrent(input.current());
         entity.setDescription(blankToNull(input.description()));
         entity.setSortOrder(input.sortOrder());
         return entity;
@@ -118,6 +123,7 @@ public class CvContentService {
 
     private CvCertification certification(Cv cv, CvContent.Certification input) {
         CvCertification entity = new CvCertification(cv, input.name().trim());
+        entity.setDescription(blankToNull(input.description()));
         entity.setIssuer(blankToNull(input.issuer()));
         entity.setIssueDate(input.issueDate());
         entity.setExpiryDate(input.expiryDate());
@@ -165,14 +171,15 @@ public class CvContentService {
         }
         return new CvContent(cv.getSummary(),
                 ordered(cv.getExperiences(), CvExperience::getSortOrder).stream().map(item -> new CvContent.Experience(item.getCompany(), item.getPosition(),
-                        item.getLocation(), item.getStartDate(), item.getEndDate(), item.isCurrent(), item.getDescription(),
+                    item.getLocation(), item.getEmploymentType(), item.getEmploymentLocation(), item.getStartDate(), item.getEndDate(), item.isCurrent(), item.getDescription(),
                     item.getSortOrder(), ordered(item.getProjects(), CvExperienceProject::getSortOrder).stream().map(project -> new CvContent.ExperienceProject(
                                 project.getCompany(), project.getIndustries(), project.getProjectName(),
-                                project.getProjectDescription(), project.getPeriodFrom(), project.getPeriodTo(),
+                                project.getProjectDescription(), project.isShowProjectName(), project.isShowCustomerCompany(),
+                                project.getPeriodFrom(), project.getPeriodTo(),
                                 project.getPosition(), project.getResponsibilities(), project.getTechnologies(),
                                 project.getTeamSize(), project.getExternalLink(), project.getSortOrder())).toList())).toList(),
                 ordered(cv.getEducation(), CvEducation::getSortOrder).stream().map(item -> new CvContent.Education(item.getInstitution(), item.getDegree(),
-                    item.getDiplomaDegreeWork(), item.getFieldOfStudy(), item.getStartDate(), item.getEndDate(), item.getDescription(),
+                    item.getDiplomaDegreeWork(), item.getFieldOfStudy(), item.getStartDate(), item.getEndDate(), item.isCurrent(), item.getDescription(),
                         item.getSortOrder())).toList(),
                 ordered(cv.getSkillGroups(), CvSkillGroup::getSortOrder).stream().map(item -> new CvContent.SkillGroup(item.getName(), item.getSortOrder(),
                     ordered(item.getSkills(), CvSkill::getSortOrder).stream().map(skill -> new CvContent.Skill(skill.getName(), skill.getLevel(),
@@ -181,7 +188,7 @@ public class CvContentService {
                     item.getReading(), item.getWriting(), item.getSpeaking(), item.getSortOrder())).toList(),
                 ordered(cv.getProjects(), CvProject::getSortOrder).stream().map(item -> new CvContent.Project(item.getName(), item.getRole(),
                         item.getDescription(), item.getTechnologies(), item.getUrl(), item.getSortOrder())).toList(),
-                ordered(cv.getCertifications(), CvCertification::getSortOrder).stream().map(item -> new CvContent.Certification(item.getName(), item.getIssuer(),
+                ordered(cv.getCertifications(), CvCertification::getSortOrder).stream().map(item -> new CvContent.Certification(item.getName(), item.getDescription(), item.getIssuer(),
                         item.getIssueDate(), item.getExpiryDate(), item.getCredentialId(), item.getCredentialUrl(),
                         item.getSortOrder())).toList(),
                 ordered(cv.getCustomSections(), CvCustomSection::getSortOrder).stream().map(item -> new CvContent.CustomSection(item.getTitle(), item.getContent(),

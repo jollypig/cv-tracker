@@ -37,6 +37,12 @@ public class CvExperienceProject {
     @Column(name = "project_description", columnDefinition = "text")
     private String projectDescription;
 
+    @Column(name = "show_project_name", nullable = false)
+    private boolean showProjectName = true;
+
+    @Column(name = "show_customer_company", nullable = false)
+    private boolean showCustomerCompany = true;
+
     @Column(name = "period_from")
     private LocalDate periodFrom;
 
@@ -79,6 +85,10 @@ public class CvExperienceProject {
     public void setProjectName(String projectName) { this.projectName = projectName; }
     public String getProjectDescription() { return projectDescription; }
     public void setProjectDescription(String projectDescription) { this.projectDescription = projectDescription; }
+    public boolean isShowProjectName() { return showProjectName; }
+    public void setShowProjectName(boolean showProjectName) { this.showProjectName = showProjectName; }
+    public boolean isShowCustomerCompany() { return showCustomerCompany; }
+    public void setShowCustomerCompany(boolean showCustomerCompany) { this.showCustomerCompany = showCustomerCompany; }
     public LocalDate getPeriodFrom() { return periodFrom; }
     public void setPeriodFrom(LocalDate periodFrom) { this.periodFrom = periodFrom; }
     public LocalDate getPeriodTo() { return periodTo; }
