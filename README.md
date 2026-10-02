@@ -27,3 +27,11 @@ The frontend is available at <http://localhost:5173>, the API status endpoint at
 Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on backend startup. PostgreSQL data is kept in the Compose named volume `postgres_data`.
 
 Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.
+
+## PDF exports
+
+- Create a PDF from a saved version: `POST /api/v1/cv-versions/{versionId}/exports/pdf`.
+- List exports for that version: `GET /api/v1/cv-versions/{versionId}/exports`.
+- Download an export: `GET /api/v1/exports/{exportId}/download`.
+
+Generated files are stored under `./data/exports` relative to the backend process working directory. Set `CV_EXPORT_DIRECTORY` to use another local directory.

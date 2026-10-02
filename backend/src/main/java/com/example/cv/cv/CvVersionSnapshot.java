@@ -8,5 +8,17 @@ public record CvVersionSnapshot(
         String description,
         String language,
         CvStatus status,
-        CvContent content) {
+        CvContent content,
+        PersonProfile person) {
+
+    public record PersonProfile(
+            String firstName,
+            String lastName,
+            String position,
+            String location,
+            java.util.List<Contact> contacts) {
+    }
+
+    public record Contact(String type, String value, int sortOrder) {
+    }
 }

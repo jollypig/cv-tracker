@@ -34,3 +34,5 @@ springdoc:
 app:
   cors:
     allowed-origins: http://localhost:5173,http://localhost:5174
+  exports:
+    directory: ${CV_EXPORT_DIRECTORY:./data/exports}
