@@ -1,0 +1,1 @@
+ALTER TABLE cv_certification ADD COLUMN description TEXT;

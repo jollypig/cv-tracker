@@ -13,11 +13,11 @@
             <h4>{{ experience.position || experience.company || 'Position' }}</h4>
             <span>{{ period(experience.startDate, experience.endDate, experience.current) }}</span>
           </div>
-          <p class="preview-meta">{{ [experience.company, experience.location].filter(Boolean).join(' · ') }}</p>
+          <p class="preview-meta">{{ [experience.company, experience.location, experience.employmentType, experience.employmentLocation].filter(Boolean).join(' · ') }}</p>
           <p v-if="experience.description">{{ experience.description }}</p>
           <div v-for="(project, projectIndex) in experience.projects" :key="projectIndex" class="preview-nested-entry">
-            <h5>{{ project.projectName }}</h5>
-            <p v-if="project.position || project.company" class="preview-meta">{{ [project.position, project.company].filter(Boolean).join(' · ') }}</p>
+            <h5 v-if="project.showProjectName !== false">{{ project.projectName }}</h5>
+            <p v-if="project.position || (project.showCustomerCompany !== false && project.company)" class="preview-meta">{{ [project.position, project.showCustomerCompany !== false ? project.company : null].filter(Boolean).join(' · ') }}</p>
             <p v-if="project.projectDescription">{{ project.projectDescription }}</p>
             <p v-if="project.responsibilities">{{ project.responsibilities }}</p>
             <p v-if="project.technologies" class="preview-meta">{{ project.technologies }}</p>
@@ -30,7 +30,7 @@
         <article v-for="(education, index) in content.education" v-show="education.institution || education.degree || education.description" :key="index" class="preview-entry">
           <div class="preview-entry-heading">
             <h4>{{ education.degree || education.institution }}</h4>
-            <span>{{ period(education.startDate, education.endDate) }}</span>
+            <span>{{ period(education.startDate, education.endDate, education.current) }}</span>
           </div>
           <p class="preview-meta">{{ [education.institution, education.fieldOfStudy].filter(Boolean).join(' · ') }}</p>
           <p v-if="education.diplomaDegreeWork">{{ education.diplomaDegreeWork }}</p>
@@ -72,6 +72,7 @@
             <span>{{ period(certification.issueDate, certification.expiryDate) }}</span>
           </div>
           <p class="preview-meta">{{ [certification.issuer, certification.credentialId].filter(Boolean).join(' · ') }}</p>
+          <p v-if="certification.description">{{ certification.description }}</p>
           <a v-if="safeUrl(certification.credentialUrl)" :href="safeUrl(certification.credentialUrl)" target="_blank" rel="noreferrer">Credential</a>
         </article>
       </section>

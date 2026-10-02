@@ -24,10 +24,10 @@ class CvContentServiceTest {
         when(repository.save(cv)).thenReturn(cv);
         CvContentService service = new CvContentService(repository);
         CvContent content = new CvContent("Summary", List.of(new CvContent.Experience("Company", "Engineer",
-                null, null, null, false, null, 0, List.of(new CvContent.ExperienceProject(null, null,
-                "Project", null, null, null, "Engineer", "Build", "Java", 4, null, 0)))),
+                null, "Contract", "Hybrid", null, null, false, null, 0, List.of(new CvContent.ExperienceProject(null, null,
+                "Project", null, false, true, null, null, "Engineer", "Build", "Java", 4, null, 0)))),
                 List.of(new CvContent.Education("University", "Bachelor", "Thesis on distributed systems", "Computer Science",
-                        null, null, null, 0)), List.of(new CvContent.SkillGroup("Backend", 0,
+                        null, null, true, null, 0)), List.of(new CvContent.SkillGroup("Backend", 0,
                         List.of(new CvContent.Skill("Java", "Advanced", 0)))),
                 List.of(new CvContent.Language("English", "Fluent (C1)", "Advanced (B2)", "Intermediate (B1)", "Fluent (C1)", 0)), List.of(), List.of(),
                 List.of(), List.of(new CvContent.Section(CvSectionType.EXPERIENCE, true, 0)));
@@ -37,12 +37,17 @@ class CvContentServiceTest {
 
         assertThat(saved.summary()).isEqualTo("Summary");
         assertThat(fetched.experiences()).hasSize(1);
+        assertThat(fetched.experiences().get(0).employmentType()).isEqualTo("Contract");
+        assertThat(fetched.experiences().get(0).employmentLocation()).isEqualTo("Hybrid");
         assertThat(fetched.experiences().get(0).projects()).hasSize(1);
+        assertThat(fetched.experiences().get(0).projects().get(0).showProjectName()).isFalse();
+        assertThat(fetched.experiences().get(0).projects().get(0).showCustomerCompany()).isTrue();
         assertThat(fetched.skillGroups().get(0).skills().get(0).name()).isEqualTo("Java");
         assertThat(fetched.languages().get(0).reading()).isEqualTo("Advanced (B2)");
         assertThat(fetched.languages().get(0).writing()).isEqualTo("Intermediate (B1)");
         assertThat(fetched.languages().get(0).speaking()).isEqualTo("Fluent (C1)");
         assertThat(fetched.education().get(0).diplomaDegreeWork()).isEqualTo("Thesis on distributed systems");
+        assertThat(fetched.education().get(0).current()).isTrue();
         assertThat(fetched.sections().get(0).type()).isEqualTo(CvSectionType.EXPERIENCE);
         verify(repository).save(cv);
     }

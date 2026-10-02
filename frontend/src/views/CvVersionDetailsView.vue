@@ -34,7 +34,7 @@
           <v-expansion-panel-text>
             <article v-for="(item, index) in snapshot.content.experiences" :key="index" class="snapshot-entry">
               <h3>{{ item.position }} · {{ item.company }}</h3>
-              <p class="muted-cell">{{ item.location }}<span v-if="item.startDate"> · {{ item.startDate }} – {{ item.current ? 'Present' : item.endDate }}</span></p>
+              <p class="muted-cell">{{ [item.location, item.employmentType, item.employmentLocation].filter(Boolean).join(' · ') }}<span v-if="item.startDate"> · {{ item.startDate }} – {{ item.current ? 'Present' : item.endDate }}</span></p>
               <p v-if="item.description" class="snapshot-copy">{{ item.description }}</p>
               <ul v-if="item.projects.length">
                 <li v-for="project in item.projects" :key="`${project.projectName}-${project.sortOrder}`">
@@ -50,6 +50,7 @@
             <article v-for="(item, index) in snapshot.content.education" :key="index" class="snapshot-entry">
               <h3>{{ item.institution }}</h3>
               <p>{{ [item.degree, item.fieldOfStudy].filter(Boolean).join(' · ') }}</p>
+              <p v-if="item.startDate || item.endDate || item.current" class="muted-cell">{{ item.startDate }}<span v-if="item.startDate && (item.endDate || item.current)"> – </span>{{ item.current ? 'Present' : item.endDate }}</p>
               <p v-if="item.diplomaDegreeWork" class="snapshot-copy">{{ item.diplomaDegreeWork }}</p>
               <p v-if="item.description" class="snapshot-copy">{{ item.description }}</p>
             </article>
@@ -84,9 +85,10 @@
         </v-expansion-panel>
         <v-expansion-panel v-if="snapshot.content.certifications.length" title="Certifications">
           <v-expansion-panel-text>
-            <p v-for="(item, index) in snapshot.content.certifications" :key="index" class="snapshot-line">
-              <strong>{{ item.name }}</strong><span v-if="item.issuer"> · {{ item.issuer }}</span>
-            </p>
+            <template v-for="(item, index) in snapshot.content.certifications" :key="index">
+              <p class="snapshot-line"><strong>{{ item.name }}</strong><span v-if="item.issuer"> · {{ item.issuer }}</span></p>
+              <p v-if="item.description" class="snapshot-copy">{{ item.description }}</p>
+            </template>
           </v-expansion-panel-text>
         </v-expansion-panel>
         <v-expansion-panel v-if="snapshot.content.customSections.length" title="Custom sections">

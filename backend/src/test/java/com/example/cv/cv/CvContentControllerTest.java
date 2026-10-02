@@ -36,7 +36,7 @@ class CvContentControllerTest {
         UUID cvId = UUID.randomUUID();
         CvContent content = new CvContent("Summary", List.of(), List.of(), List.of(),
             List.of(new CvContent.Language("English", "Fluent (C1)", "Advanced (B2)", "Intermediate (B1)", "Fluent (C1)", 0)), List.of(),
-                List.of(), List.of(), List.of());
+                List.of(new CvContent.Certification("Java Certification", "Advanced Java skills", "Oracle", null, null, null, null, 0)), List.of(), List.of());
         when(contentService.replace(eq(cvId), any(CvContent.class))).thenReturn(content);
 
         mockMvc.perform(put("/api/v1/cvs/{cvId}/content", cvId)
@@ -45,18 +45,21 @@ class CvContentControllerTest {
                                 {"summary":"Summary","experiences":[],"education":[],"skillGroups":[],
                                 "languages":[{"language":"English","level":"Fluent (C1)","reading":"Advanced (B2)",
                                 "writing":"Intermediate (B1)","speaking":"Fluent (C1)","sortOrder":0}],
-                                "projects":[],"certifications":[],"customSections":[],"sections":[]}
+                                "projects":[],"certifications":[{"name":"Java Certification","description":"Advanced Java skills",
+                                "issuer":"Oracle","sortOrder":0}],"customSections":[],"sections":[]}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary").value("Summary"))
                 .andExpect(jsonPath("$.languages[0].reading").value("Advanced (B2)"))
                 .andExpect(jsonPath("$.languages[0].writing").value("Intermediate (B1)"))
-                .andExpect(jsonPath("$.languages[0].speaking").value("Fluent (C1)"));
+                .andExpect(jsonPath("$.languages[0].speaking").value("Fluent (C1)"))
+                .andExpect(jsonPath("$.certifications[0].description").value("Advanced Java skills"));
         ArgumentCaptor<CvContent> contentCaptor = ArgumentCaptor.forClass(CvContent.class);
         verify(contentService).replace(eq(cvId), contentCaptor.capture());
         assertThat(contentCaptor.getValue().languages().get(0).reading()).isEqualTo("Advanced (B2)");
         assertThat(contentCaptor.getValue().languages().get(0).writing()).isEqualTo("Intermediate (B1)");
         assertThat(contentCaptor.getValue().languages().get(0).speaking()).isEqualTo("Fluent (C1)");
+        assertThat(contentCaptor.getValue().certifications().get(0).description()).isEqualTo("Advanced Java skills");
     }
 
     @Test
