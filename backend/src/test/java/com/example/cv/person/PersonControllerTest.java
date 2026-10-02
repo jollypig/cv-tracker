@@ -49,6 +49,7 @@ class PersonControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.position").value("Analyst"))
                 .andExpect(jsonPath("$.contacts[0].type").value("EMAIL"))
                                                                 .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/" + id)));
     }
@@ -107,7 +108,8 @@ class PersonControllerTest {
         }
 
     private PersonResponse person(UUID id) {
-        return new PersonResponse(id, "Ada", "Lovelace", null, null, null,
+        return new PersonResponse(id, "Ada", "Lovelace", null, "Analyst", "Female",
+                "Single", "Completed", "London", null,
                 List.of(new PersonContactResponse(UUID.randomUUID(), ContactType.EMAIL,
                         "ada@example.com", true, 0)),
                 Instant.parse("2026-10-01T00:00:00Z"), Instant.parse("2026-10-01T00:00:00Z"));

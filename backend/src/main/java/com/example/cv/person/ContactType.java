@@ -6,6 +6,11 @@ public enum ContactType {
     LINKEDIN,
     GITHUB,
     WEBSITE,
+    FACEBOOK,
+    WHATSAPP,
+    VIBER,
+    TELEGRAM,
+    INSTAGRAM,
     ADDRESS,
     OTHER
 }
