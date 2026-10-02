@@ -28,10 +28,32 @@ Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on 
 
 Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.
 
-## PDF exports
+## File storage and PDF exports
 
 - Create a PDF from a saved version: `POST /api/v1/cv-versions/{versionId}/exports/pdf`.
 - List exports for that version: `GET /api/v1/cv-versions/{versionId}/exports`.
 - Download an export: `GET /api/v1/exports/{exportId}/download`.
 
-Generated files are stored under `./data/exports` relative to the backend process working directory. Set `CV_EXPORT_DIRECTORY` to use another local directory.
+The default `STORAGE_TYPE=local` stores generated files under `./data/exports` relative to the backend process working directory. Set `STORAGE_LOCAL_BASE_PATH` to use another directory. `CV_EXPORT_DIRECTORY` remains supported as a fallback for existing local setups.
+
+To run the S3-compatible MinIO service and provision the `cv-files` bucket:
+
+```powershell
+docker compose up -d minio
+docker compose run --rm minio-init
+```
+
+For a backend running on the host, configure S3 storage in PowerShell before starting it:
+
+```powershell
+$env:STORAGE_TYPE = "s3"
+$env:STORAGE_S3_ENDPOINT = "http://localhost:9000"
+$env:STORAGE_S3_BUCKET = "cv-files"
+$env:STORAGE_S3_REGION = "us-east-1"
+$env:STORAGE_S3_PATH_STYLE_ACCESS = "true"
+$env:STORAGE_S3_ACCESS_KEY = "cv_minio_user"
+$env:STORAGE_S3_SECRET_KEY = "cv_minio_password"
+mvn -f backend/pom.xml spring-boot:run
+```
+
+To run the S3/MinIO round-trip integration test, start MinIO as above, set the same `STORAGE_S3_*` variables, then run `mvn -f backend/pom.xml -Dtest=StorageIntegrationTest test`. The S3 integration test is skipped when `STORAGE_S3_ENDPOINT` is unset.

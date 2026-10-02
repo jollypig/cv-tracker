@@ -1,6 +1,7 @@
 package com.example.cv.cv;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.cv.storage.LocalFileStorage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,7 +53,7 @@ class CvExportServiceTest {
             return export;
         });
 
-        CvExportStorage storage = new CvExportStorage(directory.toString());
+        LocalFileStorage storage = new LocalFileStorage(directory.toString());
         PdfRenderer pdfRenderer = html -> {
             assertThat(html).contains("Jane Doe", "Engineer", "Riga");
             return PDF_BYTES;
