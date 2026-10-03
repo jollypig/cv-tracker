@@ -9,5 +9,6 @@
         "gh": true,
         "git merge-base": true,
         "git rev-parse": true
-    }
+    },
+    "java.configuration.updateBuildConfiguration": "interactive"
 }
