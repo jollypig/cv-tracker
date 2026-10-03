@@ -8,6 +8,7 @@
       </div>
       <div class="content-heading-actions">
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">All versions</v-btn>
+        <v-btn color="secondary" prepend-icon="mdi-source-branch" :disabled="!version" @click="openBranchDialog">Branch CV</v-btn>
         <v-btn color="primary" prepend-icon="mdi-file-pdf-box" :loading="exporting" :disabled="!version" @click="exportPdf">Export PDF</v-btn>
         <v-btn color="primary" prepend-icon="mdi-backup-restore" @click="restoreDialog = true">Restore as new version</v-btn>
       </div>
@@ -23,6 +24,12 @@
         <div><span>LANGUAGE</span><strong>{{ snapshot.language }}</strong></div>
         <div><span>STATUS</span><strong>{{ snapshot.status }}</strong></div>
         <div><span>VERSION</span><strong>v{{ version?.versionNumber }}</strong></div>
+      </div>
+      <div v-if="version?.parentVersionNumber && version.parentCvId" class="snapshot-lineage">
+        Derived from
+        <RouterLink :to="`/cvs/${version.parentCvId}/versions/${version.parentVersionNumber}`">
+          {{ version.parentCvId === cvId ? `v${version.parentVersionNumber}` : `source CV v${version.parentVersionNumber}` }}
+        </RouterLink>
       </div>
 
       <div class="snapshot-section">
@@ -110,6 +117,21 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="branchDialog" max-width="480">
+      <v-card>
+        <v-card-title class="dialog-title">Branch from this version</v-card-title>
+        <v-card-text>
+          The selected snapshot will be copied into a new draft CV and linked to its source version.
+          <v-text-field v-model="branchName" class="mt-4" label="New CV name" maxlength="255" variant="outlined" />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="branchDialog = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="branching" :disabled="!branchName.trim()" @click="createBranch">Create branch</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </main>
 </template>
 
@@ -131,6 +153,9 @@ const exporting = ref(false)
 const error = ref('')
 const restoreDialog = ref(false)
 const restoreDescription = ref('')
+const branchDialog = ref(false)
+const branchName = ref('')
+const branching = ref(false)
 
 watch(() => [route.params.id, route.params.versionNumber], load, { immediate: true })
 
@@ -182,7 +207,32 @@ async function exportPdf() {
   }
 }
 
+function openBranchDialog() {
+  branchName.value = `${snapshot.value?.name ?? 'CV'} (Branch)`
+  branchDialog.value = true
+}
+
+async function createBranch() {
+  if (!version.value) return
+  branching.value = true
+  error.value = ''
+  try {
+    const branch = await cvApi.branchVersion(cvId.value, version.value.versionNumber, branchName.value.trim())
+    await router.push(`/cvs/${branch.id}/content`)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to branch from this version.'
+  } finally {
+    branching.value = false
+    branchDialog.value = false
+  }
+}
+
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 </script>
+
+<style scoped>
+.snapshot-lineage { margin: -10px 0 22px; color: #65756c; font-size: 13px; }
+.snapshot-lineage a { color: #205c50; font-weight: 700; }
+</style>

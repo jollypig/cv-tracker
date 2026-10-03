@@ -77,4 +77,24 @@ class CvVersionControllerTest {
                 .andExpect(jsonPath("$.versionNumber").value(2));
         verify(versionService).restore(cvId, 1, "Recovery");
     }
+
+    @Test
+    void exposesChangesBetweenTwoVersions() throws Exception {
+        UUID cvId = UUID.randomUUID();
+        CvVersionResponse from = new CvVersionResponse(UUID.randomUUID(), cvId, 1, "Initial",
+                Instant.parse("2026-01-01T00:00:00Z"));
+        CvVersionResponse to = new CvVersionResponse(UUID.randomUUID(), cvId, 2, "Updated",
+                Instant.parse("2026-01-02T00:00:00Z"));
+        when(versionService.diff(cvId, 1, 2)).thenReturn(new CvVersionDiffResponse(from, to,
+                java.util.List.of(new CvVersionChange("name", CvVersionChange.Type.MODIFIED,
+                        com.fasterxml.jackson.databind.node.TextNode.valueOf("Old"),
+                        com.fasterxml.jackson.databind.node.TextNode.valueOf("New")))));
+
+        mockMvc.perform(get("/api/v1/cvs/{cvId}/versions/diff", cvId)
+                        .param("fromVersion", "1").param("toVersion", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.changes[0].path").value("name"))
+                .andExpect(jsonPath("$.changes[0].type").value("MODIFIED"));
+        verify(versionService).diff(cvId, 1, 2);
+    }
 }

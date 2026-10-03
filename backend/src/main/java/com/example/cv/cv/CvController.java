@@ -22,9 +22,11 @@ import java.util.UUID;
 public class CvController {
 
     private final CvService cvService;
+    private final CvDuplicationService duplicationService;
 
-    public CvController(CvService cvService) {
+    public CvController(CvService cvService, CvDuplicationService duplicationService) {
         this.cvService = cvService;
+        this.duplicationService = duplicationService;
     }
 
     @GetMapping("/cvs")
@@ -50,6 +52,26 @@ public class CvController {
         URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/v1/cvs/{id}").buildAndExpand(cv.id()).toUri();
         return ResponseEntity.created(location).body(cv);
+    }
+
+    @PostMapping("/cvs/{id}/duplicate")
+    public ResponseEntity<CvResponse> duplicate(@PathVariable UUID id,
+            @Valid @RequestBody(required = false) CvDuplicateRequest request) {
+        CvResponse copy = duplicationService.duplicate(id, request == null ? null : request.name());
+        return createdCvResponse(copy);
+        }
+
+        @PostMapping("/cvs/{id}/versions/{versionNumber}/branch")
+        public ResponseEntity<CvResponse> branch(@PathVariable UUID id, @PathVariable int versionNumber,
+            @Valid @RequestBody(required = false) CvDuplicateRequest request) {
+        CvResponse copy = duplicationService.duplicate(id, versionNumber, request == null ? null : request.name());
+        return createdCvResponse(copy);
+        }
+
+        private ResponseEntity<CvResponse> createdCvResponse(CvResponse copy) {
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/v1/cvs/{id}").buildAndExpand(copy.id()).toUri();
+        return ResponseEntity.created(location).body(copy);
     }
 
     @PutMapping("/cvs/{id}")

@@ -7,6 +7,7 @@
         <p>{{ cv?.personName ?? 'Build each section of this CV.' }}</p>
       </div>
       <div class="content-heading-actions">
+        <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">Duplicate CV</v-btn>
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">Versions</v-btn>
         <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">CV details</v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">Save content</v-btn>
@@ -19,7 +20,24 @@
     <v-alert v-if="saved" class="view-alert" type="success" variant="tonal" closable @click:close="saved = false">
       CV content saved.
     </v-alert>
+    <v-alert v-if="draftStatus" class="view-alert" type="info" variant="tonal">
+      {{ draftStatus }}
+    </v-alert>
     <v-progress-linear v-if="loading" class="form-loading" color="primary" indeterminate />
+
+    <v-dialog v-model="duplicateDialog" max-width="480">
+      <v-card>
+        <v-card-title class="dialog-title">Duplicate this CV</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="duplicateName" label="Copy name" maxlength="255" variant="outlined" autofocus />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="duplicateDialog = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="duplicateCv">Create copy</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <div v-if="!loading && cv && person" class="content-workspace">
     <v-form ref="editorForm" class="content-editor" @submit.prevent="saveContent">
@@ -272,8 +290,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import CvPreview from '../components/templates/CvPreview.vue'
 import cvApi from '../shared/api/cvApi'
 import personApi from '../shared/api/personApi'
@@ -284,6 +302,7 @@ import type {
 import type { Person } from '../shared/api/personTypes'
 
 const route = useRoute()
+const router = useRouter()
 const cvId = typeof route.params.id === 'string' ? route.params.id : ''
 const cv = ref<Cv | null>(null)
 const person = ref<Person | null>(null)
@@ -294,6 +313,12 @@ const saving = ref(false)
 const selectingTemplate = ref(false)
 const error = ref('')
 const saved = ref(false)
+const duplicateDialog = ref(false)
+const duplicateName = ref('')
+const duplicating = ref(false)
+const draftStatus = ref('')
+const draftTracking = ref(false)
+let draftTimer: ReturnType<typeof setTimeout> | undefined
 const draggedSection = ref<number | null>(null)
 const editorForm = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
 const sectionDefinitions: Array<{ type: CvSectionType; title: string }> = [
@@ -333,11 +358,40 @@ onMounted(async () => {
     selectedTemplateId.value = cvData.templateId ?? ''
     Object.assign(content, contentData)
     content.sections.sort((left, right) => left.sortOrder - right.sortOrder)
+    restoreLocalDraft()
+    draftTracking.value = true
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to load CV content.'
   } finally {
     loading.value = false
   }
+})
+
+watch(content, scheduleLocalDraft, { deep: true })
+
+function openDuplicateDialog() {
+  duplicateName.value = `${cv.value?.name ?? 'CV'} (Copy)`
+  duplicateDialog.value = true
+}
+
+async function duplicateCv() {
+  if (!duplicateName.value.trim()) return
+  duplicating.value = true
+  error.value = ''
+  try {
+    const copy = await cvApi.duplicate(cvId, duplicateName.value.trim())
+    await router.push(`/cvs/${copy.id}/content`)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to duplicate this CV.'
+  } finally {
+    duplicating.value = false
+    duplicateDialog.value = false
+  }
+}
+
+onBeforeUnmount(() => {
+  if (draftTimer) clearTimeout(draftTimer)
+  saveLocalDraft()
 })
 
 function emptyContent(): CvContent {
@@ -478,18 +532,73 @@ function addCustomSection() {
 async function saveContent() {
   error.value = ''
   saved.value = false
+  if (draftTimer) clearTimeout(draftTimer)
+  saveLocalDraft()
   const validation = await editorForm.value?.validate()
   if (validation && !validation.valid) return
   saving.value = true
   try {
     content.sections.forEach((section, index) => { section.sortOrder = index })
     const savedContent = await cvApi.saveContent(cvId, content)
+    draftTracking.value = false
     Object.assign(content, savedContent)
+    await nextTick()
+    try {
+      localStorage.removeItem(draftStorageKey())
+      draftStatus.value = ''
+    } catch {
+      draftStatus.value = 'CV content saved, but the local draft could not be cleared.'
+    }
+    draftTracking.value = true
     saved.value = true
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to save CV content.'
   } finally {
     saving.value = false
+  }
+}
+
+function draftStorageKey() {
+  return `cv-content-draft:${cvId}`
+}
+
+function restoreLocalDraft() {
+  try {
+    const serialized = localStorage.getItem(draftStorageKey())
+    if (!serialized) return
+    const draft: unknown = JSON.parse(serialized)
+    if (!isContentDraft(draft)) {
+      localStorage.removeItem(draftStorageKey())
+      return
+    }
+    Object.assign(content, draft)
+    draftStatus.value = 'Recovered an unsaved draft from this device.'
+  } catch {
+    draftStatus.value = 'Unable to read the saved draft from this device.'
+  }
+}
+
+function isContentDraft(value: unknown): value is CvContent {
+  if (typeof value !== 'object' || value === null) return false
+  const draft = value as Record<string, unknown>
+  return ['experiences', 'education', 'skillGroups', 'languages', 'projects', 'certifications', 'customSections', 'sections']
+    .every((field) => Array.isArray(draft[field]))
+}
+
+function scheduleLocalDraft() {
+  if (!draftTracking.value) return
+  draftStatus.value = 'Saving draft on this device...'
+  if (draftTimer) clearTimeout(draftTimer)
+  draftTimer = setTimeout(saveLocalDraft, 700)
+}
+
+function saveLocalDraft() {
+  if (!draftTracking.value) return
+  try {
+    localStorage.setItem(draftStorageKey(), JSON.stringify(content))
+    draftStatus.value = 'Draft autosaved on this device.'
+  } catch {
+    draftStatus.value = 'Unable to autosave a draft on this device.'
   }
 }
 </script>

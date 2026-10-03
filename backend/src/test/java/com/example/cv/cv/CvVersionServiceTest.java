@@ -71,6 +71,35 @@ class CvVersionServiceTest {
     }
 
     @Test
+    void createsVersionWithExplicitParentLineage() {
+        CvRepository cvs = mock(CvRepository.class);
+        CvVersionRepository versions = mock(CvVersionRepository.class);
+        CvContentService content = mock(CvContentService.class);
+        Cv cv = new Cv(null, "Branch", "en", CvStatus.DRAFT);
+        setCvId(cv);
+        CvVersion parent = mock(CvVersion.class);
+        UUID parentId = UUID.randomUUID();
+        when(parent.getId()).thenReturn(parentId);
+        when(parent.getCv()).thenReturn(cv);
+        when(parent.getVersionNumber()).thenReturn(4);
+        when(cvs.findByIdForUpdate(CV_ID)).thenReturn(Optional.of(cv));
+        when(content.get(CV_ID)).thenReturn(emptyContent("branch"));
+        when(versions.findById(parentId)).thenReturn(Optional.of(parent));
+        when(versions.findTopByCv_IdOrderByVersionNumberDesc(CV_ID)).thenReturn(Optional.empty());
+        when(versions.save(any(CvVersion.class))).thenAnswer(invocation -> {
+            CvVersion saved = invocation.getArgument(0);
+            setVersionId(saved);
+            return saved;
+        });
+
+        CvVersionResponse created = service(cvs, versions, content).create(CV_ID, "Branch", parentId);
+
+        assertThat(created.parentVersionId()).isEqualTo(parentId);
+        assertThat(created.parentCvId()).isEqualTo(CV_ID);
+        assertThat(created.parentVersionNumber()).isEqualTo(4);
+    }
+
+    @Test
     void reportsMissingVersions() {
         CvRepository cvs = mock(CvRepository.class);
         CvVersionRepository versions = mock(CvVersionRepository.class);

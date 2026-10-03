@@ -49,6 +49,24 @@ export interface CvVersion {
   versionNumber: number
   description: string | null
   createdAt: string
+  parentVersionId: string | null
+  parentCvId: string | null
+  parentVersionNumber: number | null
+}
+
+export type CvVersionChangeType = 'ADDED' | 'REMOVED' | 'MODIFIED'
+
+export interface CvVersionChange {
+  path: string
+  type: CvVersionChangeType
+  oldValue: unknown
+  newValue: unknown
+}
+
+export interface CvVersionDiff {
+  fromVersion: CvVersion
+  toVersion: CvVersion
+  changes: CvVersionChange[]
 }
 
 export interface CvVersionSnapshot {
