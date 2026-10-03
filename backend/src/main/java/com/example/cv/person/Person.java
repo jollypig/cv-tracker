@@ -1,9 +1,13 @@
 package com.example.cv.person;
 
+import com.example.cv.auth.AuthenticatedUser;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -58,6 +62,10 @@ public class Person {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private AuthenticatedUser owner;
 
     @OneToMany(mappedBy = "person", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PersonContact> contacts = new ArrayList<>();
@@ -118,6 +126,8 @@ public class Person {
     public void setPhotoStorageKey(String photoStorageKey) { this.photoStorageKey = photoStorageKey; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public AuthenticatedUser getOwner() { return owner; }
+    public void setOwner(AuthenticatedUser owner) { this.owner = owner; }
     public List<PersonContact> getContacts() { return contacts; }
     public List<Cv> getCvs() { return cvs; }
 }

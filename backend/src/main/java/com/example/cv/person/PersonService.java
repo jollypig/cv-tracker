@@ -1,5 +1,6 @@
 package com.example.cv.person;
 
+import com.example.cv.auth.AuthenticatedUser;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,12 +29,31 @@ public class PersonService {
     }
 
     @Transactional(readOnly = true)
+    public List<PersonResponse> findAll(UUID ownerId) {
+        return personRepository.findAllByOwner_IdOrderByLastNameAscFirstNameAscIdAsc(ownerId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public PersonResponse findById(UUID id) {
         return toResponse(getPerson(id));
     }
 
+    @Transactional(readOnly = true)
+    public PersonResponse findById(UUID id, UUID ownerId) {
+        return toResponse(getOwnedPerson(id, ownerId));
+    }
+
     public PersonResponse create(PersonRequest request) {
         Person person = new Person(request.firstName().trim(), request.lastName().trim());
+        apply(person, request);
+        return toResponse(personRepository.save(person));
+    }
+
+    public PersonResponse create(PersonRequest request, AuthenticatedUser owner) {
+        Person person = new Person(request.firstName().trim(), request.lastName().trim());
+        person.setOwner(owner);
         apply(person, request);
         return toResponse(personRepository.save(person));
     }
@@ -46,13 +66,30 @@ public class PersonService {
         return toResponse(personRepository.save(person));
     }
 
+    public PersonResponse update(UUID id, PersonRequest request, UUID ownerId) {
+        Person person = getOwnedPerson(id, ownerId);
+        person.setFirstName(request.firstName().trim());
+        person.setLastName(request.lastName().trim());
+        apply(person, request);
+        return toResponse(personRepository.save(person));
+    }
+
     public void delete(UUID id) {
         Person person = getPerson(id);
         personRepository.delete(person);
     }
 
+    public void delete(UUID id, UUID ownerId) {
+        personRepository.delete(getOwnedPerson(id, ownerId));
+    }
+
     private Person getPerson(UUID id) {
         return personRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
+    }
+
+    private Person getOwnedPerson(UUID id, UUID ownerId) {
+        return personRepository.findByIdAndOwner_Id(id, ownerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
     }
 

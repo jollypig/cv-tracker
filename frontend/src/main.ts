@@ -7,6 +7,17 @@ import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from './shared/stores/authStore'
+
+const pinia = createPinia()
+
+window.addEventListener('cv:unauthorized', () => {
+  useAuthStore(pinia).reset()
+  void router.replace({ name: 'login' })
+})
+window.addEventListener('cv:forbidden', () => {
+  void router.replace({ name: 'forbidden' })
+})
 
 const vuetify = createVuetify({
   icons: { defaultSet: 'mdi', aliases, sets: { mdi } },
@@ -27,4 +38,4 @@ const vuetify = createVuetify({
   },
 })
 
-createApp(App).use(createPinia()).use(router).use(vuetify).mount('#app')
+createApp(App).use(pinia).use(router).use(vuetify).mount('#app')

@@ -107,6 +107,19 @@ h1 { margin: 8px 0 5px; font-size: 31px; font-weight: 700; }
 .snapshot-entry ul { margin: 8px 0 0; padding-left: 20px; color: #59665f; font-size: 13px; }
 .snapshot-entry li { margin: 5px 0; }
 .snapshot-line { margin: 8px 0; color: #59665f; font-size: 13px; }
+.topbar-account { display: flex; align-items: center; gap: 10px; color: #59665f; }
+.account-name { max-width: 240px; overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.auth-page { display: grid; min-height: 100vh; place-items: center; padding: 28px; background: radial-gradient(ellipse at 12% 88%, #dfebe2 0, transparent 38%), radial-gradient(ellipse at 90% 8%, #e9eee9 0, transparent 34%), #f6f5f1; }
+.auth-panel { width: min(100%, 430px); padding: 38px; border: 1px solid #e1e5df; border-radius: 8px; background: rgba(255,255,255,.94); box-shadow: 0 18px 52px #26382e12; animation: auth-enter .35s ease-out both; }
+.auth-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 42px; font: 800 21px/1 'Manrope', sans-serif; }
+.auth-brand-mark, .auth-mark { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 10px; color: #fff; background: #205c50; }
+.auth-mark { margin-bottom: 25px; }
+.auth-panel h1 { margin: 10px 0 8px; font-size: 26px; line-height: 1.2; }
+.auth-panel p { margin: 0 0 24px; color: #78847e; font-size: 13px; line-height: 1.6; }
+.auth-panel .auth-submit { margin-top: 8px; }
+.auth-error { color: #9a4238 !important; }
+.auth-alert { margin-top: 18px; }
+@keyframes auth-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @media (max-width: 680px) {
   .brand-lockup { justify-content: center; padding: 18px 0 28px; }
   .brand-lockup > div:last-child, .nav-label, .nav-list .v-list-item-title, .drawer-footer span { display: none; }
@@ -133,4 +146,7 @@ h1 { margin: 8px 0 5px; font-size: 31px; font-weight: 700; }
   .version-list-row time { grid-column: 2; grid-row: 2; }
   .version-list-row .v-btn { grid-column: 3; grid-row: 1 / span 2; }
   .snapshot-meta { flex-wrap: wrap; gap: 16px 28px; }
+  .auth-panel { padding: 28px 24px; }
+  .auth-panel h1 { font-size: 23px; }
+  .account-name { max-width: 120px; }
 }

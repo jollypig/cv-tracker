@@ -63,6 +63,15 @@ class CvServiceTest {
     }
 
     @Test
+    void listsOnlyCvsOwnedByTheAuthenticatedAccount() {
+        UUID ownerId = UUID.randomUUID();
+        when(cvRepository.findAllByPerson_Owner_IdOrderByUpdatedAtDesc(ownerId)).thenReturn(List.of());
+
+        assertEquals(List.of(), cvService.findAll(null, ownerId));
+        verify(cvRepository).findAllByPerson_Owner_IdOrderByUpdatedAtDesc(ownerId);
+    }
+
+    @Test
     void missingPersonReturnsNotFoundWhenCreatingCv() {
         UUID personId = UUID.randomUUID();
         when(personRepository.findById(personId)).thenReturn(Optional.empty());

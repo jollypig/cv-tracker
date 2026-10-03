@@ -19,6 +19,21 @@ The defaults are for local development only. The backend uses the `local` Spring
 
 The frontend is available at <http://localhost:5173>, the API status endpoint at <http://localhost:8080/api/v1/status>, the OpenAPI UI at <http://localhost:8080/swagger-ui.html>, and Actuator health at <http://localhost:8080/actuator/health>.
 
+## Authentication
+
+The API uses OIDC authorization-code login and a server-side session. Configure an OIDC provider before signing in:
+
+- `OIDC_ISSUER_URI`: provider issuer URL.
+- `OIDC_CLIENT_ID`: registered client ID.
+- `OIDC_CLIENT_SECRET`: secret for confidential clients; optional for public clients.
+- `FRONTEND_URL`: frontend URL to open after provider login; defaults to `http://localhost:5173/`.
+- `CORS_ALLOWED_ORIGINS`: comma-separated frontend origins; defaults to local Vite ports 5173-5177.
+- `SESSION_COOKIE_SAME_SITE` and `SESSION_COOKIE_SECURE`: cookie settings; use `none` and `true` for cross-site HTTPS deployments.
+
+Register `http://localhost:8080/login/oauth2/code/oidc` as the provider redirect URI. The frontend starts login at `/oauth2/authorization/oidc`; API requests use the session cookie and CSRF token cookie. Without OIDC configuration, protected API calls return `401` and the frontend indicates that sign-in is unavailable.
+
+People created by a signed-in account are associated with that account. Existing records remain unowned after the ownership migration and are not visible to new accounts; assign them through a trusted migration or administrative process before enabling access.
+
 ## Checks
 
 - Frontend production build: `npm run build` from `frontend/`.

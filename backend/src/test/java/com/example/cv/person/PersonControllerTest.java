@@ -2,11 +2,16 @@ package com.example.cv.person;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import com.example.cv.auth.AuthenticatedUser;
+import com.example.cv.auth.AuthenticatedUserService;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,6 +19,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -26,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PersonController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({com.example.cv.common.GlobalExceptionHandler.class, com.example.cv.common.CorsConfig.class})
 class PersonControllerTest {
 
@@ -35,10 +43,22 @@ class PersonControllerTest {
     @MockitoBean
     private PersonService personService;
 
+        @MockitoBean
+        private AuthenticatedUserService authenticatedUsers;
+
+        private final UUID ownerId = UUID.randomUUID();
+
+        @BeforeEach
+        void setUp() {
+                AuthenticatedUser owner = mock(AuthenticatedUser.class);
+                when(owner.getId()).thenReturn(ownerId);
+                when(authenticatedUsers.synchronize(nullable(OidcUser.class))).thenReturn(owner);
+        }
+
     @Test
     void createsPersonAndReturnsLocation() throws Exception {
         UUID id = UUID.randomUUID();
-        when(personService.create(any(PersonRequest.class))).thenReturn(person(id));
+        when(personService.create(any(PersonRequest.class), any(AuthenticatedUser.class))).thenReturn(person(id));
 
         mockMvc.perform(post("/api/v1/persons")
                         .contentType("application/json")
@@ -79,9 +99,9 @@ class PersonControllerTest {
     @Test
     void supportsReadUpdateAndDeleteEndpoints() throws Exception {
         UUID id = UUID.randomUUID();
-        when(personService.findAll()).thenReturn(List.of(person(id)));
-        when(personService.findById(id)).thenReturn(person(id));
-        when(personService.update(eq(id), any(PersonRequest.class))).thenReturn(person(id));
+        when(personService.findAll(ownerId)).thenReturn(List.of(person(id)));
+        when(personService.findById(id, ownerId)).thenReturn(person(id));
+        when(personService.update(eq(id), any(PersonRequest.class), eq(ownerId))).thenReturn(person(id));
 
         mockMvc.perform(get("/api/v1/persons"))
                 .andExpect(status().isOk())
@@ -95,7 +115,7 @@ class PersonControllerTest {
                 .andExpect(status().isOk());
         mockMvc.perform(delete("/api/v1/persons/{id}", id))
                 .andExpect(status().isNoContent());
-        verify(personService).delete(id);
+        verify(personService).delete(id, ownerId);
     }
 
         @Test
