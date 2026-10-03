@@ -153,7 +153,7 @@
         <v-expansion-panel value="skills">
           <v-expansion-panel-title>Skill groups <span class="panel-count">{{ content.skillGroups.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
-            <v-expansion-panels multiple class="skill-group-panels">
+            <v-expansion-panels v-model="expandedSkillGroups" multiple class="skill-group-panels">
               <v-expansion-panel v-for="(group, groupIndex) in content.skillGroups" :key="groupIndex" :value="groupIndex">
                 <v-expansion-panel-title>
                   <span>{{ group.name || `Skill group ${groupIndex + 1}` }}</span>
@@ -180,6 +180,7 @@
                       </div>
                     </div>
                     <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details label="Include in output" />
+                    <SkillDetailsEditor :skill="skill" :content="content" />
                   </div>
                   <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">Add skill</v-btn>
                 </v-expansion-panel-text>
@@ -227,7 +228,10 @@
                 <v-text-field v-model="project.role" label="Role" variant="outlined" />
                 <v-text-field v-model="project.technologies" label="Technologies" variant="outlined" />
                 <v-text-field v-model="project.url" label="Project URL" type="url" variant="outlined" :rules="[optionalUrlRule]" />
+                <v-text-field v-model="project.periodFrom" label="Period from" type="date" variant="outlined" />
+                <v-text-field v-model="project.periodTo" label="Period to" type="date" :disabled="project.current" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom ?? null, project.periodTo ?? null)]" />
               </div>
+              <v-checkbox v-model="project.current" label="Current project" density="compact" hide-details @update:model-value="project.periodTo = null" />
               <v-textarea v-model="project.description" label="Description" rows="2" variant="outlined" />
             </div>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addProject">Add project</v-btn>
@@ -296,6 +300,8 @@
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CvPreview from '../components/templates/CvPreview.vue'
+import SkillDetailsEditor from '../components/SkillDetailsEditor.vue'
+import { emptySkillDetails } from '../shared/skillMetrics'
 import cvApi from '../shared/api/cvApi'
 import personApi from '../shared/api/personApi'
 import type {
@@ -347,6 +353,7 @@ const degreeOptions = [
   'Doctorate (PhD)',
 ]
 const detailedLanguages = reactive(new Set<CvLanguage>())
+const expandedSkillGroups = ref<number[]>([])
 const content = reactive<CvContent>(emptyContent())
 
 onMounted(async () => {
@@ -362,6 +369,7 @@ onMounted(async () => {
     Object.assign(content, contentData)
     content.sections.sort((left, right) => left.sortOrder - right.sortOrder)
     restoreLocalDraft()
+    initializeSkillDetails()
     draftTracking.value = true
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to load CV content.'
@@ -476,7 +484,7 @@ function addExperience() {
 }
 
 function addExperienceProject(experience: CvExperience) {
-  experience.projects.push({ company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
+  experience.projects.push({ projectKey: crypto.randomUUID(), company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
     periodFrom: null, periodTo: null, position: '', responsibilities: '', technologies: '',
     teamSize: null, externalLink: '', sortOrder: experience.projects.length })
 }
@@ -492,11 +500,23 @@ function addEducation() {
 }
 
 function addSkillGroup() {
+  const groupIndex = content.skillGroups.length
   content.skillGroups.push({ name: '', sortOrder: content.skillGroups.length, skills: [] })
+  expandedSkillGroups.value = [...expandedSkillGroups.value, groupIndex]
 }
 
 function addSkill(group: CvSkillGroup) {
-  group.skills.push({ name: '', level: '', sortOrder: group.skills.length, visible: true })
+  group.skills.push({ name: '', level: '', sortOrder: group.skills.length, visible: true, details: emptySkillDetails() })
+}
+
+function initializeSkillDetails() {
+  content.experiences.forEach((experience) => experience.projects.forEach((project) => {
+    project.projectKey ||= crypto.randomUUID()
+  }))
+  content.projects.forEach((project) => { project.projectKey ||= crypto.randomUUID() })
+  content.skillGroups.forEach((group) => group.skills.forEach((skill) => {
+    skill.details = { ...emptySkillDetails(), ...skill.details, linkedProjects: skill.details?.linkedProjects ?? [] }
+  }))
 }
 
 function addLanguage() {
@@ -520,7 +540,8 @@ function setDetailedLevels(language: CvLanguage, enabled: boolean | null) {
 }
 
 function addProject() {
-  content.projects.push({ name: '', role: '', description: '', technologies: '', url: '', sortOrder: content.projects.length })
+  content.projects.push({ projectKey: crypto.randomUUID(), name: '', role: '', description: '', technologies: '', url: '',
+    periodFrom: null, periodTo: null, current: false, sortOrder: content.projects.length })
 }
 
 function addCertification() {
@@ -545,6 +566,7 @@ async function saveContent() {
     const savedContent = await cvApi.saveContent(cvId, content)
     draftTracking.value = false
     Object.assign(content, savedContent)
+    initializeSkillDetails()
     await nextTick()
     try {
       localStorage.removeItem(draftStorageKey())

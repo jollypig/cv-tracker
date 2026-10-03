@@ -12,6 +12,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CvVersionSnapshotSerializerTest {
 
     @Test
+    void preservesSkillDetailsAndProjectLinksInSnapshots() {
+    var details = new CvSkillDetails(new java.math.BigDecimal("4.5"), null, "2024", "2010", "daily",
+        "active", List.of(new CvSkillDetails.ProjectLink("stable", "Delivered")), true);
+    var content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
+        List.of(new CvContent.Skill("Java", null, 0, true, details)))), List.of(),
+        List.of(new CvContent.Project("Platform", null, null, null, null, 0, "stable",
+            java.time.LocalDate.of(2020, 1, 1), java.time.LocalDate.of(2024, 1, 1), false)),
+        List.of(), List.of(), List.of());
+    var serializer = new CvVersionSnapshotSerializer(new ObjectMapper().findAndRegisterModules());
+    var snapshot = serializer.deserialize(serializer.serialize(new Cv(new Person("Jane", "Doe"),
+        "Resume", "en", CvStatus.DRAFT), content));
+    assertThat(snapshot.content()).isEqualTo(content);
+    }
+
+    @Test
     void capturesProfileAndContactsInVersionSnapshot() {
         Person person = new Person("Jane", "Doe");
         person.setPosition("Engineer");

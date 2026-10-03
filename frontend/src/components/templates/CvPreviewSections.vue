@@ -43,6 +43,9 @@
         <div v-for="(group, index) in printableSkillGroups" :key="index" class="preview-entry">
           <h4 v-if="group.name">{{ group.name }}</h4>
           <p class="preview-skill-list">{{ group.skills.map((skill) => skill.level ? `${skill.name} · ${skill.level}` : skill.name).join('  |  ') }}</p>
+          <template v-for="(skill, skillIndex) in group.skills" :key="skillIndex">
+            <p v-for="(line, lineIndex) in skillOutput(skill, content)" :key="lineIndex" class="preview-meta">{{ line }}</p>
+          </template>
         </div>
       </section>
 
@@ -92,6 +95,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { CvContent, CvExperience, CvLanguage } from '../../shared/api/cvTypes'
+import { skillOutput } from '../../shared/skillMetrics'
 
 const props = defineProps<{
   content: CvContent

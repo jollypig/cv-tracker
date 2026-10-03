@@ -41,11 +41,24 @@ People created by a signed-in account are associated with that account. Existing
 ## Checks
 
 - Frontend production build: `npm run build` from `frontend/`.
+- Skill calculation tests: `npm test` from `frontend/`.
 - Backend tests: `mvn test` from `backend/`.
 
 Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on backend startup. PostgreSQL data is kept in the Compose named volume `postgres_data`.
 
 Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.
+
+## Skill experience and project evidence
+
+Skills support entered years of experience, optional years actively used, started-from and last-used dates (either `YYYY` or `YYYY-MM-DD`), frequency (`daily`, `occasionally`, `rarely`), status (`active`, `learning`, `maintaining`, `deprecated`), and linked projects with one-line outcomes. Project links use stable keys retained across content saves, versions, and copies. Standalone projects have period dates and a current-project flag; employment projects use their existing period dates.
+
+- Calculated last used is the latest entered last-used date or linked project end. Current projects use today's date; an employment project without an end uses today only when its employment is current.
+- Calculated years of experience uses the entered value (including zero), otherwise the interval from started-from to calculated last-used, when both are known.
+- Total experience is the maximum of calculated years of experience and the sum of linked project periods. Overlapping project periods are summed, not merged. Missing or reversed periods do not contribute; duplicate links do not double-count a project.
+- Bare years represent January 1. Date intervals are divided by 365.2425 and rounded to two decimals internally. Calculated experience values are then rounded up to whole years in the editor, preview, and export; entered values are retained unchanged.
+- Skills last used more than five years ago are flagged, without changing the manually configured order.
+
+Enable **Include experience and project outcomes in output** per skill to show these values in all preview templates and saved-version PDF exports. Skill visibility and hidden employment-project names still apply. Existing skills and snapshots remain compatible. Migration V20 adds the storage fields on backend startup.
 
 ## File storage and PDF exports
 

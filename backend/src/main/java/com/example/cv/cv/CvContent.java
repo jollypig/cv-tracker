@@ -21,6 +21,24 @@ public record CvContent(
         @NotNull @Size(max = 100) List<@Valid CustomSection> customSections,
         @NotNull @Size(max = 8) List<@Valid Section> sections) {
 
+        public List<CvSkillDetails.ProjectPeriod> skillProjectPeriods() {
+                List<CvSkillDetails.ProjectPeriod> periods = new java.util.ArrayList<>();
+                if (experiences != null) {
+                        experiences.forEach(experience -> {
+                                if (experience.projects() != null) {
+                                        experience.projects().forEach(project -> periods.add(new CvSkillDetails.ProjectPeriod(
+                                                        project.projectKey(), project.periodFrom(), project.periodTo(),
+                                                        project.periodTo() == null && experience.current())));
+                                }
+                        });
+                }
+                if (projects != null) {
+                        projects.forEach(project -> periods.add(new CvSkillDetails.ProjectPeriod(project.projectKey(),
+                                        project.periodFrom(), project.periodTo(), project.current())));
+                }
+                return periods;
+        }
+
     public record Experience(
             @NotBlank @Size(max = 255) String company,
             @NotBlank @Size(max = 255) String position,
@@ -49,7 +67,15 @@ public record CvContent(
             @Size(max = 10000) String technologies,
             @PositiveOrZero Integer teamSize,
             @Size(max = 1000) String externalLink,
-            @PositiveOrZero int sortOrder) {
+                        @PositiveOrZero int sortOrder,
+                        @Size(max = 100) String projectKey) {
+                public ExperienceProject(String company, String industries, String projectName, String projectDescription,
+                                Boolean showProjectName, Boolean showCustomerCompany, LocalDate periodFrom, LocalDate periodTo,
+                                String position, String responsibilities, String technologies, Integer teamSize,
+                                String externalLink, int sortOrder) {
+                        this(company, industries, projectName, projectDescription, showProjectName, showCustomerCompany,
+                                        periodFrom, periodTo, position, responsibilities, technologies, teamSize, externalLink, sortOrder, null);
+                }
     }
 
     public record Education(
@@ -74,7 +100,11 @@ public record CvContent(
             @NotBlank @Size(max = 255) String name,
             @Size(max = 50) String level,
             @PositiveOrZero int sortOrder,
-            Boolean visible) {
+                        Boolean visible,
+                        @Valid CvSkillDetails details) {
+                public Skill(String name, String level, int sortOrder, Boolean visible) {
+                        this(name, level, sortOrder, visible, null);
+                }
     }
 
     public record Language(
@@ -92,7 +122,14 @@ public record CvContent(
             @Size(max = 10000) String description,
             @Size(max = 10000) String technologies,
             @Size(max = 500) String url,
-            @PositiveOrZero int sortOrder) {
+                        @PositiveOrZero int sortOrder,
+                        @Size(max = 100) String projectKey,
+                        LocalDate periodFrom,
+                        LocalDate periodTo,
+                        boolean current) {
+                public Project(String name, String role, String description, String technologies, String url, int sortOrder) {
+                        this(name, role, description, technologies, url, sortOrder, null, null, null, false);
+                }
     }
 
     public record Certification(

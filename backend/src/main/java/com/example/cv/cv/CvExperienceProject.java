@@ -67,6 +67,9 @@ public class CvExperienceProject {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Column(name = "project_key", length = 100)
+    private String projectKey;
+
     protected CvExperienceProject() {
     }
 
@@ -76,6 +79,8 @@ public class CvExperienceProject {
     }
 
     public UUID getId() { return id; }
+    public String getProjectKey() { return projectKey; }
+    public void setProjectKey(String projectKey) { this.projectKey = projectKey; }
     public CvExperience getExperience() { return experience; }
     public String getCompany() { return company; }
     public void setCompany(String company) { this.company = company; }

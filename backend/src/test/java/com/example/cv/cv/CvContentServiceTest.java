@@ -16,6 +16,27 @@ import static org.mockito.Mockito.when;
 class CvContentServiceTest {
 
     @Test
+    void retainsSkillMetadataAndProjectKeysAcrossReplacements() {
+        CvRepository repository = mock(CvRepository.class);
+        UUID id = UUID.randomUUID();
+        Cv cv = new Cv(null, "Resume", "en", CvStatus.DRAFT);
+        when(repository.findById(id)).thenReturn(Optional.of(cv));
+        var details = new CvSkillDetails(null, new java.math.BigDecimal("3.5"), "2024", "2010", "daily",
+                "active", List.of(new CvSkillDetails.ProjectLink("stable", "Delivered")), true);
+        var project = new CvContent.Project("Platform", null, null, null, null, 0, "stable",
+                java.time.LocalDate.of(2020, 1, 1), java.time.LocalDate.of(2024, 1, 1), false);
+        var content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
+                List.of(new CvContent.Skill("Java", null, 0, true, details)))), List.of(), List.of(project),
+                List.of(), List.of(), List.of());
+        var service = new CvContentService(repository);
+        var saved = service.replace(id, content);
+        var replaced = service.replace(id, saved);
+        assertThat(replaced.skillGroups().get(0).skills().get(0).details()).isEqualTo(details);
+        assertThat(replaced.projects()).containsExactly(project);
+        assertThat(replaced.skillProjectPeriods()).hasSize(1);
+    }
+
+    @Test
     void replacesAndReadsCompleteNestedContent() {
         CvRepository repository = mock(CvRepository.class);
         Cv cv = new Cv(null, "Resume", "en", CvStatus.DRAFT);
