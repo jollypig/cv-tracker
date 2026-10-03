@@ -56,6 +56,8 @@ public class CvSkillService {
         CvSkill skill = new CvSkill(getGroup(cvId, groupId), request.name().trim());
         skill.setLevel(blankToNull(request.level()));
         skill.setSortOrder(request.sortOrder());
+        skill.setVisible(request.visible() == null || request.visible());
+        skill.setDetails(request.details());
         return toSkill(skillRepository.save(skill));
     }
 
@@ -65,6 +67,8 @@ public class CvSkillService {
         skill.setName(request.name().trim());
         skill.setLevel(blankToNull(request.level()));
         skill.setSortOrder(request.sortOrder());
+        skill.setVisible(request.visible() == null || request.visible());
+        skill.setDetails(request.details());
         return toSkill(skillRepository.save(skill));
     }
 
@@ -81,7 +85,8 @@ public class CvSkillService {
     }
 
     private CvSkillResponse toSkill(CvSkill skill) {
-        return new CvSkillResponse(skill.getId(), skill.getName(), skill.getLevel(), skill.getSortOrder());
+        return new CvSkillResponse(skill.getId(), skill.getName(), skill.getLevel(), skill.getSortOrder(),
+            skill.isVisible(), skill.getDetails());
     }
 
     private Cv getCv(UUID cvId) {

@@ -75,18 +75,14 @@ public class CvHtmlRenderer {
         switch (type) {
             case SUMMARY -> appendTextSection(html, "Profile", content.summary());
                 case EXPERIENCE -> appendEntries(html, "Experience",
-                    sorted(content.experiences(), CvContent.Experience::sortOrder), this::experienceHtml);
+                    sorted(content.experiences(), CvContent.Experience::sortOrder),
+                    experience -> experienceHtml(experience, content));
                 case EDUCATION -> appendEntries(html, "Education",
                     sorted(content.education(), CvContent.Education::sortOrder), education ->
                     "<h3>" + escape(education.degree()) + " - " + escape(education.institution()) + "</h3>"
                         + optionalLine(dateRange(education.startDate(), education.endDate(), education.current()))
                         + optionalLine(education.fieldOfStudy()) + optionalLine(education.description()));
-                case SKILLS -> appendEntries(html, "Skills",
-                    sorted(content.skillGroups(), CvContent.SkillGroup::sortOrder), group ->
-                    "<h3>" + escape(group.name()) + "</h3><p>" + escape(String.join(", ", safe(group.skills())
-                            .stream().sorted(Comparator.comparingInt(CvContent.Skill::sortOrder))
-                        .map(skill -> notBlank(skill.level())
-                            ? skill.name() + " (" + skill.level() + ")" : skill.name()).toList())) + "</p>");
+                case SKILLS -> appendSkillGroups(html, content);
                 case LANGUAGES -> appendEntries(html, "Languages",
                     sorted(content.languages(), CvContent.Language::sortOrder), language ->
                     "<p><strong>" + escape(language.language()) + "</strong>"
@@ -108,7 +104,51 @@ public class CvHtmlRenderer {
         }
     }
 
-            private String experienceHtml(CvContent.Experience experience) {
+    private void appendSkillGroups(StringBuilder html, CvContent content) {
+        List<CvContent.SkillGroup> printableGroups = sorted(content.skillGroups(), CvContent.SkillGroup::sortOrder).stream()
+                .map(group -> new CvContent.SkillGroup(group.name(), group.sortOrder(), safe(group.skills()).stream()
+                        .filter(skill -> !Boolean.FALSE.equals(skill.visible()) && notBlank(skill.name()))
+                        .sorted(Comparator.comparingInt(CvContent.Skill::sortOrder)).toList()))
+                .filter(group -> !group.skills().isEmpty())
+                .toList();
+        appendEntries(html, "Skills", printableGroups, group ->
+                "<h3>" + escape(group.name()) + "</h3><p>" + escape(String.join(", ", group.skills().stream()
+                        .map(skill -> notBlank(skill.level())
+                                ? skill.name() + " (" + skill.level() + ")" : skill.name()).toList())) + "</p>"
+                        + group.skills().stream().map(skill -> skillDetailsHtml(skill, content))
+                                .collect(java.util.stream.Collectors.joining()));
+    }
+
+    private String skillDetailsHtml(CvContent.Skill skill, CvContent content) {
+        CvSkillDetails details = skill.details();
+        if (details == null || !details.includeInOutput()) {
+            return "";
+        }
+        var calculated = details.calculate(content.skillProjectPeriods(), java.time.LocalDate.now());
+        List<String> values = new java.util.ArrayList<>();
+        if (calculated.totalExperience() != null) values.add("Total experience: " + calculated.totalExperience() + " years");
+        if (details.yearsActivelyUsed() != null) values.add("Actively used: " + details.yearsActivelyUsed() + " years");
+        if (notBlank(details.startedFrom())) values.add("Started from: " + details.startedFrom());
+        if (calculated.lastUsed() != null) values.add("Last used: " + calculated.lastUsed());
+        if (notBlank(details.frequency())) values.add(details.frequency());
+        if (notBlank(details.status())) values.add(details.status());
+        if (calculated.stale()) values.add("Not used in over 5 years");
+        StringBuilder html = new StringBuilder(values.isEmpty() ? "" : optionalLine(skill.name() + ": " + String.join(" | ", values)));
+        safe(details.linkedProjects()).forEach(link -> {
+            String name = safe(content.projects()).stream().filter(project -> link.projectKey().equals(project.projectKey()))
+                    .map(CvContent.Project::name).findFirst().orElse(null);
+            if (name == null) {
+                name = safe(content.experiences()).stream().flatMap(experience -> safe(experience.projects()).stream())
+                        .filter(project -> link.projectKey().equals(project.projectKey()))
+                        .map(project -> Boolean.FALSE.equals(project.showProjectName()) ? "Project" : project.projectName())
+                        .findFirst().orElse(null);
+            }
+            if (name != null) html.append(optionalLine(name + (notBlank(link.outcome()) ? ": " + link.outcome() : "")));
+        });
+        return html.toString();
+    }
+
+    private String experienceHtml(CvContent.Experience experience, CvContent content) {
             StringBuilder html = new StringBuilder("<h3>").append(escape(experience.position())).append(" - ")
                 .append(escape(experience.company())).append("</h3>")
                 .append(optionalLine(dateRange(experience.startDate(), experience.endDate(), experience.current())))
@@ -118,10 +158,24 @@ public class CvHtmlRenderer {
                 String customer = Boolean.FALSE.equals(project.showCustomerCompany()) ? "" : project.company();
                 String heading = join(projectName, customer);
                 html.append("<p><strong>").append(escape(heading)).append("</strong></p>")
-                    .append(optionalLine(project.responsibilities())).append(optionalLine(project.technologies()));
+                    .append(optionalLine(project.responsibilities())).append(optionalLine(project.technologies()))
+                    .append(optionalLine(linkedSkills(project, content)));
             });
             return html.toString();
             }
+
+    private String linkedSkills(CvContent.ExperienceProject project, CvContent content) {
+        if (project.projectKey() == null) {
+            return "";
+        }
+        List<String> names = safe(content.skillGroups()).stream()
+                .flatMap(group -> safe(group.skills()).stream())
+                .filter(skill -> !Boolean.FALSE.equals(skill.visible()) && notBlank(skill.name()))
+                .filter(skill -> skill.details() != null && safe(skill.details().linkedProjects()).stream()
+                        .anyMatch(link -> project.projectKey().equals(link.projectKey())))
+                .map(CvContent.Skill::name).distinct().toList();
+        return names.isEmpty() ? "" : "Skills: " + String.join(", ", names);
+    }
 
     private void appendTextSection(StringBuilder html, String title, String text) {
         if (notBlank(text)) {

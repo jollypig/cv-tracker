@@ -16,6 +16,27 @@ import static org.mockito.Mockito.when;
 class CvContentServiceTest {
 
     @Test
+    void retainsSkillMetadataAndProjectKeysAcrossReplacements() {
+        CvRepository repository = mock(CvRepository.class);
+        UUID id = UUID.randomUUID();
+        Cv cv = new Cv(null, "Resume", "en", CvStatus.DRAFT);
+        when(repository.findById(id)).thenReturn(Optional.of(cv));
+        var details = new CvSkillDetails(null, new java.math.BigDecimal("3.5"), "2024", "2010", "daily",
+                "active", List.of(new CvSkillDetails.ProjectLink("stable", "Delivered")), true);
+        var project = new CvContent.Project("Platform", null, null, null, null, 0, "stable",
+                java.time.LocalDate.of(2020, 1, 1), java.time.LocalDate.of(2024, 1, 1), false);
+        var content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
+                List.of(new CvContent.Skill("Java", null, 0, true, details)))), List.of(), List.of(project),
+                List.of(), List.of(), List.of());
+        var service = new CvContentService(repository);
+        var saved = service.replace(id, content);
+        var replaced = service.replace(id, saved);
+        assertThat(replaced.skillGroups().get(0).skills().get(0).details()).isEqualTo(details);
+        assertThat(replaced.projects()).containsExactly(project);
+        assertThat(replaced.skillProjectPeriods()).hasSize(1);
+    }
+
+    @Test
     void replacesAndReadsCompleteNestedContent() {
         CvRepository repository = mock(CvRepository.class);
         Cv cv = new Cv(null, "Resume", "en", CvStatus.DRAFT);
@@ -28,7 +49,8 @@ class CvContentServiceTest {
                 "Project", null, false, true, null, null, "Engineer", "Build", "Java", 4, null, 0)))),
                 List.of(new CvContent.Education("University", "Bachelor", "Thesis on distributed systems", "Computer Science",
                         null, null, true, null, 0)), List.of(new CvContent.SkillGroup("Backend", 0,
-                        List.of(new CvContent.Skill("Java", "Advanced", 0)))),
+                        List.of(new CvContent.Skill("Java", "Advanced", 0, false),
+                                new CvContent.Skill("Kotlin", null, 1, null)))),
                 List.of(new CvContent.Language("English", "Fluent (C1)", "Advanced (B2)", "Intermediate (B1)", "Fluent (C1)", 0)), List.of(), List.of(),
                 List.of(), List.of(new CvContent.Section(CvSectionType.EXPERIENCE, true, 0)));
 
@@ -43,6 +65,8 @@ class CvContentServiceTest {
         assertThat(fetched.experiences().get(0).projects().get(0).showProjectName()).isFalse();
         assertThat(fetched.experiences().get(0).projects().get(0).showCustomerCompany()).isTrue();
         assertThat(fetched.skillGroups().get(0).skills().get(0).name()).isEqualTo("Java");
+        assertThat(fetched.skillGroups().get(0).skills().get(0).visible()).isFalse();
+        assertThat(fetched.skillGroups().get(0).skills().get(1).visible()).isTrue();
         assertThat(fetched.languages().get(0).reading()).isEqualTo("Advanced (B2)");
         assertThat(fetched.languages().get(0).writing()).isEqualTo("Intermediate (B1)");
         assertThat(fetched.languages().get(0).speaking()).isEqualTo("Fluent (C1)");

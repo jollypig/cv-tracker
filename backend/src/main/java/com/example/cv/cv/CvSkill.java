@@ -33,6 +33,13 @@ public class CvSkill {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Column(nullable = false)
+    private boolean visible = true;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private CvSkillDetails details;
+
     protected CvSkill() {
     }
 
@@ -49,4 +56,8 @@ public class CvSkill {
     public void setLevel(String level) { this.level = level; }
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+    public boolean isVisible() { return visible; }
+    public void setVisible(boolean visible) { this.visible = visible; }
+    public CvSkillDetails getDetails() { return details; }
+    public void setDetails(CvSkillDetails details) { this.details = details; }
 }

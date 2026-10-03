@@ -30,6 +30,40 @@ class CvSkillControllerTest {
     private CvSkillService skillService;
 
     @Test
+    void acceptsAndReturnsSkillMetadata() throws Exception {
+        UUID cvId = UUID.randomUUID();
+        UUID groupId = UUID.randomUUID();
+        var details = new CvSkillDetails(new java.math.BigDecimal("4.5"), null, "2024", "2010", "daily",
+                "active", List.of(new CvSkillDetails.ProjectLink("project", "Delivered")), true);
+        when(skillService.createSkill(org.mockito.ArgumentMatchers.eq(cvId), org.mockito.ArgumentMatchers.eq(groupId),
+                org.mockito.ArgumentMatchers.any(CvSkillRequest.class)))
+                .thenReturn(new CvSkillResponse(UUID.randomUUID(), "Java", null, 0, true, details));
+        mockMvc.perform(post("/api/v1/cvs/{cvId}/skill-groups/{groupId}/skills", cvId, groupId)
+                        .contentType("application/json")
+                        .content("""
+                                {"name":"Java","sortOrder":0,"details":{"yearsOfExperience":4.5,
+                                "lastUsed":"2024","startedFrom":"2010","frequency":"daily","status":"active",
+                                "linkedProjects":[{"projectKey":"project","outcome":"Delivered"}],"includeInOutput":true}}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.details.yearsOfExperience").value(4.5))
+                .andExpect(jsonPath("$.details.linkedProjects[0].outcome").value("Delivered"));
+        verify(skillService).createSkill(cvId, groupId, new CvSkillRequest("Java", null, 0, null, details));
+    }
+
+    @Test
+    void rejectsInvalidMetadata() throws Exception {
+        for (String details : List.of("{\"yearsOfExperience\":-1}", "{\"yearsActivelyUsed\":-1}",
+                "{\"lastUsed\":\"2024-02-30\"}", "{\"startedFrom\":\"2025\",\"lastUsed\":\"2020\"}",
+                "{\"frequency\":\"sometimes\"}", "{\"status\":\"unknown\"}", "{\"linkedProjects\":[null]}")) {
+            mockMvc.perform(post("/api/v1/cvs/{cvId}/skill-groups/{groupId}/skills", UUID.randomUUID(), UUID.randomUUID())
+                            .contentType("application/json")
+                            .content("{\"name\":\"Java\",\"sortOrder\":0,\"details\":" + details + "}"))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Test
     void createsSkillGroupWithAddressableId() throws Exception {
         UUID cvId = UUID.randomUUID();
         UUID groupId = UUID.randomUUID();

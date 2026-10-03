@@ -119,6 +119,25 @@
                   </div>
                   <v-textarea v-model="project.responsibilities" label="Responsibilities" rows="2" variant="outlined" />
                   <v-textarea v-model="project.technologies" label="Technologies and tools" rows="2" variant="outlined" />
+                  <v-autocomplete
+                    :model-value="linkedSkillIds(project)"
+                    :items="projectSkillOptions"
+                    item-title="title"
+                    item-value="value"
+                    label="Linked skills"
+                    variant="outlined"
+                    density="compact"
+                    multiple
+                    chips
+                    closable-chips
+                    clearable
+                    no-data-text="Add skills in the Skills section first"
+                    @update:model-value="updateProjectSkills(project, $event)"
+                  >
+                    <template #item="{ props: itemProps, item }">
+                      <v-list-item v-bind="itemProps" :subtitle="item.raw.group" />
+                    </template>
+                  </v-autocomplete>
                 </div>
               </div>
             </div>
@@ -153,7 +172,7 @@
         <v-expansion-panel value="skills">
           <v-expansion-panel-title>Skill groups <span class="panel-count">{{ content.skillGroups.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
-            <v-expansion-panels multiple class="skill-group-panels">
+            <v-expansion-panels v-model="expandedSkillGroups" multiple class="skill-group-panels">
               <v-expansion-panel v-for="(group, groupIndex) in content.skillGroups" :key="groupIndex" :value="groupIndex">
                 <v-expansion-panel-title>
                   <span>{{ group.name || `Skill group ${groupIndex + 1}` }}</span>
@@ -169,14 +188,18 @@
                 </v-expansion-panel-title>
                 <v-expansion-panel-text>
                   <v-text-field v-model="group.name" label="Group name" variant="outlined" :rules="[requiredRule]" />
-                  <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="content-field-grid skill-entry">
-                    <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
-                    <v-select v-model="skill.level" :items="skillLevels" label="Level" variant="outlined" />
-                    <div class="entry-actions">
-                      <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
-                      <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
-                      <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                  <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="skill-item">
+                    <div class="content-field-grid skill-entry">
+                      <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
+                      <v-select v-model="skill.level" :items="skillLevels" label="Level" variant="outlined" />
+                      <div class="entry-actions">
+                        <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
+                        <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
+                        <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                      </div>
                     </div>
+                    <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details label="Include in output" />
+                    <SkillDetailsEditor :skill="skill" :content="content" />
                   </div>
                   <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">Add skill</v-btn>
                 </v-expansion-panel-text>
@@ -224,7 +247,10 @@
                 <v-text-field v-model="project.role" label="Role" variant="outlined" />
                 <v-text-field v-model="project.technologies" label="Technologies" variant="outlined" />
                 <v-text-field v-model="project.url" label="Project URL" type="url" variant="outlined" :rules="[optionalUrlRule]" />
+                <v-text-field v-model="project.periodFrom" label="Period from" type="date" variant="outlined" />
+                <v-text-field v-model="project.periodTo" label="Period to" type="date" :disabled="project.current" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom ?? null, project.periodTo ?? null)]" />
               </div>
+              <v-checkbox v-model="project.current" label="Current project" density="compact" hide-details @update:model-value="project.periodTo = null" />
               <v-textarea v-model="project.description" label="Description" rows="2" variant="outlined" />
             </div>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addProject">Add project</v-btn>
@@ -290,9 +316,11 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CvPreview from '../components/templates/CvPreview.vue'
+import SkillDetailsEditor from '../components/SkillDetailsEditor.vue'
+import { emptySkillDetails } from '../shared/skillMetrics'
 import cvApi from '../shared/api/cvApi'
 import personApi from '../shared/api/personApi'
 import type {
@@ -344,7 +372,14 @@ const degreeOptions = [
   'Doctorate (PhD)',
 ]
 const detailedLanguages = reactive(new Set<CvLanguage>())
+const expandedSkillGroups = ref<number[]>([])
 const content = reactive<CvContent>(emptyContent())
+const projectSkillOptions = computed(() => content.skillGroups.flatMap((group, groupIndex) =>
+  group.skills.flatMap((skill, skillIndex) => skill.name.trim() ? [{
+    value: `${groupIndex}:${skillIndex}`,
+    title: skill.name,
+    group: group.name || 'Ungrouped',
+  }] : [])))
 
 onMounted(async () => {
   try {
@@ -359,6 +394,7 @@ onMounted(async () => {
     Object.assign(content, contentData)
     content.sections.sort((left, right) => left.sortOrder - right.sortOrder)
     restoreLocalDraft()
+    initializeSkillDetails()
     draftTracking.value = true
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to load CV content.'
@@ -473,9 +509,34 @@ function addExperience() {
 }
 
 function addExperienceProject(experience: CvExperience) {
-  experience.projects.push({ company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
+  experience.projects.push({ projectKey: crypto.randomUUID(), company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
     periodFrom: null, periodTo: null, position: '', responsibilities: '', technologies: '',
     teamSize: null, externalLink: '', sortOrder: experience.projects.length })
+}
+
+function linkedSkillIds(project: CvExperienceProject) {
+  if (!project.projectKey) return []
+  return content.skillGroups.flatMap((group, groupIndex) => group.skills.flatMap((skill, skillIndex) =>
+    skill.name.trim() && skill.details?.linkedProjects.some((link) => link.projectKey === project.projectKey)
+      ? [`${groupIndex}:${skillIndex}`] : []))
+}
+
+function updateProjectSkills(project: CvExperienceProject, selectedIds: string[] | null) {
+  if (!project.projectKey) return
+  const selected = new Set(selectedIds ?? [])
+  content.skillGroups.forEach((group, groupIndex) => group.skills.forEach((skill, skillIndex) => {
+    if (!skill.name.trim()) return
+    const key = `${groupIndex}:${skillIndex}`
+    const details = skill.details ?? emptySkillDetails()
+    const linkedProjects = details.linkedProjects ?? []
+    const isLinked = linkedProjects.some((link) => link.projectKey === project.projectKey)
+    const shouldLink = selected.has(key)
+    if (shouldLink && !isLinked) {
+      skill.details = { ...details, linkedProjects: [...linkedProjects, { projectKey: project.projectKey!, outcome: '' }] }
+    } else if (!shouldLink && isLinked) {
+      skill.details = { ...details, linkedProjects: linkedProjects.filter((link) => link.projectKey !== project.projectKey) }
+    }
+  }))
 }
 
 function setProjectNameAndCompanyHidden(project: CvExperienceProject, hidden: boolean | null) {
@@ -489,11 +550,23 @@ function addEducation() {
 }
 
 function addSkillGroup() {
+  const groupIndex = content.skillGroups.length
   content.skillGroups.push({ name: '', sortOrder: content.skillGroups.length, skills: [] })
+  expandedSkillGroups.value = [...expandedSkillGroups.value, groupIndex]
 }
 
 function addSkill(group: CvSkillGroup) {
-  group.skills.push({ name: '', level: '', sortOrder: group.skills.length })
+  group.skills.push({ name: '', level: '', sortOrder: group.skills.length, visible: true, details: emptySkillDetails() })
+}
+
+function initializeSkillDetails() {
+  content.experiences.forEach((experience) => experience.projects.forEach((project) => {
+    project.projectKey ||= crypto.randomUUID()
+  }))
+  content.projects.forEach((project) => { project.projectKey ||= crypto.randomUUID() })
+  content.skillGroups.forEach((group) => group.skills.forEach((skill) => {
+    skill.details = { ...emptySkillDetails(), ...skill.details, linkedProjects: skill.details?.linkedProjects ?? [] }
+  }))
 }
 
 function addLanguage() {
@@ -517,7 +590,8 @@ function setDetailedLevels(language: CvLanguage, enabled: boolean | null) {
 }
 
 function addProject() {
-  content.projects.push({ name: '', role: '', description: '', technologies: '', url: '', sortOrder: content.projects.length })
+  content.projects.push({ projectKey: crypto.randomUUID(), name: '', role: '', description: '', technologies: '', url: '',
+    periodFrom: null, periodTo: null, current: false, sortOrder: content.projects.length })
 }
 
 function addCertification() {
@@ -542,6 +616,7 @@ async function saveContent() {
     const savedContent = await cvApi.saveContent(cvId, content)
     draftTracking.value = false
     Object.assign(content, savedContent)
+    initializeSkillDetails()
     await nextTick()
     try {
       localStorage.removeItem(draftStorageKey())
@@ -624,6 +699,7 @@ function saveLocalDraft() {
 .skill-group-panels :deep(.v-expansion-panel-text__wrapper) { padding: 16px 16px 8px; }
 .skill-group-expand-icon { margin-left: 4px; transition: transform 180ms ease; }
 .skill-group-panels :deep(.v-expansion-panel-title--active .skill-group-expand-icon) { transform: rotate(180deg); }
+.skill-visibility { margin-top: -10px; }
 .panel-count { margin-left: 8px; color: #78847e; font-size: 12px; font-weight: 500; }
 .editor-entry { padding: 17px 0 12px; border-bottom: 1px solid #e8e9e3; }
 .editor-entry:first-child { padding-top: 0; }

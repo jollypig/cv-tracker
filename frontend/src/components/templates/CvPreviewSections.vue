@@ -21,6 +21,7 @@
             <p v-if="project.projectDescription">{{ project.projectDescription }}</p>
             <p v-if="project.responsibilities">{{ project.responsibilities }}</p>
             <p v-if="project.technologies" class="preview-meta">{{ project.technologies }}</p>
+            <p v-if="linkedSkillNames(project).length" class="preview-meta">Skills: {{ linkedSkillNames(project).join(', ') }}</p>
           </div>
         </article>
       </section>
@@ -38,11 +39,14 @@
         </article>
       </section>
 
-      <section v-else-if="section.visible && section.type === 'SKILLS' && content.skillGroups.length" class="preview-section">
+      <section v-else-if="section.visible && section.type === 'SKILLS' && printableSkillGroups.length" class="preview-section">
         <h3>Skills</h3>
-        <div v-for="(group, index) in content.skillGroups" v-show="group.name || group.skills.some((skill) => skill.name)" :key="index" class="preview-entry">
+        <div v-for="(group, index) in printableSkillGroups" :key="index" class="preview-entry">
           <h4 v-if="group.name">{{ group.name }}</h4>
-          <p class="preview-skill-list">{{ group.skills.filter((skill) => skill.name).map((skill) => skill.level ? `${skill.name} · ${skill.level}` : skill.name).join('  |  ') }}</p>
+          <p class="preview-skill-list">{{ group.skills.map((skill) => skill.level ? `${skill.name} · ${skill.level}` : skill.name).join('  |  ') }}</p>
+          <template v-for="(skill, skillIndex) in group.skills" :key="skillIndex">
+            <p v-for="(line, lineIndex) in skillOutput(skill, content)" :key="lineIndex" class="preview-meta">{{ line }}</p>
+          </template>
         </div>
       </section>
 
@@ -91,7 +95,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CvContent, CvExperience, CvLanguage } from '../../shared/api/cvTypes'
+import type { CvContent, CvExperience, CvExperienceProject, CvLanguage } from '../../shared/api/cvTypes'
+import { skillOutput } from '../../shared/skillMetrics'
 
 const props = defineProps<{
   content: CvContent
@@ -99,9 +104,20 @@ const props = defineProps<{
 }>()
 
 const orderedSections = computed(() => [...props.content.sections].sort((left, right) => left.sortOrder - right.sortOrder))
+const printableSkillGroups = computed(() => props.content.skillGroups
+  .map((group) => ({ ...group, skills: group.skills.filter((skill) => skill.visible !== false && skill.name.trim()) }))
+  .filter((group) => group.skills.length > 0))
 
 function hasExperience(experience: CvExperience) {
   return Boolean(experience.position || experience.company || experience.description || experience.projects.length)
+}
+
+function linkedSkillNames(project: CvExperienceProject) {
+  if (!project.projectKey) return []
+  return props.content.skillGroups.flatMap((group) => group.skills
+    .filter((skill) => skill.visible !== false && skill.name.trim()
+      && skill.details?.linkedProjects.some((link) => link.projectKey === project.projectKey))
+    .map((skill) => skill.name))
 }
 
 function languageSummary(language: CvLanguage) {

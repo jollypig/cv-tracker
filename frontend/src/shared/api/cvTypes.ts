@@ -97,6 +97,7 @@ export interface CvExperience {
 }
 
 export interface CvExperienceProject {
+  projectKey?: string | null
   company: string | null
   industries: string | null
   projectName: string
@@ -135,6 +136,19 @@ export interface CvSkill {
   name: string
   level: string | null
   sortOrder: number
+  visible?: boolean
+  details?: CvSkillDetails | null
+}
+
+export interface CvSkillDetails {
+  yearsOfExperience: number | null
+  yearsActivelyUsed: number | null
+  lastUsed: string | null
+  startedFrom: string | null
+  frequency: 'daily' | 'occasionally' | 'rarely' | null
+  status: 'active' | 'learning' | 'maintaining' | 'deprecated' | null
+  linkedProjects: { projectKey: string; outcome: string | null }[]
+  includeInOutput: boolean
 }
 
 export interface CvLanguage {
@@ -147,6 +161,10 @@ export interface CvLanguage {
 }
 
 export interface CvProject {
+  projectKey?: string | null
+  periodFrom?: string | null
+  periodTo?: string | null
+  current?: boolean
   name: string
   role: string | null
   description: string | null

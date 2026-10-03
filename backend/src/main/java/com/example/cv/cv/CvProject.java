@@ -42,6 +42,18 @@ public class CvProject {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Column(name = "project_key", length = 100)
+    private String projectKey;
+
+    @Column(name = "period_from")
+    private java.time.LocalDate periodFrom;
+
+    @Column(name = "period_to")
+    private java.time.LocalDate periodTo;
+
+    @Column(nullable = false)
+    private boolean current;
+
     protected CvProject() {
     }
 
@@ -51,6 +63,14 @@ public class CvProject {
     }
 
     public UUID getId() { return id; }
+    public String getProjectKey() { return projectKey; }
+    public void setProjectKey(String projectKey) { this.projectKey = projectKey; }
+    public java.time.LocalDate getPeriodFrom() { return periodFrom; }
+    public void setPeriodFrom(java.time.LocalDate periodFrom) { this.periodFrom = periodFrom; }
+    public java.time.LocalDate getPeriodTo() { return periodTo; }
+    public void setPeriodTo(java.time.LocalDate periodTo) { this.periodTo = periodTo; }
+    public boolean isCurrent() { return current; }
+    public void setCurrent(boolean current) { this.current = current; }
     public Cv getCv() { return cv; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
