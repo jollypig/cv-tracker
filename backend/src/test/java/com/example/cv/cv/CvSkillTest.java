@@ -17,11 +17,13 @@ class CvSkillTest {
         skill.setName("Spring Boot");
         skill.setLevel("Advanced");
         skill.setSortOrder(2);
+        skill.setVisible(false);
 
         assertThat(skill.getSkillGroup()).isSameAs(group);
         assertThat(skill.getName()).isEqualTo("Spring Boot");
         assertThat(skill.getLevel()).isEqualTo("Advanced");
         assertThat(skill.getSortOrder()).isEqualTo(2);
+        assertThat(skill.isVisible()).isFalse();
         assertThat(CvSkill.class.getAnnotation(Table.class).name()).isEqualTo("cv_skill");
         assertThat(CvSkill.class.getDeclaredField("skillGroup").getAnnotation(JoinColumn.class).name())
                 .isEqualTo("skill_group_id");
@@ -37,5 +39,6 @@ class CvSkillTest {
 
         assertThat(skill.getLevel()).isNull();
         assertThat(skill.getSortOrder()).isZero();
+        assertThat(skill.isVisible()).isTrue();
     }
 }

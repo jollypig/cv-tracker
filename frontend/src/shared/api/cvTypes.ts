@@ -135,6 +135,7 @@ export interface CvSkill {
   name: string
   level: string | null
   sortOrder: number
+  visible?: boolean
 }
 
 export interface CvLanguage {

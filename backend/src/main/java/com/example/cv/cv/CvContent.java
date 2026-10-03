@@ -73,7 +73,8 @@ public record CvContent(
     public record Skill(
             @NotBlank @Size(max = 255) String name,
             @Size(max = 50) String level,
-            @PositiveOrZero int sortOrder) {
+            @PositiveOrZero int sortOrder,
+            Boolean visible) {
     }
 
     public record Language(

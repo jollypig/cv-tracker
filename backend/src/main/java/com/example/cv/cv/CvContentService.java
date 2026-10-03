@@ -96,6 +96,7 @@ public class CvContentService {
             CvSkill skill = new CvSkill(entity, item.name().trim());
             skill.setLevel(blankToNull(item.level()));
             skill.setSortOrder(item.sortOrder());
+            skill.setVisible(item.visible() == null || item.visible());
             return skill;
         }).toList());
         return entity;
@@ -183,7 +184,7 @@ public class CvContentService {
                         item.getSortOrder())).toList(),
                 ordered(cv.getSkillGroups(), CvSkillGroup::getSortOrder).stream().map(item -> new CvContent.SkillGroup(item.getName(), item.getSortOrder(),
                     ordered(item.getSkills(), CvSkill::getSortOrder).stream().map(skill -> new CvContent.Skill(skill.getName(), skill.getLevel(),
-                                skill.getSortOrder())).toList())).toList(),
+                                skill.getSortOrder(), skill.isVisible())).toList())).toList(),
                 ordered(cv.getLanguages(), CvLanguage::getSortOrder).stream().map(item -> new CvContent.Language(item.getLanguage(), item.getLevel(),
                     item.getReading(), item.getWriting(), item.getSpeaking(), item.getSortOrder())).toList(),
                 ordered(cv.getProjects(), CvProject::getSortOrder).stream().map(item -> new CvContent.Project(item.getName(), item.getRole(),

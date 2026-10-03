@@ -38,11 +38,11 @@
         </article>
       </section>
 
-      <section v-else-if="section.visible && section.type === 'SKILLS' && content.skillGroups.length" class="preview-section">
+      <section v-else-if="section.visible && section.type === 'SKILLS' && printableSkillGroups.length" class="preview-section">
         <h3>Skills</h3>
-        <div v-for="(group, index) in content.skillGroups" v-show="group.name || group.skills.some((skill) => skill.name)" :key="index" class="preview-entry">
+        <div v-for="(group, index) in printableSkillGroups" :key="index" class="preview-entry">
           <h4 v-if="group.name">{{ group.name }}</h4>
-          <p class="preview-skill-list">{{ group.skills.filter((skill) => skill.name).map((skill) => skill.level ? `${skill.name} · ${skill.level}` : skill.name).join('  |  ') }}</p>
+          <p class="preview-skill-list">{{ group.skills.map((skill) => skill.level ? `${skill.name} · ${skill.level}` : skill.name).join('  |  ') }}</p>
         </div>
       </section>
 
@@ -99,6 +99,9 @@ const props = defineProps<{
 }>()
 
 const orderedSections = computed(() => [...props.content.sections].sort((left, right) => left.sortOrder - right.sortOrder))
+const printableSkillGroups = computed(() => props.content.skillGroups
+  .map((group) => ({ ...group, skills: group.skills.filter((skill) => skill.visible !== false && skill.name.trim()) }))
+  .filter((group) => group.skills.length > 0))
 
 function hasExperience(experience: CvExperience) {
   return Boolean(experience.position || experience.company || experience.description || experience.projects.length)

@@ -81,12 +81,7 @@ public class CvHtmlRenderer {
                     "<h3>" + escape(education.degree()) + " - " + escape(education.institution()) + "</h3>"
                         + optionalLine(dateRange(education.startDate(), education.endDate(), education.current()))
                         + optionalLine(education.fieldOfStudy()) + optionalLine(education.description()));
-                case SKILLS -> appendEntries(html, "Skills",
-                    sorted(content.skillGroups(), CvContent.SkillGroup::sortOrder), group ->
-                    "<h3>" + escape(group.name()) + "</h3><p>" + escape(String.join(", ", safe(group.skills())
-                            .stream().sorted(Comparator.comparingInt(CvContent.Skill::sortOrder))
-                        .map(skill -> notBlank(skill.level())
-                            ? skill.name() + " (" + skill.level() + ")" : skill.name()).toList())) + "</p>");
+                case SKILLS -> appendSkillGroups(html, content.skillGroups());
                 case LANGUAGES -> appendEntries(html, "Languages",
                     sorted(content.languages(), CvContent.Language::sortOrder), language ->
                     "<p><strong>" + escape(language.language()) + "</strong>"
@@ -106,6 +101,19 @@ public class CvHtmlRenderer {
                     sorted(content.customSections(), CvContent.CustomSection::sortOrder), item ->
                     "<h3>" + escape(item.title()) + "</h3>" + optionalLine(item.content()));
         }
+    }
+
+    private void appendSkillGroups(StringBuilder html, List<CvContent.SkillGroup> skillGroups) {
+        List<CvContent.SkillGroup> printableGroups = sorted(skillGroups, CvContent.SkillGroup::sortOrder).stream()
+                .map(group -> new CvContent.SkillGroup(group.name(), group.sortOrder(), safe(group.skills()).stream()
+                        .filter(skill -> !Boolean.FALSE.equals(skill.visible()) && notBlank(skill.name()))
+                        .sorted(Comparator.comparingInt(CvContent.Skill::sortOrder)).toList()))
+                .filter(group -> !group.skills().isEmpty())
+                .toList();
+        appendEntries(html, "Skills", printableGroups, group ->
+                "<h3>" + escape(group.name()) + "</h3><p>" + escape(String.join(", ", group.skills().stream()
+                        .map(skill -> notBlank(skill.level())
+                                ? skill.name() + " (" + skill.level() + ")" : skill.name()).toList())) + "</p>");
     }
 
             private String experienceHtml(CvContent.Experience experience) {

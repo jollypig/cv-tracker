@@ -47,6 +47,36 @@ class CvHtmlRendererTest {
         assertThat(html).contains("Jane Doe", "Engineer", "Riga", "A careful engineer");
     }
 
+    @Test
+    void omitsHiddenSkillsAndGroupsWithoutPrintableSkills() {
+        CvContent content = new CvContent(null, List.of(), List.of(), List.of(
+                new CvContent.SkillGroup("Backend", 0, List.of(
+                        new CvContent.Skill("Java", "Advanced", 0, false),
+                        new CvContent.Skill("Kotlin", "Intermediate", 1, null))),
+                new CvContent.SkillGroup("Hidden group", 1, List.of(
+                        new CvContent.Skill("Rust", null, 0, false)))),
+                List.of(), List.of(), List.of(), List.of(),
+                List.of(new CvContent.Section(CvSectionType.SKILLS, true, 0)));
+
+        String html = renderer.render(snapshot(content), "modern");
+
+        assertThat(html).contains("Skills", "Backend", "Kotlin (Intermediate)")
+                .doesNotContain("Java", "Hidden group", "Rust");
+    }
+
+    @Test
+    void omitsSkillsSectionWhenEverySkillIsHidden() {
+        CvContent content = new CvContent(null, List.of(), List.of(), List.of(
+                new CvContent.SkillGroup("Backend", 0, List.of(
+                        new CvContent.Skill("Java", null, 0, false)))),
+                List.of(), List.of(), List.of(), List.of(),
+                List.of(new CvContent.Section(CvSectionType.SKILLS, true, 0)));
+
+        String html = renderer.render(snapshot(content), "modern");
+
+        assertThat(html).doesNotContain("Skills", "Backend", "Java");
+    }
+
     private CvVersionSnapshot snapshot(CvContent content) {
         return new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT, content, null);
     }

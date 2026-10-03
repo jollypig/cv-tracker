@@ -169,14 +169,17 @@
                 </v-expansion-panel-title>
                 <v-expansion-panel-text>
                   <v-text-field v-model="group.name" label="Group name" variant="outlined" :rules="[requiredRule]" />
-                  <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="content-field-grid skill-entry">
-                    <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
-                    <v-select v-model="skill.level" :items="skillLevels" label="Level" variant="outlined" />
-                    <div class="entry-actions">
-                      <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
-                      <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
-                      <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                  <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="skill-item">
+                    <div class="content-field-grid skill-entry">
+                      <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
+                      <v-select v-model="skill.level" :items="skillLevels" label="Level" variant="outlined" />
+                      <div class="entry-actions">
+                        <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
+                        <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
+                        <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                      </div>
                     </div>
+                    <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details label="Include in output" />
                   </div>
                   <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">Add skill</v-btn>
                 </v-expansion-panel-text>
@@ -493,7 +496,7 @@ function addSkillGroup() {
 }
 
 function addSkill(group: CvSkillGroup) {
-  group.skills.push({ name: '', level: '', sortOrder: group.skills.length })
+  group.skills.push({ name: '', level: '', sortOrder: group.skills.length, visible: true })
 }
 
 function addLanguage() {
@@ -624,6 +627,7 @@ function saveLocalDraft() {
 .skill-group-panels :deep(.v-expansion-panel-text__wrapper) { padding: 16px 16px 8px; }
 .skill-group-expand-icon { margin-left: 4px; transition: transform 180ms ease; }
 .skill-group-panels :deep(.v-expansion-panel-title--active .skill-group-expand-icon) { transform: rotate(180deg); }
+.skill-visibility { margin-top: -10px; }
 .panel-count { margin-left: 8px; color: #78847e; font-size: 12px; font-weight: 500; }
 .editor-entry { padding: 17px 0 12px; border-bottom: 1px solid #e8e9e3; }
 .editor-entry:first-child { padding-top: 0; }
