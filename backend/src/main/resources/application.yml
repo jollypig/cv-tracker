@@ -1,6 +1,8 @@
 spring:
   application:
     name: cv-management
+  config:
+    import: "optional:file:./.env[.properties],optional:file:./backend/.env[.properties]"
   profiles:
     default: local
   datasource:

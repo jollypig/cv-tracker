@@ -1,5 +1,7 @@
 package com.example.cv.common;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,8 +14,15 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import com.example.cv.auth.AuthenticatedUserService;
+import org.springframework.util.StringUtils;
+
+import java.util.function.Supplier;
 
 @Configuration
 public class SecurityConfiguration {
@@ -52,7 +61,9 @@ public class SecurityConfiguration {
                                     : manager.check(authentication, context);
                         })
                         .anyRequest().authenticated())
-                .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
                 .cors(Customizer.withDefaults())
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
@@ -80,4 +91,25 @@ public class SecurityConfiguration {
 
         return http.build();
     }
+
+        private static final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
+
+                private final CsrfTokenRequestAttributeHandler plain = new CsrfTokenRequestAttributeHandler();
+                private final XorCsrfTokenRequestAttributeHandler xor = new XorCsrfTokenRequestAttributeHandler();
+
+                @Override
+                public void handle(HttpServletRequest request, HttpServletResponse response,
+                                Supplier<CsrfToken> csrfToken) {
+                        xor.handle(request, response, csrfToken);
+                        csrfToken.get();
+                }
+
+                @Override
+                public String resolveCsrfTokenValue(HttpServletRequest request, CsrfToken csrfToken) {
+                        String headerValue = request.getHeader(csrfToken.getHeaderName());
+                        return StringUtils.hasText(headerValue)
+                                        ? plain.resolveCsrfTokenValue(request, csrfToken)
+                                        : xor.resolveCsrfTokenValue(request, csrfToken);
+                }
+        }
 }
