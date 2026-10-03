@@ -10,4 +10,5 @@ public interface CvVersionRepository extends JpaRepository<CvVersion, UUID> {
     List<CvVersion> findAllByCv_IdOrderByVersionNumberDesc(UUID cvId);
     Optional<CvVersion> findByCv_IdAndVersionNumber(UUID cvId, int versionNumber);
     Optional<CvVersion> findTopByCv_IdOrderByVersionNumberDesc(UUID cvId);
+    boolean existsByIdAndCv_Person_Owner_Id(UUID id, UUID ownerId);
 }

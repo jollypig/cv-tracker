@@ -1,7 +1,10 @@
 package com.example.cv.cv;
 
+import com.example.cv.auth.AuthenticatedUserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,20 +26,25 @@ public class CvController {
 
     private final CvService cvService;
     private final CvDuplicationService duplicationService;
+    private final AuthenticatedUserService authenticatedUsers;
 
-    public CvController(CvService cvService, CvDuplicationService duplicationService) {
+    public CvController(CvService cvService, CvDuplicationService duplicationService,
+            AuthenticatedUserService authenticatedUsers) {
         this.cvService = cvService;
         this.duplicationService = duplicationService;
+        this.authenticatedUsers = authenticatedUsers;
     }
 
     @GetMapping("/cvs")
-    public List<CvResponse> findAll(@RequestParam(required = false) UUID personId) {
-        return cvService.findAll(personId);
+    public List<CvResponse> findAll(@RequestParam(required = false) UUID personId,
+            @AuthenticationPrincipal OidcUser principal) {
+        return cvService.findAll(personId, authenticatedUsers.synchronize(principal).getId());
     }
 
     @GetMapping("/persons/{personId}/cvs")
-    public List<CvResponse> findForPerson(@PathVariable UUID personId) {
-        return cvService.findAll(personId);
+    public List<CvResponse> findForPerson(@PathVariable UUID personId,
+            @AuthenticationPrincipal OidcUser principal) {
+        return cvService.findAll(personId, authenticatedUsers.synchronize(principal).getId());
     }
 
     @GetMapping("/cvs/{id}")

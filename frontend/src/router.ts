@@ -7,10 +7,14 @@ import CvContentView from './views/CvContentView.vue'
 import CvVersionsView from './views/CvVersionsView.vue'
 import CvVersionDetailsView from './views/CvVersionDetailsView.vue'
 import CvVersionDiffView from './views/CvVersionDiffView.vue'
+import AuthView from './views/AuthView.vue'
+import { useAuthStore } from './shared/stores/authStore'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    { path: '/login', name: 'login', component: AuthView, meta: { title: 'Sign in', public: true, view: 'login' } },
+    { path: '/forbidden', name: 'forbidden', component: AuthView, meta: { title: 'Access denied', public: true, view: 'forbidden' } },
     { path: '/', component: PeopleView, meta: { title: 'People' } },
     { path: '/people/new', component: PersonFormView, meta: { title: 'Add person' } },
     { path: '/people/:id/edit', component: PersonFormView, meta: { title: 'Edit person' } },
@@ -24,6 +28,28 @@ const router = createRouter({
     { path: '/people/:personId/cvs', component: WorkspaceView, meta: { title: 'Person CVs' } },
     { path: '/people/:personId/cvs/new', component: CvFormView, meta: { title: 'Create CV' } },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (to.meta.public) return true
+
+  const auth = useAuthStore()
+  try {
+    if (await auth.load()) {
+      if (to.path === '/') {
+        const redirect = sessionStorage.getItem('cv-auth-redirect')
+        sessionStorage.removeItem('cv-auth-redirect')
+        if (redirect && redirect !== '/') return redirect
+      }
+      return true
+    }
+  } catch {
+    sessionStorage.setItem('cv-auth-redirect', to.fullPath)
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  sessionStorage.setItem('cv-auth-redirect', to.fullPath)
+  return { name: 'login', query: { redirect: to.fullPath } }
 })
 
 export default router

@@ -35,6 +35,19 @@ public class CvService {
     }
 
     @Transactional(readOnly = true)
+    public List<CvResponse> findAll(UUID personId, UUID ownerId) {
+        List<Cv> cvs;
+        if (personId == null) {
+            cvs = cvRepository.findAllByPerson_Owner_IdOrderByUpdatedAtDesc(ownerId);
+        } else {
+            personRepository.findByIdAndOwner_Id(personId, ownerId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
+            cvs = cvRepository.findAllByPerson_IdAndPerson_Owner_IdOrderByUpdatedAtDesc(personId, ownerId);
+        }
+        return cvs.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public CvResponse findById(UUID id) {
         return toResponse(getCv(id));
     }

@@ -3,11 +3,16 @@ package com.example.cv.cv;
 import com.example.cv.common.CorsConfig;
 import com.example.cv.common.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import com.example.cv.auth.AuthenticatedUser;
+import com.example.cv.auth.AuthenticatedUserService;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 import java.time.Instant;
 import java.util.List;
@@ -15,6 +20,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -26,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CvController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import({GlobalExceptionHandler.class, CorsConfig.class})
 class CvControllerTest {
 
@@ -37,6 +45,18 @@ class CvControllerTest {
 
         @MockitoBean
         private CvDuplicationService duplicationService;
+
+        @MockitoBean
+        private AuthenticatedUserService authenticatedUsers;
+
+        private final UUID ownerId = UUID.randomUUID();
+
+        @BeforeEach
+        void setUp() {
+            AuthenticatedUser owner = mock(AuthenticatedUser.class);
+            when(owner.getId()).thenReturn(ownerId);
+            when(authenticatedUsers.synchronize(nullable(OidcUser.class))).thenReturn(owner);
+        }
 
     @Test
     void createsCvAndReturnsItsResourceLocation() throws Exception {
@@ -59,7 +79,7 @@ class CvControllerTest {
     void listsAndUpdatesCvs() throws Exception {
         UUID personId = UUID.randomUUID();
         UUID cvId = UUID.randomUUID();
-        when(cvService.findAll(personId)).thenReturn(List.of(cv(cvId, personId)));
+        when(cvService.findAll(personId, ownerId)).thenReturn(List.of(cv(cvId, personId)));
         when(cvService.update(eq(cvId), any(CvRequest.class))).thenReturn(cv(cvId, personId));
 
         mockMvc.perform(get("/api/v1/persons/{personId}/cvs", personId))

@@ -1,5 +1,6 @@
 package com.example.cv.person;
 
+import com.example.cv.auth.AuthenticatedUser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -15,6 +16,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,6 +50,30 @@ class PersonServiceTest {
         assertEquals("London", response.location());
         assertEquals("EMAIL", captor.getValue().getContacts().get(0).getType());
         assertEquals("ada@example.com", response.contacts().get(0).value());
+    }
+
+    @Test
+    void assignsTheAuthenticatedOwnerWhenCreatingPerson() {
+        AuthenticatedUser owner = org.mockito.Mockito.mock(AuthenticatedUser.class);
+        PersonRequest request = new PersonRequest("Ada", "Lovelace", null,
+                null, null, null, null, null, null, List.of());
+        when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        personService.create(request, owner);
+
+        ArgumentCaptor<Person> captor = ArgumentCaptor.forClass(Person.class);
+        verify(personRepository).save(captor.capture());
+        assertSame(owner, captor.getValue().getOwner());
+    }
+
+    @Test
+    void listsOnlyPeopleOwnedByTheRequestedAccount() {
+        UUID ownerId = UUID.randomUUID();
+        when(personRepository.findAllByOwner_IdOrderByLastNameAscFirstNameAscIdAsc(ownerId))
+                .thenReturn(List.of(new Person("Ada", "Lovelace")));
+
+        assertEquals(1, personService.findAll(ownerId).size());
+        verify(personRepository).findAllByOwner_IdOrderByLastNameAscFirstNameAscIdAsc(ownerId);
     }
 
     @Test
