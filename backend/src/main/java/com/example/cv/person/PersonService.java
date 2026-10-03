@@ -1,7 +1,6 @@
 package com.example.cv.person;
 
 import com.example.cv.auth.AuthenticatedUser;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +22,7 @@ public class PersonService {
 
     @Transactional(readOnly = true)
     public List<PersonResponse> findAll() {
-        return personRepository.findAll(Sort.by("lastName", "firstName", "id")).stream()
+        return personRepository.findAllByOrderByLastNameAscFirstNameAscIdAsc().stream()
                 .map(this::toResponse)
                 .toList();
     }

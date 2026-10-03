@@ -25,15 +25,22 @@ server:
         secure: ${SESSION_COOKIE_SECURE:false}
 
 management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
+  prometheus:
+    metrics:
+      export:
+        enabled: true
   endpoint:
+    prometheus:
+      enabled: true
     health:
       probes:
         enabled: true
-
+  endpoints:
+    access:
+      default: read-only
+    web:
+      exposure:
+        include: health,info,prometheus
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

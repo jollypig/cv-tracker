@@ -41,12 +41,20 @@ People created by a signed-in account are associated with that account. Existing
 ## Checks
 
 - Frontend production build: `npm run build` from `frontend/`.
-- Skill calculation tests: `npm test` from `frontend/`.
+- Frontend unit and component tests: `npm test` from `frontend/`.
+- Frontend browser tests: `npm run test:e2e` from `frontend/` (install Chromium first with `npx playwright install chromium`).
 - Backend tests: `mvn test` from `backend/`.
+- Backend PostgreSQL and MinIO integration tests use Testcontainers and require Docker.
 
 Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on backend startup. PostgreSQL data is kept in the Compose named volume `postgres_data`.
 
 Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.
+
+## Production image
+
+Build the backend image from the repository root with `docker build -t cv-management .`. Run it with the Spring `prod` profile and provide `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `FRONTEND_URL`, and `CORS_ALLOWED_ORIGINS` through the deployment environment or secret manager. Configure `OIDC_ISSUER_URI` and `OIDC_CLIENT_ID` to enable sign-in; set `OIDC_CLIENT_SECRET` when required by the identity provider. The production profile enables secure session cookies, structured JSON logs, readiness/liveness health probes, and Prometheus metrics. OpenAPI docs and Swagger UI are disabled by default in production and can be enabled with `OPENAPI_DOCS_ENABLED` and `OPENAPI_SWAGGER_UI_ENABLED`.
+
+The unauthenticated `/actuator/prometheus` scrape endpoint should only be reachable on a trusted monitoring network. GitHub Actions runs backend tests, frontend tests and build, Playwright browser tests, and a Docker image build for pushes and pull requests.
 
 ## Skill experience and project evidence
 
