@@ -32,6 +32,10 @@ The API uses OIDC authorization-code login and a server-side session. Configure 
 
 Register `http://localhost:8080/login/oauth2/code/oidc` as the provider redirect URI. The frontend starts login at `/oauth2/authorization/oidc`; API requests use the session cookie and CSRF token cookie. Without OIDC configuration, protected API calls return `401` and the frontend indicates that sign-in is unavailable.
 
+### Keycloak login theme
+
+The `keycloak/themes/folio/login` theme styles Keycloak 26's `keycloak.v2` login pages to match the frontend. Mount `./keycloak/themes` at `/opt/keycloak/themes` in your Keycloak service, then select **Realm settings → Themes → Login theme → folio**. The theme does not replace Keycloak templates, so login, recovery, registration, and identity-provider flows remain native. In development, disable theme caching or restart Keycloak after changing theme files.
+
 People created by a signed-in account are associated with that account. Existing records remain unowned after the ownership migration and are not visible to new accounts; assign them through a trusted migration or administrative process before enabling access.
 
 ## Checks
