@@ -1,6 +1,7 @@
 package com.example.cv.cv;
 
 import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,9 +12,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface CvRepository extends JpaRepository<Cv, UUID> {
+    @EntityGraph(attributePaths = "person")
     List<Cv> findAllByPersonIdOrderByUpdatedAtDesc(UUID personId);
+    @EntityGraph(attributePaths = "person")
     List<Cv> findAllByPerson_IdAndPerson_Owner_IdOrderByUpdatedAtDesc(UUID personId, UUID ownerId);
+    @EntityGraph(attributePaths = "person")
     List<Cv> findAllByPerson_Owner_IdOrderByUpdatedAtDesc(UUID ownerId);
+    @EntityGraph(attributePaths = "person")
     List<Cv> findAllByOrderByUpdatedAtDesc();
     boolean existsByIdAndPerson_Owner_Id(UUID id, UUID ownerId);
 

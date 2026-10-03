@@ -1,0 +1,60 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:20}
+      minimum-idle: ${DB_POOL_MIN_IDLE:5}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      cookie:
+        same-site: ${SESSION_COOKIE_SAME_SITE:lax}
+        secure: true
+
+management:
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: never
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+springdoc:
+  api-docs:
+    enabled: ${OPENAPI_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${OPENAPI_SWAGGER_UI_ENABLED:false}
+
+logging:
+  structured:
+    format:
+      console: logstash
+
+app:
+  frontend:
+    url: ${FRONTEND_URL}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+storage:
+  type: ${STORAGE_TYPE:s3}
