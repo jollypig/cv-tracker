@@ -57,6 +57,11 @@
               <v-btn v-bind="props" :aria-label="`Edit content for ${item.name}`" icon="mdi-text-box-edit-outline" size="small" variant="text" :to="`/cvs/${item.id}/content`" />
             </template>
           </v-tooltip>
+          <v-tooltip text="Duplicate CV">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`Duplicate ${item.name}`" icon="mdi-content-copy" size="small" variant="text" @click="openDuplicate(item)" />
+            </template>
+          </v-tooltip>
           <v-tooltip text="Version history">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="`View versions for ${item.name}`" icon="mdi-history" size="small" variant="text" :to="`/cvs/${item.id}/versions`" />
@@ -101,18 +106,33 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="duplicateDialog" max-width="480">
+      <v-card>
+        <v-card-title class="dialog-title">Duplicate this CV</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="duplicateName" label="Copy name" maxlength="255" variant="outlined" autofocus />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="duplicateDialog = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="confirmDuplicate">Create copy</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </main>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import cvApi from '../shared/api/cvApi'
 import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
 import type { Cv, CvStatus } from '../shared/api/cvTypes'
 
 const route = useRoute()
+const router = useRouter()
 const store = useCvStore()
 const personStore = usePersonStore()
 const personId = computed(() => typeof route.params.personId === 'string' ? route.params.personId : undefined)
@@ -123,8 +143,12 @@ const search = ref('')
 const error = ref('')
 const deleteDialog = ref(false)
 const deleting = ref(false)
+const duplicateDialog = ref(false)
+const duplicateName = ref('')
+const duplicating = ref(false)
 const exportingCvId = ref('')
 const selectedCv = ref<Cv | null>(null)
+const cvToDuplicate = ref<Cv | null>(null)
 const headers = computed(() => [
   { title: 'CV', key: 'name' },
   ...(!isPersonView.value ? [{ title: 'Person', key: 'personName' }] : []),
@@ -184,6 +208,28 @@ async function exportCv(cv: Cv) {
 function openDelete(cv: Cv) {
   selectedCv.value = cv
   deleteDialog.value = true
+}
+
+function openDuplicate(cv: Cv) {
+  cvToDuplicate.value = cv
+  duplicateName.value = `${cv.name} (Copy)`
+  duplicateDialog.value = true
+}
+
+async function confirmDuplicate() {
+  if (!cvToDuplicate.value || !duplicateName.value.trim()) return
+  duplicating.value = true
+  error.value = ''
+  try {
+    const copy = await cvApi.duplicate(cvToDuplicate.value.id, duplicateName.value.trim())
+    await router.push(`/cvs/${copy.id}/content`)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to duplicate this CV.'
+  } finally {
+    duplicating.value = false
+    duplicateDialog.value = false
+    cvToDuplicate.value = null
+  }
 }
 
 async function confirmDelete() {

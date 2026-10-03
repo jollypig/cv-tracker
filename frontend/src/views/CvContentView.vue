@@ -7,6 +7,7 @@
         <p>{{ cv?.personName ?? 'Build each section of this CV.' }}</p>
       </div>
       <div class="content-heading-actions">
+        <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">Duplicate CV</v-btn>
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">Versions</v-btn>
         <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">CV details</v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">Save content</v-btn>
@@ -23,6 +24,20 @@
       {{ draftStatus }}
     </v-alert>
     <v-progress-linear v-if="loading" class="form-loading" color="primary" indeterminate />
+
+    <v-dialog v-model="duplicateDialog" max-width="480">
+      <v-card>
+        <v-card-title class="dialog-title">Duplicate this CV</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="duplicateName" label="Copy name" maxlength="255" variant="outlined" autofocus />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="duplicateDialog = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="duplicateCv">Create copy</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <div v-if="!loading && cv && person" class="content-workspace">
     <v-form ref="editorForm" class="content-editor" @submit.prevent="saveContent">
@@ -276,7 +291,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import CvPreview from '../components/templates/CvPreview.vue'
 import cvApi from '../shared/api/cvApi'
 import personApi from '../shared/api/personApi'
@@ -287,6 +302,7 @@ import type {
 import type { Person } from '../shared/api/personTypes'
 
 const route = useRoute()
+const router = useRouter()
 const cvId = typeof route.params.id === 'string' ? route.params.id : ''
 const cv = ref<Cv | null>(null)
 const person = ref<Person | null>(null)
@@ -297,6 +313,9 @@ const saving = ref(false)
 const selectingTemplate = ref(false)
 const error = ref('')
 const saved = ref(false)
+const duplicateDialog = ref(false)
+const duplicateName = ref('')
+const duplicating = ref(false)
 const draftStatus = ref('')
 const draftTracking = ref(false)
 let draftTimer: ReturnType<typeof setTimeout> | undefined
@@ -349,6 +368,26 @@ onMounted(async () => {
 })
 
 watch(content, scheduleLocalDraft, { deep: true })
+
+function openDuplicateDialog() {
+  duplicateName.value = `${cv.value?.name ?? 'CV'} (Copy)`
+  duplicateDialog.value = true
+}
+
+async function duplicateCv() {
+  if (!duplicateName.value.trim()) return
+  duplicating.value = true
+  error.value = ''
+  try {
+    const copy = await cvApi.duplicate(cvId, duplicateName.value.trim())
+    await router.push(`/cvs/${copy.id}/content`)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to duplicate this CV.'
+  } finally {
+    duplicating.value = false
+    duplicateDialog.value = false
+  }
+}
 
 onBeforeUnmount(() => {
   if (draftTimer) clearTimeout(draftTimer)
