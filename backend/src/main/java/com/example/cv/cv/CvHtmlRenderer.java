@@ -75,7 +75,8 @@ public class CvHtmlRenderer {
         switch (type) {
             case SUMMARY -> appendTextSection(html, "Profile", content.summary());
                 case EXPERIENCE -> appendEntries(html, "Experience",
-                    sorted(content.experiences(), CvContent.Experience::sortOrder), this::experienceHtml);
+                    sorted(content.experiences(), CvContent.Experience::sortOrder),
+                    experience -> experienceHtml(experience, content));
                 case EDUCATION -> appendEntries(html, "Education",
                     sorted(content.education(), CvContent.Education::sortOrder), education ->
                     "<h3>" + escape(education.degree()) + " - " + escape(education.institution()) + "</h3>"
@@ -147,7 +148,7 @@ public class CvHtmlRenderer {
         return html.toString();
     }
 
-            private String experienceHtml(CvContent.Experience experience) {
+    private String experienceHtml(CvContent.Experience experience, CvContent content) {
             StringBuilder html = new StringBuilder("<h3>").append(escape(experience.position())).append(" - ")
                 .append(escape(experience.company())).append("</h3>")
                 .append(optionalLine(dateRange(experience.startDate(), experience.endDate(), experience.current())))
@@ -157,10 +158,24 @@ public class CvHtmlRenderer {
                 String customer = Boolean.FALSE.equals(project.showCustomerCompany()) ? "" : project.company();
                 String heading = join(projectName, customer);
                 html.append("<p><strong>").append(escape(heading)).append("</strong></p>")
-                    .append(optionalLine(project.responsibilities())).append(optionalLine(project.technologies()));
+                    .append(optionalLine(project.responsibilities())).append(optionalLine(project.technologies()))
+                    .append(optionalLine(linkedSkills(project, content)));
             });
             return html.toString();
             }
+
+    private String linkedSkills(CvContent.ExperienceProject project, CvContent content) {
+        if (project.projectKey() == null) {
+            return "";
+        }
+        List<String> names = safe(content.skillGroups()).stream()
+                .flatMap(group -> safe(group.skills()).stream())
+                .filter(skill -> !Boolean.FALSE.equals(skill.visible()) && notBlank(skill.name()))
+                .filter(skill -> skill.details() != null && safe(skill.details().linkedProjects()).stream()
+                        .anyMatch(link -> project.projectKey().equals(link.projectKey())))
+                .map(CvContent.Skill::name).distinct().toList();
+        return names.isEmpty() ? "" : "Skills: " + String.join(", ", names);
+    }
 
     private void appendTextSection(StringBuilder html, String title, String text) {
         if (notBlank(text)) {

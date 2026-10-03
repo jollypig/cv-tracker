@@ -119,6 +119,25 @@
                   </div>
                   <v-textarea v-model="project.responsibilities" label="Responsibilities" rows="2" variant="outlined" />
                   <v-textarea v-model="project.technologies" label="Technologies and tools" rows="2" variant="outlined" />
+                  <v-autocomplete
+                    :model-value="linkedSkillIds(project)"
+                    :items="projectSkillOptions"
+                    item-title="title"
+                    item-value="value"
+                    label="Linked skills"
+                    variant="outlined"
+                    density="compact"
+                    multiple
+                    chips
+                    closable-chips
+                    clearable
+                    no-data-text="Add skills in the Skills section first"
+                    @update:model-value="updateProjectSkills(project, $event)"
+                  >
+                    <template #item="{ props: itemProps, item }">
+                      <v-list-item v-bind="itemProps" :subtitle="item.raw.group" />
+                    </template>
+                  </v-autocomplete>
                 </div>
               </div>
             </div>
@@ -297,7 +316,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CvPreview from '../components/templates/CvPreview.vue'
 import SkillDetailsEditor from '../components/SkillDetailsEditor.vue'
@@ -355,6 +374,12 @@ const degreeOptions = [
 const detailedLanguages = reactive(new Set<CvLanguage>())
 const expandedSkillGroups = ref<number[]>([])
 const content = reactive<CvContent>(emptyContent())
+const projectSkillOptions = computed(() => content.skillGroups.flatMap((group, groupIndex) =>
+  group.skills.flatMap((skill, skillIndex) => skill.name.trim() ? [{
+    value: `${groupIndex}:${skillIndex}`,
+    title: skill.name,
+    group: group.name || 'Ungrouped',
+  }] : [])))
 
 onMounted(async () => {
   try {
@@ -487,6 +512,31 @@ function addExperienceProject(experience: CvExperience) {
   experience.projects.push({ projectKey: crypto.randomUUID(), company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
     periodFrom: null, periodTo: null, position: '', responsibilities: '', technologies: '',
     teamSize: null, externalLink: '', sortOrder: experience.projects.length })
+}
+
+function linkedSkillIds(project: CvExperienceProject) {
+  if (!project.projectKey) return []
+  return content.skillGroups.flatMap((group, groupIndex) => group.skills.flatMap((skill, skillIndex) =>
+    skill.name.trim() && skill.details?.linkedProjects.some((link) => link.projectKey === project.projectKey)
+      ? [`${groupIndex}:${skillIndex}`] : []))
+}
+
+function updateProjectSkills(project: CvExperienceProject, selectedIds: string[] | null) {
+  if (!project.projectKey) return
+  const selected = new Set(selectedIds ?? [])
+  content.skillGroups.forEach((group, groupIndex) => group.skills.forEach((skill, skillIndex) => {
+    if (!skill.name.trim()) return
+    const key = `${groupIndex}:${skillIndex}`
+    const details = skill.details ?? emptySkillDetails()
+    const linkedProjects = details.linkedProjects ?? []
+    const isLinked = linkedProjects.some((link) => link.projectKey === project.projectKey)
+    const shouldLink = selected.has(key)
+    if (shouldLink && !isLinked) {
+      skill.details = { ...details, linkedProjects: [...linkedProjects, { projectKey: project.projectKey!, outcome: '' }] }
+    } else if (!shouldLink && isLinked) {
+      skill.details = { ...details, linkedProjects: linkedProjects.filter((link) => link.projectKey !== project.projectKey) }
+    }
+  }))
 }
 
 function setProjectNameAndCompanyHidden(project: CvExperienceProject, hidden: boolean | null) {

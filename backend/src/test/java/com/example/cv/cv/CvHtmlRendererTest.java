@@ -64,6 +64,28 @@ class CvHtmlRendererTest {
     }
 
     @Test
+    void rendersVisibleSkillsLinkedToExperienceProjects() {
+        var project = new CvContent.ExperienceProject(null, null, "Platform", null, true, true,
+                null, null, null, "Built API", "Spring", null, null, 0, "platform-key");
+        var experience = new CvContent.Experience("Company", "Engineer", null, null, null,
+                null, null, false, null, 0, List.of(project));
+        var visibleSkill = new CvContent.Skill("Java", null, 0, true,
+                new CvSkillDetails(null, null, null, null, null, null,
+                        List.of(new CvSkillDetails.ProjectLink("platform-key", null)), false));
+        var hiddenSkill = new CvContent.Skill("Secret tool", null, 1, false,
+                new CvSkillDetails(null, null, null, null, null, null,
+                        List.of(new CvSkillDetails.ProjectLink("platform-key", null)), false));
+        CvContent content = new CvContent(null, List.of(experience), List.of(),
+                List.of(new CvContent.SkillGroup("Backend", 0, List.of(visibleSkill, hiddenSkill))),
+                List.of(), List.of(), List.of(), List.of(),
+                List.of(new CvContent.Section(CvSectionType.EXPERIENCE, true, 0)));
+
+        String html = renderer.render(snapshot(content), "modern");
+
+        assertThat(html).contains("Spring", "Skills: Java").doesNotContain("Skills: Java, Secret tool");
+    }
+
+    @Test
     void omitsHiddenSkillsAndGroupsWithoutPrintableSkills() {
         CvContent content = new CvContent(null, List.of(), List.of(), List.of(
                 new CvContent.SkillGroup("Backend", 0, List.of(

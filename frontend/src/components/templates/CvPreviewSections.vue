@@ -21,6 +21,7 @@
             <p v-if="project.projectDescription">{{ project.projectDescription }}</p>
             <p v-if="project.responsibilities">{{ project.responsibilities }}</p>
             <p v-if="project.technologies" class="preview-meta">{{ project.technologies }}</p>
+            <p v-if="linkedSkillNames(project).length" class="preview-meta">Skills: {{ linkedSkillNames(project).join(', ') }}</p>
           </div>
         </article>
       </section>
@@ -94,7 +95,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CvContent, CvExperience, CvLanguage } from '../../shared/api/cvTypes'
+import type { CvContent, CvExperience, CvExperienceProject, CvLanguage } from '../../shared/api/cvTypes'
 import { skillOutput } from '../../shared/skillMetrics'
 
 const props = defineProps<{
@@ -109,6 +110,14 @@ const printableSkillGroups = computed(() => props.content.skillGroups
 
 function hasExperience(experience: CvExperience) {
   return Boolean(experience.position || experience.company || experience.description || experience.projects.length)
+}
+
+function linkedSkillNames(project: CvExperienceProject) {
+  if (!project.projectKey) return []
+  return props.content.skillGroups.flatMap((group) => group.skills
+    .filter((skill) => skill.visible !== false && skill.name.trim()
+      && skill.details?.linkedProjects.some((link) => link.projectKey === project.projectKey))
+    .map((skill) => skill.name))
 }
 
 function languageSummary(language: CvLanguage) {
