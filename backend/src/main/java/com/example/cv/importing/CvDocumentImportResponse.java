@@ -11,6 +11,7 @@ public record CvDocumentImportResponse(
         CvImportStatus status,
         String errorMessage,
         ParsedCv result,
+        UUID cvId,
         Instant createdAt,
         Instant updatedAt
 ) {

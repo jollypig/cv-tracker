@@ -1,5 +1,8 @@
 package com.example.cv.importing;
 
+import com.example.cv.cv.CvContent;
+import com.example.cv.cv.CvImportRequest;
+import com.example.cv.cv.CvImportService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,16 +26,21 @@ public class CvDocumentImportService {
     private final PdfCvParser pdfParser;
     private final HtmlCvParser htmlParser;
     private final CvAiExtractor extractor;
+    private final CvImportService cvImportService;
+    private final ParsedCvToContentMapper contentMapper;
     private final ObjectMapper objectMapper;
     private final long maxFileSizeBytes;
 
     public CvDocumentImportService(CvDocumentImportRepository imports, PdfCvParser pdfParser,
-            HtmlCvParser htmlParser, CvAiExtractor extractor, ObjectMapper objectMapper,
+            HtmlCvParser htmlParser, CvAiExtractor extractor, CvImportService cvImportService,
+            ParsedCvToContentMapper contentMapper, ObjectMapper objectMapper,
             @Value("${cv.import.max-file-size-bytes:10485760}") long maxFileSizeBytes) {
         this.imports = imports;
         this.pdfParser = pdfParser;
         this.htmlParser = htmlParser;
         this.extractor = extractor;
+        this.cvImportService = cvImportService;
+        this.contentMapper = contentMapper;
         this.objectMapper = objectMapper;
         this.maxFileSizeBytes = maxFileSizeBytes;
     }
@@ -64,7 +72,7 @@ public class CvDocumentImportService {
                 throw new IllegalStateException("The extractor returned no CV data");
             }
             parsedCv = ParsedCvNormalizer.normalize(parsedCv, LocalDate.now(), sourceText);
-            documentImport.complete(serialize(parsedCv), !parsedCv.warnings().isEmpty());
+            documentImport.complete(serialize(parsedCv));
         } catch (IOException | RuntimeException exception) {
             documentImport.fail(failureMessage(exception));
         }
@@ -75,9 +83,35 @@ public class CvDocumentImportService {
 
     @Transactional(readOnly = true)
     public CvDocumentImportResponse findById(UUID importId) {
-        CvDocumentImport documentImport = imports.findById(importId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV import was not found"));
+        CvDocumentImport documentImport = getImport(importId);
         return response(documentImport, parseResult(documentImport.getResultJson()));
+    }
+
+    public CvDocumentImportResponse updateDraft(UUID importId, ParsedCv draft) {
+        CvDocumentImport documentImport = getImport(importId);
+        documentImport.updateDraft(serialize(draft));
+        imports.save(documentImport);
+        return response(documentImport, draft);
+    }
+
+    public CvDocumentImportResponse approveDraft(UUID importId, CvDraftApprovalRequest request) {
+        CvDocumentImport documentImport = getImport(importId);
+        documentImport.assertReviewable();
+        ParsedCv draft = parseResult(documentImport.getResultJson());
+        if (draft == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CV import has no reviewable draft");
+        }
+        CvContent content = contentMapper.toContent(draft);
+        var cv = cvImportService.importCv(request.personId(), new CvImportRequest(
+                request.name(), null, request.language(), request.status(), request.tags(), content));
+        documentImport.approve(cv.id());
+        imports.save(documentImport);
+        return response(documentImport, draft);
+    }
+
+    private CvDocumentImport getImport(UUID importId) {
+        return imports.findById(importId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV import was not found"));
     }
 
     private String resolveMediaType(MultipartFile file) {
@@ -141,6 +175,7 @@ public class CvDocumentImportService {
     private CvDocumentImportResponse response(CvDocumentImport documentImport, ParsedCv result) {
         return new CvDocumentImportResponse(documentImport.getId(), documentImport.getFileName(),
                 documentImport.getMediaType(), documentImport.getFileSize(), documentImport.getStatus(),
-                documentImport.getErrorMessage(), result, documentImport.getCreatedAt(), documentImport.getUpdatedAt());
+            documentImport.getErrorMessage(), result, documentImport.getCvId(), documentImport.getCreatedAt(),
+            documentImport.getUpdatedAt());
     }
 }

@@ -5,5 +5,6 @@ public enum CvImportStatus {
     PROCESSING,
     COMPLETED,
     NEEDS_REVIEW,
+    APPROVED,
     FAILED
 }
