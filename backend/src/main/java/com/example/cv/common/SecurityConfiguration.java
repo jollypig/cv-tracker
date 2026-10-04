@@ -38,6 +38,7 @@ public class SecurityConfiguration {
                         .requestMatchers(
                                 "/api/v1/status",
                                 "/api/v1/auth/config",
+                                "/api/v1/public/cv-shares/*",
                                 "/actuator/health/**",
                                 "/actuator/prometheus",
                                 "/v3/api-docs/**",

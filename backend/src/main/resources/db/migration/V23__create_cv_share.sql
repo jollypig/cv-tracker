@@ -1,0 +1,6 @@
+CREATE TABLE cv_share (
+    id UUID PRIMARY KEY,
+    cv_id UUID NOT NULL UNIQUE REFERENCES cv(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL
+);

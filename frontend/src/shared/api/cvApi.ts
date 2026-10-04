@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Cv, CvContent, CvInput, CvTemplate, CvVersion, CvVersionDetail, CvVersionDiff, CvVersionSnapshot } from './cvTypes'
+import type { Cv, CvContent, CvInput, CvShareLink, CvShareStatus, CvTemplate, CvVersion, CvVersionDetail, CvVersionDiff, CvVersionSnapshot } from './cvTypes'
 
 const cvApi = {
   async list(personId?: string): Promise<Cv[]> {
@@ -94,6 +94,20 @@ const cvApi = {
     const created = await apiClient.post<{ id: string; fileName: string }>(`/cv-versions/${versionId}/exports/${format}`)
     const downloaded = await apiClient.get<Blob>(`/exports/${created.data.id}/download`, { responseType: 'blob' })
     return { fileName: created.data.fileName, content: downloaded.data }
+  },
+
+  async shareStatus(id: string): Promise<CvShareStatus> {
+    const response = await apiClient.get<CvShareStatus>(`/cvs/${id}/share`)
+    return response.data
+  },
+
+  async createShareLink(id: string): Promise<CvShareLink> {
+    const response = await apiClient.put<CvShareLink>(`/cvs/${id}/share`)
+    return response.data
+  },
+
+  async revokeShareLink(id: string): Promise<void> {
+    await apiClient.delete(`/cvs/${id}/share`)
   },
 }
 
