@@ -1,6 +1,7 @@
 package com.example.cv.importing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import com.example.cv.cv.CvImportRequest;
 import com.example.cv.cv.CvResponse;
 import com.example.cv.cv.CvStatus;
@@ -45,14 +46,17 @@ class CvDocumentImportServiceTest {
     private ObjectMapper objectMapper;
 
     private CvDocumentImportService service;
+    private SimpleMeterRegistry meterRegistry;
     private final AtomicReference<CvDocumentImport> savedImport = new AtomicReference<>();
     private final ParsedCv parsedCv = new ParsedCv(null, null, List.of(), List.of(), List.of(), List.of(), List.of());
     private final NormalizedCvDocument parsedDocument = new NormalizedCvDocument(List.of());
 
     @BeforeEach
     void setUp() throws Exception {
+        meterRegistry = new SimpleMeterRegistry();
         service = new CvDocumentImportService(imports, pdfParser, htmlParser, extractor, cvImportService,
-                new ParsedCvToContentMapper(Validation.buildDefaultValidatorFactory().getValidator()), objectMapper, 1024);
+            new ParsedCvToContentMapper(Validation.buildDefaultValidatorFactory().getValidator()), objectMapper,
+            meterRegistry, 1024);
         Mockito.lenient().when(imports.save(any(CvDocumentImport.class))).thenAnswer(invocation -> {
             CvDocumentImport saved = invocation.getArgument(0);
             savedImport.set(saved);
@@ -68,6 +72,7 @@ class CvDocumentImportServiceTest {
     @Test
     void importsPdfAndReturnsPersistedResultAndStatus() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "resume.pdf", "application/pdf", new byte[] {1, 2});
+        when(extractor.modelMetadata()).thenReturn(new CvAiExtractor.ModelMetadata("test-model", "test-v1"));
 
         CvDocumentImportResponse response = service.startImport(file);
 
@@ -75,6 +80,12 @@ class CvDocumentImportServiceTest {
         assertThat(response.result()).isEqualTo(parsedCv);
         assertThat(response.createdAt()).isNotNull();
         assertThat(response.updatedAt()).isNotNull();
+        assertThat(meterRegistry.get("cv.import.processing").tag("status", "NEEDS_REVIEW").timer().count())
+            .isEqualTo(1);
+        assertThat(meterRegistry.get("cv.import.status").tag("status", "NEEDS_REVIEW").counter().count())
+            .isEqualTo(1);
+        assertThat(savedImport.get().getAiModelName()).isEqualTo("test-model");
+        assertThat(savedImport.get().getAiModelVersion()).isEqualTo("test-v1");
         verify(pdfParser).parse(new byte[] {1, 2}, "application/pdf");
         verify(imports, org.mockito.Mockito.times(2)).save(any(CvDocumentImport.class));
     }
@@ -103,6 +114,11 @@ class CvDocumentImportServiceTest {
         assertThat(response.status()).isEqualTo(CvImportStatus.FAILED);
         assertThat(response.errorMessage()).contains("AI extraction failed");
         assertThat(response.result()).isNull();
+        assertThat(meterRegistry.get("cv.import.failures").tag("stage", "ai").counter().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("cv.ai.failures").counter().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("cv.import.status").tag("status", "FAILED").counter().count()).isEqualTo(1);
+        assertThat(savedImport.get().getAiModelName()).isEqualTo("unknown");
+        assertThat(savedImport.get().getAiModelVersion()).isEqualTo("unknown");
     }
 
     @Test

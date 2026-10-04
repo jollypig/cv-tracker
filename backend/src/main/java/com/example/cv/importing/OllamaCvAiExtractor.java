@@ -2,8 +2,12 @@ package com.example.cv.importing;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -49,6 +53,8 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
     private final ParsedCvOutputValidator outputValidator;
+    private final MeterRegistry meterRegistry;
+    private final CvAiExtractor.ModelMetadata modelMetadata;
     private final BeanOutputConverter<DetectedCvSections> sectionOutputConverter =
             new BeanOutputConverter<>(DetectedCvSections.class);
     private final BeanOutputConverter<ParsedCv> outputConverter = new BeanOutputConverter<>(ParsedCv.class);
@@ -56,11 +62,21 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
     public OllamaCvAiExtractor(
             ChatModel chatModel,
             ObjectMapper objectMapper,
-            ParsedCvOutputValidator outputValidator
+            ParsedCvOutputValidator outputValidator,
+            MeterRegistry meterRegistry,
+            @Value("${spring.ai.ollama.chat.options.model:unknown}") String modelName,
+            @Value("${cv.ai.model-version:unknown}") String modelVersion
     ) {
         this.chatModel = chatModel;
         this.objectMapper = objectMapper;
         this.outputValidator = outputValidator;
+        this.meterRegistry = meterRegistry;
+        this.modelMetadata = new CvAiExtractor.ModelMetadata(modelName, modelVersion);
+    }
+
+    @Override
+    public ModelMetadata modelMetadata() {
+        return modelMetadata;
     }
 
     @Override
@@ -73,7 +89,7 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
         String promptText = SECTION_INSTRUCTIONS.formatted(sectionOutputConverter.getFormat(), text);
         String output;
         try {
-            ChatResponse response = chatModel.call(new Prompt(promptText));
+            ChatResponse response = requestModel(new Prompt(promptText));
             output = response.getResult().getOutput().getText();
         } catch (RuntimeException exception) {
             return detectSectionsFromHeadings(document, text);
@@ -99,7 +115,7 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
                     outputConverter.getFormat(),
                     normalizedDocument
             );
-            ChatResponse response = chatModel.call(new Prompt(promptText));
+            ChatResponse response = requestModel(new Prompt(promptText));
             String output = response.getResult().getOutput().getText();
             ParsedCv parsedCv = outputConverter.convert(output);
             if (parsedCv == null) {
@@ -178,5 +194,21 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
                 "CV extraction failed; verify the configured AI provider and its response.",
                 exception
         );
+    }
+
+    private ChatResponse requestModel(Prompt prompt) {
+        Timer.Sample requestTimer = Timer.start(meterRegistry);
+        String outcome = "success";
+        try {
+            return chatModel.call(prompt);
+        } catch (RuntimeException exception) {
+            outcome = "failure";
+            Counter.builder("cv.ai.request.failures").register(meterRegistry).increment();
+            throw exception;
+        } finally {
+            requestTimer.stop(Timer.builder("cv.ai.request")
+                    .tag("outcome", outcome)
+                    .register(meterRegistry));
+        }
     }
 }

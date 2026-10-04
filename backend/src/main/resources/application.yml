@@ -80,3 +80,4 @@ cv:
   ai:
     provider: ${CV_AI_PROVIDER:ollama}
     request-timeout: ${CV_AI_REQUEST_TIMEOUT:60s}
+    model-version: ${OLLAMA_MODEL_VERSION:unknown}

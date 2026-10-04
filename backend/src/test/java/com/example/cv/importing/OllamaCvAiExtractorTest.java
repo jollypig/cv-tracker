@@ -7,6 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -36,6 +37,7 @@ class OllamaCvAiExtractorTest {
     @Test
     void convertsModelResponseToParsedCv() {
         ChatModel chatModel = mock(ChatModel.class);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         ChatResponse response = mock(ChatResponse.class);
         Generation generation = mock(Generation.class);
         AssistantMessage message = mock(AssistantMessage.class);
@@ -44,24 +46,36 @@ class OllamaCvAiExtractorTest {
         when(generation.getOutput()).thenReturn(message);
         when(message.getText()).thenReturn(PARSED_CV_JSON);
 
-        OllamaCvAiExtractor extractor = extractor(chatModel);
+        OllamaCvAiExtractor extractor = extractor(chatModel, meterRegistry);
         ParsedCv result = extractor.extract(new NormalizedCvDocument(List.of()));
 
         assertThat(result).isNotNull();
         assertThat(result.employment()).isEmpty();
         assertThat(result.skills()).isEmpty();
+        assertThat(meterRegistry.get("cv.ai.request").tag("outcome", "success").timer().count()).isEqualTo(1);
     }
 
     @Test
     void reportsProviderFailureWithoutIncludingCvContent() {
         ChatModel chatModel = mock(ChatModel.class);
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("connection refused"));
-        OllamaCvAiExtractor extractor = extractor(chatModel);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        OllamaCvAiExtractor extractor = extractor(chatModel, meterRegistry);
 
         assertThatThrownBy(() -> extractor.extract(new NormalizedCvDocument(List.of())))
                 .isInstanceOf(CvAiExtractionException.class)
                 .hasMessage("CV extraction failed; verify the configured AI provider and its response.")
                 .hasCauseInstanceOf(IllegalStateException.class);
+        assertThat(meterRegistry.get("cv.ai.request").tag("outcome", "failure").timer().count()).isEqualTo(1);
+        assertThat(meterRegistry.get("cv.ai.request.failures").counter().count()).isEqualTo(1);
+    }
+
+    @Test
+    void exposesConfiguredModelIdentityAsTechnicalMetadata() {
+        OllamaCvAiExtractor extractor = new OllamaCvAiExtractor(mock(ChatModel.class), new ObjectMapper(),
+                new ParsedCvOutputValidator(VALIDATOR), new SimpleMeterRegistry(), "llama3.2", "3b-q4");
+
+        assertThat(extractor.modelMetadata()).isEqualTo(new CvAiExtractor.ModelMetadata("llama3.2", "3b-q4"));
     }
 
     @Test
@@ -241,6 +255,11 @@ class OllamaCvAiExtractorTest {
     }
 
     private OllamaCvAiExtractor extractor(ChatModel chatModel) {
-        return new OllamaCvAiExtractor(chatModel, new ObjectMapper(), new ParsedCvOutputValidator(VALIDATOR));
+        return extractor(chatModel, new SimpleMeterRegistry());
+    }
+
+    private OllamaCvAiExtractor extractor(ChatModel chatModel, SimpleMeterRegistry meterRegistry) {
+        return new OllamaCvAiExtractor(chatModel, new ObjectMapper(), new ParsedCvOutputValidator(VALIDATOR),
+                meterRegistry, "test-model", "test-version");
     }
 }

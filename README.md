@@ -50,7 +50,7 @@ Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on 
 
 Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.
 
-CV import uses a local Ollama server by default. Start Ollama and pull the configured model (`ollama pull llama3.2`) before using extraction. Configure `OLLAMA_BASE_URL` (default `http://localhost:11434`), `OLLAMA_MODEL` (default `llama3.2`), and `CV_AI_REQUEST_TIMEOUT` (default `60s`) as needed. `CV_AI_PROVIDER` defaults to `ollama`.
+CV import uses a local Ollama server by default. Start Ollama and pull the configured model (`ollama pull llama3.2`) before using extraction. Configure `OLLAMA_BASE_URL` (default `http://localhost:11434`), `OLLAMA_MODEL` (default `llama3.2`), `OLLAMA_MODEL_VERSION` (default `unknown`; an optional model tag or digest stored with import diagnostics), and `CV_AI_REQUEST_TIMEOUT` (default `60s`) as needed. `CV_AI_PROVIDER` defaults to `ollama`.
 
 ## Production image
 

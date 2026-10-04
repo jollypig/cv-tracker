@@ -5,6 +5,11 @@ import com.example.cv.cv.CvImportRequest;
 import com.example.cv.cv.CvImportService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +27,8 @@ import java.util.UUID;
 @Transactional
 public class CvDocumentImportService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CvDocumentImportService.class);
+
     private final CvDocumentImportRepository imports;
     private final PdfCvParser pdfParser;
     private final HtmlCvParser htmlParser;
@@ -29,11 +36,13 @@ public class CvDocumentImportService {
     private final CvImportService cvImportService;
     private final ParsedCvToContentMapper contentMapper;
     private final ObjectMapper objectMapper;
+    private final MeterRegistry meterRegistry;
     private final long maxFileSizeBytes;
 
     public CvDocumentImportService(CvDocumentImportRepository imports, PdfCvParser pdfParser,
             HtmlCvParser htmlParser, CvAiExtractor extractor, CvImportService cvImportService,
             ParsedCvToContentMapper contentMapper, ObjectMapper objectMapper,
+            MeterRegistry meterRegistry,
             @Value("${cv.import.max-file-size-bytes:10485760}") long maxFileSizeBytes) {
         this.imports = imports;
         this.pdfParser = pdfParser;
@@ -42,6 +51,7 @@ public class CvDocumentImportService {
         this.cvImportService = cvImportService;
         this.contentMapper = contentMapper;
         this.objectMapper = objectMapper;
+        this.meterRegistry = meterRegistry;
         this.maxFileSizeBytes = maxFileSizeBytes;
     }
 
@@ -62,22 +72,46 @@ public class CvDocumentImportService {
         imports.save(documentImport);
         documentImport.markProcessing();
 
+        Timer.Sample processingTimer = Timer.start(meterRegistry);
+        String stage = "parser";
         try {
             NormalizedCvDocument document = parse(file.getBytes(), mediaType);
             document = new NormalizedCvDocument(CvDocumentNormalizer.normalize(document.blocks()));
             String sourceText = document.blocks().stream().map(NormalizedCvBlock::text)
                     .reduce((left, right) -> left + "\n" + right).orElse("");
+            documentImport.recordAiModel(extractor.modelMetadata());
+            stage = "ai";
             ParsedCv parsedCv = extractor.extract(document);
             if (parsedCv == null) {
                 throw new IllegalStateException("The extractor returned no CV data");
             }
+            stage = "normalization";
             parsedCv = ParsedCvNormalizer.normalize(parsedCv, LocalDate.now(), sourceText);
             documentImport.complete(serialize(parsedCv));
         } catch (IOException | RuntimeException exception) {
             documentImport.fail(failureMessage(exception));
+            if ("ai".equals(stage)) {
+                Counter.builder("cv.ai.failures").register(meterRegistry).increment();
+            }
+            Counter.builder("cv.import.failures")
+                .tag("stage", stage)
+                .register(meterRegistry)
+                .increment();
+            logger.warn("CV import {} failed during {} ({})", documentImport.getId(), stage,
+                exception.getClass().getSimpleName());
         }
 
         imports.save(documentImport);
+        String status = documentImport.getStatus().name();
+        processingTimer.stop(Timer.builder("cv.import.processing")
+            .tag("status", status)
+            .register(meterRegistry));
+        Counter.builder("cv.import.status")
+            .tag("status", status)
+            .register(meterRegistry)
+            .increment();
+        logger.info("CV import {} finished with status {} (AI model={}, version={})", documentImport.getId(),
+            status, documentImport.getAiModelName(), documentImport.getAiModelVersion());
         return response(documentImport, parseResult(documentImport.getResultJson()));
     }
 
