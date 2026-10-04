@@ -40,6 +40,12 @@ public class CvDocumentImport {
     @Column(name = "result_json", columnDefinition = "text")
     private String resultJson;
 
+    @Column(name = "ai_model_name", length = 250)
+    private String aiModelName;
+
+    @Column(name = "ai_model_version", length = 250)
+    private String aiModelVersion;
+
     @Column(name = "cv_id", unique = true)
     private UUID cvId;
 
@@ -115,6 +121,11 @@ public class CvDocumentImport {
         updatedAt = Instant.now();
     }
 
+    public void recordAiModel(CvAiExtractor.ModelMetadata modelMetadata) {
+        this.aiModelName = modelMetadata == null ? "unknown" : modelMetadata.name();
+        this.aiModelVersion = modelMetadata == null ? "unknown" : modelMetadata.version();
+    }
+
     public UUID getId() { return id; }
     public String getFileName() { return fileName; }
     public String getMediaType() { return mediaType; }
@@ -122,6 +133,8 @@ public class CvDocumentImport {
     public CvImportStatus getStatus() { return status; }
     public String getErrorMessage() { return errorMessage; }
     public String getResultJson() { return resultJson; }
+    public String getAiModelName() { return aiModelName; }
+    public String getAiModelVersion() { return aiModelVersion; }
     public UUID getCvId() { return cvId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
