@@ -27,7 +27,7 @@
         variant="outlined"
         class="directory-search"
       />
-      <span class="directory-count">{{ store.cvs.length }} {{ store.cvs.length === 1 ? 'CV' : 'CVs' }}</span>
+      <span class="directory-count">{{ directoryCount }}</span>
     </div>
 
     <v-progress-linear v-if="store.loading" color="primary" indeterminate />
@@ -36,8 +36,7 @@
       v-else
       class="people-table cv-table"
       :headers="headers"
-      :items="store.cvs"
-      :search="search"
+      :items="filteredCvs"
       item-value="id"
       :items-per-page="10"
     >
@@ -107,7 +106,7 @@
         <div class="people-empty cv-empty">
           <v-icon icon="mdi-file-document-plus-outline" size="30" />
           <h2>{{ store.cvs.length ? 'No matching CVs' : 'No CVs yet' }}</h2>
-          <p v-if="store.cvs.length">No CVs match “{{ search }}”.</p>
+          <p v-if="store.cvs.length">No CVs match “{{ search.trim() }}”.</p>
           <p v-else>{{ isPersonView ? 'Create the first CV for this person.' : 'Create a CV to start building your library.' }}</p>
           <v-btn v-if="!store.cvs.length" color="primary" prepend-icon="mdi-plus" :to="createRoute">Create CV</v-btn>
         </div>
@@ -181,6 +180,7 @@ import cvApi from '../shared/api/cvApi'
 import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
 import type { Cv, CvStatus, CvVersionSnapshot } from '../shared/api/cvTypes'
+import { matchesCvSearch } from '../shared/utils/cvSearch'
 
 const route = useRoute()
 const router = useRouter()
@@ -191,6 +191,14 @@ const isPersonView = computed(() => Boolean(personId.value))
 const createRoute = computed(() => personId.value ? `/people/${personId.value}/cvs/new` : '/cvs/new')
 const personName = ref('')
 const search = ref('')
+const filteredCvs = computed(() => store.cvs.filter((cv) => matchesCvSearch(cv, search.value)))
+const directoryCount = computed(() => {
+  const count = filteredCvs.value.length
+  const total = store.cvs.length
+  return search.value.trim()
+    ? `${count} of ${total} ${total === 1 ? 'CV' : 'CVs'}`
+    : `${count} ${count === 1 ? 'CV' : 'CVs'}`
+})
 const error = ref('')
 const deleteDialog = ref(false)
 const deleting = ref(false)
