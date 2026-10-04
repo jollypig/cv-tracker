@@ -3,6 +3,7 @@ package com.example.cv.importing;
 import com.example.cv.cv.CvContent;
 import com.example.cv.cv.CvImportRequest;
 import com.example.cv.cv.CvImportService;
+import com.example.cv.person.PersonRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
@@ -37,12 +38,13 @@ public class CvDocumentImportService {
     private final ParsedCvToContentMapper contentMapper;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+    private final PersonRepository people;
     private final long maxFileSizeBytes;
 
     public CvDocumentImportService(CvDocumentImportRepository imports, PdfCvParser pdfParser,
             HtmlCvParser htmlParser, CvAiExtractor extractor, CvImportService cvImportService,
             ParsedCvToContentMapper contentMapper, ObjectMapper objectMapper,
-            MeterRegistry meterRegistry,
+            MeterRegistry meterRegistry, PersonRepository people,
             @Value("${cv.import.max-file-size-bytes:10485760}") long maxFileSizeBytes) {
         this.imports = imports;
         this.pdfParser = pdfParser;
@@ -52,12 +54,16 @@ public class CvDocumentImportService {
         this.contentMapper = contentMapper;
         this.objectMapper = objectMapper;
         this.meterRegistry = meterRegistry;
+        this.people = people;
         this.maxFileSizeBytes = maxFileSizeBytes;
     }
 
-    public CvDocumentImportResponse startImport(MultipartFile file) {
+    public CvDocumentImportResponse startImport(MultipartFile file, UUID ownerId) {
         if (file == null || file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "An uploaded CV file is required");
+        }
+        if (ownerId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sign-in is required to import a CV");
         }
         if (file.getSize() > maxFileSizeBytes) {
             throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE,
@@ -66,9 +72,7 @@ public class CvDocumentImportService {
 
         String mediaType = resolveMediaType(file);
         CvDocumentImport documentImport = new CvDocumentImport(
-                Optional.ofNullable(file.getOriginalFilename()).filter(name -> !name.isBlank()).orElse("upload"),
-                mediaType,
-                file.getSize());
+            safeFileName(file.getOriginalFilename()), mediaType, file.getSize(), ownerId);
         imports.save(documentImport);
         documentImport.markProcessing();
 
@@ -116,21 +120,24 @@ public class CvDocumentImportService {
     }
 
     @Transactional(readOnly = true)
-    public CvDocumentImportResponse findById(UUID importId) {
-        CvDocumentImport documentImport = getImport(importId);
+    public CvDocumentImportResponse findById(UUID importId, UUID ownerId) {
+        CvDocumentImport documentImport = getImport(importId, ownerId);
         return response(documentImport, parseResult(documentImport.getResultJson()));
     }
 
-    public CvDocumentImportResponse updateDraft(UUID importId, ParsedCv draft) {
-        CvDocumentImport documentImport = getImport(importId);
+    public CvDocumentImportResponse updateDraft(UUID importId, UUID ownerId, ParsedCv draft) {
+        CvDocumentImport documentImport = getImport(importId, ownerId);
         documentImport.updateDraft(serialize(draft));
         imports.save(documentImport);
         return response(documentImport, draft);
     }
 
-    public CvDocumentImportResponse approveDraft(UUID importId, CvDraftApprovalRequest request) {
-        CvDocumentImport documentImport = getImport(importId);
+    public CvDocumentImportResponse approveDraft(UUID importId, UUID ownerId, CvDraftApprovalRequest request) {
+        CvDocumentImport documentImport = getImport(importId, ownerId);
         documentImport.assertReviewable();
+        if (!people.existsByIdAndOwner_Id(request.personId(), ownerId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Person was not found");
+        }
         ParsedCv draft = parseResult(documentImport.getResultJson());
         if (draft == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "CV import has no reviewable draft");
@@ -143,27 +150,42 @@ public class CvDocumentImportService {
         return response(documentImport, draft);
     }
 
-    private CvDocumentImport getImport(UUID importId) {
-        return imports.findById(importId)
+    private CvDocumentImport getImport(UUID importId, UUID ownerId) {
+        return imports.findByIdAndOwnerId(importId, ownerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV import was not found"));
+    }
+
+    private String safeFileName(String originalFilename) {
+        String fileName = Optional.ofNullable(originalFilename).orElse("").replace('\\', '/');
+        fileName = fileName.substring(fileName.lastIndexOf('/') + 1)
+                .replaceAll("[\\p{Cntrl}]", "_").strip();
+        if (fileName.isBlank() || ".".equals(fileName) || "..".equals(fileName)) {
+            return "upload";
+        }
+        return fileName.substring(0, Math.min(fileName.length(), 500));
     }
 
     private String resolveMediaType(MultipartFile file) {
         String mediaType = Optional.ofNullable(file.getContentType()).orElse("").split(";", 2)[0].strip()
                 .toLowerCase(Locale.ROOT);
         String fileName = Optional.ofNullable(file.getOriginalFilename()).orElse("").toLowerCase(Locale.ROOT);
+        fileName = fileName.replace('\\', '/');
+        fileName = fileName.substring(fileName.lastIndexOf('/') + 1);
+        String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf('.') + 1) : "";
         if (mediaType.isBlank() || "application/octet-stream".equals(mediaType)) {
-            if (fileName.endsWith(".pdf")) {
+            if ("pdf".equals(extension)) {
                 return "application/pdf";
             }
-            if (fileName.endsWith(".html") || fileName.endsWith(".htm")) {
+            if ("html".equals(extension) || "htm".equals(extension)) {
                 return "text/html";
             }
         }
-        if ("application/pdf".equals(mediaType)) {
+        if ("application/pdf".equals(mediaType)
+                && (extension.isBlank() || "pdf".equals(extension))) {
             return mediaType;
         }
-        if ("text/html".equals(mediaType) || "application/xhtml+xml".equals(mediaType)) {
+        if (("text/html".equals(mediaType) || "application/xhtml+xml".equals(mediaType))
+                && (extension.isBlank() || "html".equals(extension) || "htm".equals(extension))) {
             return mediaType;
         }
         throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
@@ -197,9 +219,6 @@ public class CvDocumentImportService {
     }
 
     private String failureMessage(Exception exception) {
-        if (exception instanceof PdfCvParserException || exception instanceof HtmlCvParserException) {
-            return exception.getMessage();
-        }
         if (exception instanceof CvAiExtractionException) {
             return "AI extraction failed; the file can be retried";
         }

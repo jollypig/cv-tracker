@@ -48,6 +48,15 @@ public class SecurityConfiguration {
                                 "/login/**",
                                 "/error")
                         .permitAll()
+                        .requestMatchers("/api/v1/cvs/import")
+                        .authenticated()
+                        .requestMatchers("/api/v1/cvs/import/*", "/api/v1/cvs/import/*/**")
+                        .access((authentication, context) -> {
+                            OwnershipAuthorizationManager manager = ownershipManager.getIfAvailable();
+                            return manager == null
+                                    ? new AuthorizationDecision(false)
+                                    : manager.check(authentication, context);
+                        })
                         .requestMatchers(
                                 "/api/v1/persons/*",
                                 "/api/v1/persons/*/**",
