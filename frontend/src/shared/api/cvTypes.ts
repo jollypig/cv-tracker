@@ -88,6 +88,8 @@ export interface CvVersionDetail extends CvVersion {
 export interface CvShareStatus {
   enabled: boolean
   createdAt: string | null
+  viewCount: number
+  lastViewedAt: string | null
 }
 
 export interface CvShareLink {

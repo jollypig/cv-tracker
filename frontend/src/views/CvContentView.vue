@@ -59,6 +59,10 @@
           <v-alert v-if="shareEnabled" class="share-status" type="success" variant="tonal">
             {{ translate('editor.shareEnabled') }}
           </v-alert>
+          <div v-if="shareEnabled" class="share-analytics">
+            <p>{{ translate('editor.shareViewCount', { count: String(shareViewCount) }) }}</p>
+            <p>{{ translate('editor.shareLastViewed') }}: {{ formattedShareLastViewed }}</p>
+          </div>
           <v-text-field v-if="shareUrl" :model-value="shareUrl" :label="translate('editor.shareLink')" readonly variant="outlined">
             <template #append-inner>
               <v-btn icon="mdi-content-copy" size="small" variant="text" :aria-label="translate('editor.copyShareLink')" :title="translate('editor.copyShareLink')" @click="copyShareLink" />
@@ -386,6 +390,8 @@ const saved = ref(false)
 const duplicateDialog = ref(false)
 const shareDialog = ref(false)
 const shareEnabled = ref(false)
+const shareViewCount = ref(0)
+const shareLastViewedAt = ref<string | null>(null)
 const shareUrl = ref('')
 const shareLoading = ref(false)
 const shareError = ref('')
@@ -441,6 +447,9 @@ const projectSkillOptions = computed(() => content.skillGroups.flatMap((group, g
     title: skill.name,
     group: group.name || translate('editor.ungrouped'),
   }] : [])))
+const formattedShareLastViewed = computed(() => shareLastViewedAt.value
+  ? new Date(shareLastViewedAt.value).toLocaleString()
+  : translate('editor.shareNeverViewed'))
 
 onMounted(async () => {
   try {
@@ -480,6 +489,8 @@ async function openShareDialog() {
   try {
     const status = await cvApi.shareStatus(cvId)
     shareEnabled.value = status.enabled
+    shareViewCount.value = status.viewCount
+    shareLastViewedAt.value = status.lastViewedAt
   } catch {
     shareError.value = 'editor.shareLoadError'
   } finally {
@@ -509,6 +520,8 @@ async function revokeShareLink() {
   try {
     await cvApi.revokeShareLink(cvId)
     shareEnabled.value = false
+    shareViewCount.value = 0
+    shareLastViewedAt.value = null
     shareUrl.value = ''
   } catch {
     shareError.value = 'editor.shareRevokeError'

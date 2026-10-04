@@ -1,0 +1,3 @@
+ALTER TABLE cv_share
+    ADD COLUMN view_count BIGINT NOT NULL DEFAULT 0,
+    ADD COLUMN last_viewed_at TIMESTAMPTZ;
