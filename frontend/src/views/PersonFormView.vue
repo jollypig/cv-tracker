@@ -2,11 +2,11 @@
   <main class="person-form-view">
     <div class="page-heading form-heading">
       <div>
-        <div class="eyebrow">PEOPLE DIRECTORY</div>
-        <h1>{{ isEditing ? 'Edit person' : 'Add person' }}</h1>
-        <p>{{ isEditing ? 'Update profile details and contact methods.' : 'Create a profile for someone in your workspace.' }}</p>
+        <div class="eyebrow">{{ translate('personForm.eyebrow') }}</div>
+        <h1>{{ translate(isEditing ? 'personForm.editTitle' : 'personForm.addTitle') }}</h1>
+        <p>{{ translate(isEditing ? 'personForm.editDescription' : 'personForm.addDescription') }}</p>
       </div>
-      <v-btn icon="mdi-arrow-left" aria-label="Back to people" to="/" variant="text" />
+      <v-btn icon="mdi-arrow-left" :aria-label="translate('personForm.back')" to="/" variant="text" />
     </div>
 
     <v-alert v-if="error" class="view-alert" type="error" variant="tonal">
@@ -17,15 +17,15 @@
     <v-form v-else @submit.prevent="savePerson">
       <section class="form-section" aria-labelledby="profile-section-title">
         <div class="form-section-heading">
-          <h2 id="profile-section-title">Profile</h2>
-          <p>Required fields are marked in the form.</p>
+          <h2 id="profile-section-title">{{ translate('personForm.profile') }}</h2>
+          <p>{{ translate('personForm.requiredHint') }}</p>
         </div>
         <v-row>
           <v-col cols="12" sm="6">
             <v-text-field
               v-model="form.firstName"
               :rules="[required, maxLength(100)]"
-              label="First name"
+              :label="translate('personForm.firstName')"
               maxlength="100"
               required
             />
@@ -34,28 +34,28 @@
             <v-text-field
               v-model="form.lastName"
               :rules="[required, maxLength(100)]"
-              label="Last name"
+              :label="translate('personForm.lastName')"
               maxlength="100"
               required
             />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field v-model="form.position" label="Position" maxlength="255" />
+            <v-text-field v-model="form.position" :label="translate('personForm.position')" maxlength="255" />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field v-model="form.dateOfBirth" label="Date of birth" type="date" />
+            <v-text-field v-model="form.dateOfBirth" :label="translate('personForm.birthDate')" type="date" />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-select v-model="form.gender" :items="genderOptions" label="Gender" clearable />
+            <v-select v-model="form.gender" :items="genderOptions" item-title="title" item-value="value" :label="translate('personForm.gender')" clearable />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-select v-model="form.maritalStatus" :items="maritalStatusOptions" label="Marital status" clearable />
+            <v-select v-model="form.maritalStatus" :items="maritalStatusOptions" item-title="title" item-value="value" :label="translate('personForm.maritalStatus')" clearable />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-select v-model="form.militaryStatus" :items="militaryStatusOptions" label="Military status" clearable />
+            <v-select v-model="form.militaryStatus" :items="militaryStatusOptions" item-title="title" item-value="value" :label="translate('personForm.militaryStatus')" clearable />
           </v-col>
           <v-col cols="12" sm="6">
-            <v-text-field v-model="form.location" label="Location" maxlength="255" />
+            <v-text-field v-model="form.location" :label="translate('personForm.location')" maxlength="255" />
           </v-col>
         </v-row>
       </section>
@@ -63,18 +63,18 @@
       <section class="form-section contacts-section" aria-labelledby="contacts-section-title">
         <div class="form-section-heading contacts-heading">
           <div>
-            <h2 id="contacts-section-title">Contact details</h2>
-            <p>Email, phone, and professional links.</p>
+            <h2 id="contacts-section-title">{{ translate('personForm.contacts') }}</h2>
+            <p>{{ translate('personForm.contactDescription') }}</p>
           </div>
-          <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addContact">Add contact</v-btn>
+          <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addContact">{{ translate('personForm.addContact') }}</v-btn>
         </div>
 
-        <div v-if="contacts.length === 0" class="contacts-empty">No contact details added.</div>
+        <div v-if="contacts.length === 0" class="contacts-empty">{{ translate('personForm.noContacts') }}</div>
         <div v-for="(contact, index) in contacts" :key="contact.key" class="contact-row">
           <v-select
             v-model="contact.type"
             :items="contactTypes"
-            label="Type"
+            :label="translate('personForm.type')"
             item-title="title"
             item-value="value"
             class="contact-type-field"
@@ -82,23 +82,23 @@
           <v-text-field
             v-model="contact.value"
             :rules="[required, maxLength(500)]"
-            label="Contact value"
+            :label="translate('personForm.value')"
             maxlength="500"
             required
           />
-          <v-checkbox v-model="contact.primary" hide-details label="Primary" />
-          <v-tooltip text="Remove contact">
+          <v-checkbox v-model="contact.primary" hide-details :label="translate('personForm.primary')" />
+          <v-tooltip :text="translate('personForm.removeContact')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Remove contact ${index + 1}`" class="remove-contact" color="error" icon="mdi-close" variant="text" @click="removeContact(index)" />
+              <v-btn v-bind="props" :aria-label="translate('personForm.removeContactNumber', { number: index + 1 })" class="remove-contact" color="error" icon="mdi-close" variant="text" @click="removeContact(index)" />
             </template>
           </v-tooltip>
         </div>
       </section>
 
       <div class="form-actions">
-        <v-btn variant="text" to="/">Cancel</v-btn>
+        <v-btn variant="text" to="/">{{ translate('personForm.cancel') }}</v-btn>
         <v-btn color="primary" :loading="saving" type="submit">
-          {{ isEditing ? 'Save changes' : 'Create person' }}
+          {{ translate(isEditing ? 'personForm.save' : 'personForm.create') }}
         </v-btn>
       </div>
     </v-form>
@@ -110,6 +110,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePersonStore } from '../shared/stores/personStore'
 import type { ContactType, PersonContactInput } from '../shared/api/personTypes'
+import { translate } from '../shared/i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -125,24 +126,36 @@ const form = reactive({
 const contacts = ref<Array<PersonContactInput & { key: number }>>([])
 let nextContactKey = 0
 
-const genderOptions = ['Male', 'Female']
-const maritalStatusOptions = ['Single', 'Married']
-const militaryStatusOptions = ['Completed', 'Not Completed', 'Exempt', 'Currently Serving', 'Not Applicable']
+const genderOptions = computed(() => [
+  { title: translate('personForm.male'), value: 'Male' },
+  { title: translate('personForm.female'), value: 'Female' },
+])
+const maritalStatusOptions = computed(() => [
+  { title: translate('personForm.single'), value: 'Single' },
+  { title: translate('personForm.married'), value: 'Married' },
+])
+const militaryStatusOptions = computed(() => [
+  { title: translate('personForm.completed'), value: 'Completed' },
+  { title: translate('personForm.notCompleted'), value: 'Not Completed' },
+  { title: translate('personForm.exempt'), value: 'Exempt' },
+  { title: translate('personForm.currentlyServing'), value: 'Currently Serving' },
+  { title: translate('personForm.notApplicable'), value: 'Not Applicable' },
+])
 
-const contactTypes: Array<{ title: string; value: ContactType }> = [
-  { title: 'Email', value: 'EMAIL' },
-  { title: 'Phone', value: 'PHONE' },
-  { title: 'LinkedIn', value: 'LINKEDIN' },
-  { title: 'GitHub', value: 'GITHUB' },
-  { title: 'Website', value: 'WEBSITE' },
-  { title: 'Facebook', value: 'FACEBOOK' },
-  { title: 'WhatsApp', value: 'WHATSAPP' },
-  { title: 'Viber', value: 'VIBER' },
-  { title: 'Telegram', value: 'TELEGRAM' },
-  { title: 'Instagram', value: 'INSTAGRAM' },
-  { title: 'Address', value: 'ADDRESS' },
-  { title: 'Other', value: 'OTHER' },
-]
+const contactTypes = computed<Array<{ title: string; value: ContactType }>>(() => [
+  { title: translate('contact.email'), value: 'EMAIL' },
+  { title: translate('contact.phone'), value: 'PHONE' },
+  { title: translate('contact.linkedin'), value: 'LINKEDIN' },
+  { title: translate('contact.github'), value: 'GITHUB' },
+  { title: translate('contact.website'), value: 'WEBSITE' },
+  { title: translate('contact.facebook'), value: 'FACEBOOK' },
+  { title: translate('contact.whatsapp'), value: 'WHATSAPP' },
+  { title: translate('contact.viber'), value: 'VIBER' },
+  { title: translate('contact.telegram'), value: 'TELEGRAM' },
+  { title: translate('contact.instagram'), value: 'INSTAGRAM' },
+  { title: translate('contact.address'), value: 'ADDRESS' },
+  { title: translate('contact.other'), value: 'OTHER' },
+])
 
 onMounted(async () => {
   if (!isEditing.value) return
@@ -165,18 +178,18 @@ onMounted(async () => {
       sortOrder: contact.sortOrder,
     }))
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to load this person.'
+    error.value = cause instanceof Error ? cause.message : translate('personForm.loadError')
   } finally {
     loadingPerson.value = false
   }
 })
 
 function required(value: string) {
-  return Boolean(value?.trim()) || 'This field is required.'
+  return Boolean(value?.trim()) || translate('personForm.required')
 }
 
 function maxLength(maximum: number) {
-  return (value: string) => !value || value.length <= maximum || `Use ${maximum} characters or fewer.`
+  return (value: string) => !value || value.length <= maximum || translate('personForm.maxLength', { maximum })
 }
 
 function addContact() {
@@ -218,7 +231,7 @@ async function savePerson() {
     }
     await router.push('/')
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to save this person.'
+    error.value = cause instanceof Error ? cause.message : translate('personForm.saveError')
   } finally {
     saving.value = false
   }

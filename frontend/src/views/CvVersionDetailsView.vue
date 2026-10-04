@@ -2,17 +2,17 @@
   <main class="cv-version-detail-view">
     <div class="page-heading form-heading">
       <div>
-        <div class="eyebrow">READ-ONLY SNAPSHOT</div>
+        <div class="eyebrow">{{ translate('details.eyebrow') }}</div>
         <h1>{{ snapshot?.name ?? 'Version details' }}<span v-if="version"> · v{{ version.versionNumber }}</span></h1>
         <p>{{ version?.description || 'Saved CV snapshot' }}<span v-if="version"> · {{ formatDate(version.createdAt) }}</span></p>
       </div>
       <div class="content-heading-actions">
-        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">All versions</v-btn>
-        <v-btn color="secondary" prepend-icon="mdi-source-branch" :disabled="!version" @click="openBranchDialog">Branch CV</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-file-pdf-box" :loading="exportingFormat === 'pdf'" :disabled="!version || !!exportingFormat" @click="exportFile('pdf')">Export PDF</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-file-word-box" :loading="exportingFormat === 'docx'" :disabled="!version || !!exportingFormat" @click="exportFile('docx')">Export DOCX</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-code-json" :loading="exportingFormat === 'json'" :disabled="!version || !!exportingFormat" @click="exportFile('json')">Export JSON</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-backup-restore" @click="restoreDialog = true">Restore as new version</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('details.allVersions') }}</v-btn>
+        <v-btn color="secondary" prepend-icon="mdi-source-branch" :disabled="!version" @click="openBranchDialog">{{ translate('details.branch') }}</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-file-pdf-box" :loading="exportingFormat === 'pdf'" :disabled="!version || !!exportingFormat" @click="exportFile('pdf')">{{ translate('details.exportPdf') }}</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-file-word-box" :loading="exportingFormat === 'docx'" :disabled="!version || !!exportingFormat" @click="exportFile('docx')">{{ translate('details.exportDocx') }}</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-code-json" :loading="exportingFormat === 'json'" :disabled="!version || !!exportingFormat" @click="exportFile('json')">{{ translate('details.exportJson') }}</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-backup-restore" @click="restoreDialog = true">{{ translate('details.restore') }}</v-btn>
       </div>
     </div>
 
@@ -23,28 +23,28 @@
 
     <template v-else-if="snapshot">
       <div class="snapshot-meta">
-        <div><span>LANGUAGE</span><strong>{{ snapshot.language }}</strong></div>
-        <div><span>STATUS</span><strong>{{ snapshot.status }}</strong></div>
-        <div><span>VERSION</span><strong>v{{ version?.versionNumber }}</strong></div>
+        <div><span>{{ translate('details.language') }}</span><strong>{{ snapshot.language }}</strong></div>
+        <div><span>{{ translate('details.status') }}</span><strong>{{ translate(`cvForm.${snapshot.status.toLowerCase()}`) }}</strong></div>
+        <div><span>{{ translate('details.version') }}</span><strong>v{{ version?.versionNumber }}</strong></div>
       </div>
       <div v-if="version?.parentVersionNumber && version.parentCvId" class="snapshot-lineage">
-        Derived from
+        {{ translate('details.derivedFrom') }}
         <RouterLink :to="`/cvs/${version.parentCvId}/versions/${version.parentVersionNumber}`">
-          {{ version.parentCvId === cvId ? `v${version.parentVersionNumber}` : `source CV v${version.parentVersionNumber}` }}
+          {{ version.parentCvId === cvId ? `v${version.parentVersionNumber}` : translate('details.sourceCvVersion', { version: version.parentVersionNumber }) }}
         </RouterLink>
       </div>
 
       <div class="snapshot-section">
-        <h2>Professional summary</h2>
-        <p class="snapshot-copy">{{ snapshot.content.summary || 'No summary in this snapshot.' }}</p>
+        <h2>{{ translate('details.professionalSummary') }}</h2>
+        <p class="snapshot-copy">{{ snapshot.content.summary || translate('details.noSummary') }}</p>
       </div>
 
       <v-expansion-panels multiple class="snapshot-panels">
-        <v-expansion-panel v-if="snapshot.content.experiences.length" title="Experience">
+        <v-expansion-panel v-if="snapshot.content.experiences.length" :title="translate('details.experience')">
           <v-expansion-panel-text>
             <article v-for="(item, index) in snapshot.content.experiences" :key="index" class="snapshot-entry">
               <h3>{{ item.position }} · {{ item.company }}</h3>
-              <p class="muted-cell">{{ item.location }}<span v-if="item.startDate"> · {{ item.startDate }} – {{ item.current ? 'Present' : item.endDate }}</span></p>
+              <p class="muted-cell">{{ item.location }}<span v-if="item.startDate"> · {{ item.startDate }} – {{ item.current ? translate('details.present') : item.endDate }}</span></p>
               <p v-if="item.description" class="snapshot-copy">{{ item.description }}</p>
               <ul v-if="item.projects.length">
                 <li v-for="project in item.projects" :key="`${project.projectName}-${project.sortOrder}`">
@@ -55,7 +55,7 @@
             </article>
           </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="snapshot.content.education.length" title="Education">
+        <v-expansion-panel v-if="snapshot.content.education.length" :title="translate('details.education')">
           <v-expansion-panel-text>
             <article v-for="(item, index) in snapshot.content.education" :key="index" class="snapshot-entry">
               <h3>{{ item.institution }}</h3>
@@ -64,7 +64,7 @@
             </article>
           </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="snapshot.content.skillGroups.length" title="Skills">
+        <v-expansion-panel v-if="snapshot.content.skillGroups.length" :title="translate('details.skills')">
           <v-expansion-panel-text>
             <article v-for="(group, index) in snapshot.content.skillGroups" :key="index" class="snapshot-entry">
               <h3>{{ group.name }}</h3>
@@ -72,14 +72,14 @@
             </article>
           </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="snapshot.content.languages.length" title="Languages">
+        <v-expansion-panel v-if="snapshot.content.languages.length" :title="translate('details.languages')">
           <v-expansion-panel-text>
             <p v-for="(item, index) in snapshot.content.languages" :key="index" class="snapshot-line">
               {{ item.language }}<span v-if="item.level"> · {{ item.level }}</span>
             </p>
           </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="snapshot.content.projects.length" title="Projects">
+        <v-expansion-panel v-if="snapshot.content.projects.length" :title="translate('details.projects')">
           <v-expansion-panel-text>
             <article v-for="(item, index) in snapshot.content.projects" :key="index" class="snapshot-entry">
               <h3>{{ item.name }}<span v-if="item.role"> · {{ item.role }}</span></h3>
@@ -88,14 +88,14 @@
             </article>
           </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="snapshot.content.certifications.length" title="Certifications">
+        <v-expansion-panel v-if="snapshot.content.certifications.length" :title="translate('details.certifications')">
           <v-expansion-panel-text>
             <p v-for="(item, index) in snapshot.content.certifications" :key="index" class="snapshot-line">
               <strong>{{ item.name }}</strong><span v-if="item.issuer"> · {{ item.issuer }}</span>
             </p>
           </v-expansion-panel-text>
         </v-expansion-panel>
-        <v-expansion-panel v-if="snapshot.content.customSections.length" title="Custom sections">
+        <v-expansion-panel v-if="snapshot.content.customSections.length" :title="translate('details.customSections')">
           <v-expansion-panel-text>
             <article v-for="(item, index) in snapshot.content.customSections" :key="index" class="snapshot-entry">
               <h3>{{ item.title }}</h3><p class="snapshot-copy">{{ item.content }}</p>
@@ -107,30 +107,30 @@
 
     <v-dialog v-model="restoreDialog" max-width="480">
       <v-card>
-        <v-card-title class="dialog-title">Restore this snapshot?</v-card-title>
+        <v-card-title class="dialog-title">{{ translate('details.restoreTitle') }}</v-card-title>
         <v-card-text>
-          Restoring creates a new version and leaves the selected historical snapshot unchanged.
-          <v-text-field v-model="restoreDescription" class="mt-4" label="New version description" maxlength="500" variant="outlined" />
+          {{ translate('details.restoreDescription') }}
+          <v-text-field v-model="restoreDescription" class="mt-4" :label="translate('details.newVersionDescription')" maxlength="500" variant="outlined" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="restoreDialog = false">Cancel</v-btn>
-          <v-btn color="primary" :loading="restoring" @click="restore">Restore as new version</v-btn>
+          <v-btn variant="text" @click="restoreDialog = false">{{ translate('details.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="restoring" @click="restore">{{ translate('details.restore') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="branchDialog" max-width="480">
       <v-card>
-        <v-card-title class="dialog-title">Branch from this version</v-card-title>
+        <v-card-title class="dialog-title">{{ translate('details.branchTitle') }}</v-card-title>
         <v-card-text>
-          The selected snapshot will be copied into a new draft CV and linked to its source version.
-          <v-text-field v-model="branchName" class="mt-4" label="New CV name" maxlength="255" variant="outlined" />
+          {{ translate('details.branchDescription') }}
+          <v-text-field v-model="branchName" class="mt-4" :label="translate('details.newCvName')" maxlength="255" variant="outlined" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="branchDialog = false">Cancel</v-btn>
-          <v-btn color="primary" :loading="branching" :disabled="!branchName.trim()" @click="createBranch">Create branch</v-btn>
+          <v-btn variant="text" @click="branchDialog = false">{{ translate('details.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="branching" :disabled="!branchName.trim()" @click="createBranch">{{ translate('details.createBranch') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -142,6 +142,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import cvApi from '../shared/api/cvApi'
 import type { CvVersionDetail, CvVersionSnapshot } from '../shared/api/cvTypes'
+import { locale, translate } from '../shared/i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,7 +168,7 @@ async function load() {
   try {
     version.value = await cvApi.getVersion(cvId.value, versionNumber.value)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to load this CV version.'
+    error.value = cause instanceof Error ? cause.message : translate('details.loadError')
   } finally {
     loading.value = false
   }
@@ -181,7 +182,7 @@ async function restore() {
     const restored = await cvApi.restoreVersion(cvId.value, version.value.versionNumber, restoreDescription.value.trim())
     await router.push(`/cvs/${cvId.value}/versions/${restored.versionNumber}`)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to restore this CV version.'
+    error.value = cause instanceof Error ? cause.message : translate('details.restoreError')
   } finally {
     restoring.value = false
     restoreDialog.value = false
@@ -203,7 +204,7 @@ async function exportFile(format: 'pdf' | 'docx' | 'json') {
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : `Unable to export this CV version as ${format.toUpperCase()}.`
+    error.value = cause instanceof Error ? cause.message : translate('details.exportError', { format: format.toUpperCase() })
   } finally {
     exportingFormat.value = null
   }
@@ -222,7 +223,7 @@ async function createBranch() {
     const branch = await cvApi.branchVersion(cvId.value, version.value.versionNumber, branchName.value.trim())
     await router.push(`/cvs/${branch.id}/content`)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to branch from this version.'
+    error.value = cause instanceof Error ? cause.message : translate('details.branchError')
   } finally {
     branching.value = false
     branchDialog.value = false
@@ -230,7 +231,7 @@ async function createBranch() {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  return new Intl.DateTimeFormat(locale.value === 'lv' ? 'lv-LV' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 </script>
 

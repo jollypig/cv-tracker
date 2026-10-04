@@ -1,5 +1,5 @@
 <template>
-  <div class="template-selector" role="group" aria-label="CV template">
+  <div class="template-selector" role="group" :aria-label="translate('template.selector')">
     <v-btn-toggle
       :model-value="modelValue"
       :disabled="disabled"
@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import type { CvTemplate } from '../../shared/api/cvTypes'
+import { translate } from '../../shared/i18n'
 
 defineProps<{
   templates: CvTemplate[]

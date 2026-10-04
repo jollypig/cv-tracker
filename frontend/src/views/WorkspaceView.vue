@@ -2,13 +2,13 @@
   <main class="workspace-view">
     <div class="page-heading">
       <div>
-        <div class="eyebrow">{{ isPersonView ? 'PERSON CVs' : 'YOUR CAREER DOCUMENTS' }}</div>
-        <h1>{{ isPersonView ? personName || 'CVs' : 'CV library' }}</h1>
-        <p>{{ isPersonView ? 'CVs connected to this profile.' : 'Every CV across your workspace.' }}</p>
+        <div class="eyebrow">{{ translate(isPersonView ? 'workspace.personEyebrow' : 'workspace.libraryEyebrow') }}</div>
+        <h1>{{ isPersonView ? personName || translate('navigation.personCvs') : translate('navigation.cvLibrary') }}</h1>
+        <p>{{ translate(isPersonView ? 'workspace.personDescription' : 'workspace.libraryDescription') }}</p>
       </div>
       <div class="workspace-heading-actions">
-        <v-btn variant="outlined" prepend-icon="mdi-code-json" @click="openImport">Import JSON</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" :to="createRoute">Create CV</v-btn>
+        <v-btn variant="outlined" prepend-icon="mdi-code-json" @click="openImport">{{ translate('workspace.importJson') }}</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" :to="createRoute">{{ translate('workspace.createCv') }}</v-btn>
       </div>
     </div>
 
@@ -19,10 +19,10 @@
     <div class="directory-toolbar">
       <v-text-field
         v-model="search"
-        aria-label="Search CVs"
+        :aria-label="translate('workspace.search')"
         density="compact"
         hide-details
-        label="Search CVs"
+        :label="translate('workspace.search')"
         prepend-inner-icon="mdi-magnify"
         variant="outlined"
         class="directory-search"
@@ -47,12 +47,12 @@
         <RouterLink class="person-name-link" :to="`/people/${item.personId}/cvs`">{{ item.personName }}</RouterLink>
       </template>
       <template #item.status="{ item }">
-        <v-chip size="small" :color="statusColor(item.status)" variant="tonal">{{ item.status }}</v-chip>
+        <v-chip size="small" :color="statusColor(item.status)" variant="tonal">{{ translate(`cvForm.${item.status.toLowerCase()}`) }}</v-chip>
       </template>
       <template #item.tags="{ item }">
         <div class="cv-tag-list">
           <v-chip v-for="tag in item.tags" :key="tag" size="small" variant="outlined">{{ tag }}</v-chip>
-          <span v-if="!item.tags.length" class="muted-cell">None</span>
+          <span v-if="!item.tags.length" class="muted-cell">{{ translate('workspace.none') }}</span>
         </div>
       </template>
       <template #item.updatedAt="{ item }">
@@ -60,44 +60,44 @@
       </template>
       <template #item.actions="{ item }">
         <div class="row-actions">
-          <v-tooltip text="Edit CV content">
+          <v-tooltip :text="translate('workspace.editContent')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Edit content for ${item.name}`" icon="mdi-text-box-edit-outline" size="small" variant="text" :to="`/cvs/${item.id}/content`" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.editContentFor', { name: item.name })" icon="mdi-text-box-edit-outline" size="small" variant="text" :to="`/cvs/${item.id}/content`" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Duplicate CV">
+          <v-tooltip :text="translate('workspace.duplicate')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Duplicate ${item.name}`" icon="mdi-content-copy" size="small" variant="text" @click="openDuplicate(item)" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.duplicateNamed', { name: item.name })" icon="mdi-content-copy" size="small" variant="text" @click="openDuplicate(item)" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Version history">
+          <v-tooltip :text="translate('workspace.versions')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`View versions for ${item.name}`" icon="mdi-history" size="small" variant="text" :to="`/cvs/${item.id}/versions`" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.viewVersionsFor', { name: item.name })" icon="mdi-history" size="small" variant="text" :to="`/cvs/${item.id}/versions`" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Export current CV as PDF; saves a version">
+          <v-tooltip :text="translate('workspace.exportPdf')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Export ${item.name} as PDF`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'pdf'" icon="mdi-file-pdf-box" size="small" variant="text" @click="exportCv(item, 'pdf')" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.exportNamed', { name: item.name, format: 'PDF' })" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'pdf'" icon="mdi-file-pdf-box" size="small" variant="text" @click="exportCv(item, 'pdf')" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Export current CV as DOCX; saves a version">
+          <v-tooltip :text="translate('workspace.exportDocx')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Export ${item.name} as DOCX`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'docx'" icon="mdi-file-word-box" size="small" variant="text" @click="exportCv(item, 'docx')" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.exportNamed', { name: item.name, format: 'DOCX' })" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'docx'" icon="mdi-file-word-box" size="small" variant="text" @click="exportCv(item, 'docx')" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Export current CV as JSON; saves a version">
+          <v-tooltip :text="translate('workspace.exportJson')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Export ${item.name} as JSON`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'json'" icon="mdi-code-json" size="small" variant="text" @click="exportCv(item, 'json')" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.exportNamed', { name: item.name, format: 'JSON' })" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'json'" icon="mdi-code-json" size="small" variant="text" @click="exportCv(item, 'json')" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Edit CV">
+          <v-tooltip :text="translate('workspace.editCv')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Edit ${item.name}`" icon="mdi-pencil-outline" size="small" variant="text" :to="`/cvs/${item.id}/edit`" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.editNamed', { name: item.name })" icon="mdi-pencil-outline" size="small" variant="text" :to="`/cvs/${item.id}/edit`" />
             </template>
           </v-tooltip>
-          <v-tooltip text="Delete CV">
+          <v-tooltip :text="translate('workspace.deleteCv')">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Delete ${item.name}`" color="error" icon="mdi-trash-can-outline" size="small" variant="text" @click="openDelete(item)" />
+              <v-btn v-bind="props" :aria-label="translate('workspace.deleteNamed', { name: item.name })" color="error" icon="mdi-trash-can-outline" size="small" variant="text" @click="openDelete(item)" />
             </template>
           </v-tooltip>
         </div>
@@ -105,44 +105,44 @@
       <template #no-data>
         <div class="people-empty cv-empty">
           <v-icon icon="mdi-file-document-plus-outline" size="30" />
-          <h2>{{ store.cvs.length ? 'No matching CVs' : 'No CVs yet' }}</h2>
-          <p v-if="store.cvs.length">No CVs match “{{ search.trim() }}”.</p>
-          <p v-else>{{ isPersonView ? 'Create the first CV for this person.' : 'Create a CV to start building your library.' }}</p>
-          <v-btn v-if="!store.cvs.length" color="primary" prepend-icon="mdi-plus" :to="createRoute">Create CV</v-btn>
+          <h2>{{ translate(store.cvs.length ? 'workspace.noMatchingCvs' : 'workspace.noCvs') }}</h2>
+          <p v-if="store.cvs.length">{{ translate('workspace.noSearchResults', { search: search.trim() }) }}</p>
+          <p v-else>{{ translate(isPersonView ? 'workspace.createFirstPersonCv' : 'workspace.createLibraryCv') }}</p>
+          <v-btn v-if="!store.cvs.length" color="primary" prepend-icon="mdi-plus" :to="createRoute">{{ translate('workspace.createCv') }}</v-btn>
         </div>
       </template>
     </v-data-table>
 
     <v-dialog v-model="deleteDialog" max-width="430">
       <v-card>
-        <v-card-title class="dialog-title">Delete CV?</v-card-title>
-        <v-card-text>This will permanently delete “{{ selectedCv?.name }}”.</v-card-text>
+        <v-card-title class="dialog-title">{{ translate('workspace.deleteTitle') }}</v-card-title>
+        <v-card-text>{{ translate('workspace.deleteConfirm', { name: selectedCv?.name ?? '' }) }}</v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
-          <v-btn color="error" :loading="deleting" @click="confirmDelete">Delete</v-btn>
+          <v-btn variant="text" @click="deleteDialog = false">{{ translate('workspace.cancel') }}</v-btn>
+          <v-btn color="error" :loading="deleting" @click="confirmDelete">{{ translate('workspace.delete') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="duplicateDialog" max-width="480">
       <v-card>
-        <v-card-title class="dialog-title">Duplicate this CV</v-card-title>
+        <v-card-title class="dialog-title">{{ translate('workspace.duplicateTitle') }}</v-card-title>
         <v-card-text>
-          <v-text-field v-model="duplicateName" label="Copy name" maxlength="255" variant="outlined" autofocus />
-          <v-select v-model="duplicatePersonId" :items="duplicatePersonOptions" label="Destination person" variant="outlined" />
+          <v-text-field v-model="duplicateName" :label="translate('workspace.copyName')" maxlength="255" variant="outlined" autofocus />
+          <v-select v-model="duplicatePersonId" :items="duplicatePersonOptions" :label="translate('workspace.destinationPerson')" variant="outlined" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="duplicateDialog = false">Cancel</v-btn>
-          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim() || !duplicatePersonId" @click="confirmDuplicate">Create copy</v-btn>
+          <v-btn variant="text" @click="duplicateDialog = false">{{ translate('workspace.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim() || !duplicatePersonId" @click="confirmDuplicate">{{ translate('workspace.createCopy') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
     <v-dialog v-model="importDialog" max-width="480">
       <v-card>
-        <v-card-title class="dialog-title">Import CV JSON</v-card-title>
+        <v-card-title class="dialog-title">{{ translate('workspace.importTitle') }}</v-card-title>
         <v-card-text>
           <v-select
             v-if="!personId"
@@ -150,14 +150,14 @@
             :items="personOptions"
             item-title="name"
             item-value="id"
-            label="Person"
+            :label="translate('workspace.personLabel')"
             variant="outlined"
             :loading="personStore.loading"
           />
           <v-file-input
             v-model="importFile"
             accept=".json,application/json"
-            label="JSON file"
+            :label="translate('workspace.jsonFile')"
             prepend-icon="mdi-code-json"
             show-size
             variant="outlined"
@@ -165,8 +165,8 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="importDialog = false">Cancel</v-btn>
-          <v-btn color="primary" :loading="importing" :disabled="!canImport" @click="confirmImport">Import</v-btn>
+          <v-btn variant="text" @click="importDialog = false">{{ translate('workspace.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="importing" :disabled="!canImport" @click="confirmImport">{{ translate('workspace.import') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -181,6 +181,7 @@ import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
 import type { Cv, CvStatus, CvVersionSnapshot } from '../shared/api/cvTypes'
 import { matchesCvSearch } from '../shared/utils/cvSearch'
+import { locale, translate } from '../shared/i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -196,8 +197,8 @@ const directoryCount = computed(() => {
   const count = filteredCvs.value.length
   const total = store.cvs.length
   return search.value.trim()
-    ? `${count} of ${total} ${total === 1 ? 'CV' : 'CVs'}`
-    : `${count} ${count === 1 ? 'CV' : 'CVs'}`
+    ? translate('workspace.countFiltered', { count, total })
+    : translate('workspace.count', { count })
 })
 const error = ref('')
 const deleteDialog = ref(false)
@@ -220,12 +221,12 @@ const personOptions = computed(() => personStore.people.map((person) => ({
 })))
 const canImport = computed(() => Boolean(importFile.value && (personId.value || importPersonId.value)))
 const headers = computed(() => [
-  { title: 'CV', key: 'name' },
-  ...(!isPersonView.value ? [{ title: 'Person', key: 'personName' }] : []),
-  { title: 'Language', key: 'language' },
-  { title: 'Tags', key: 'tags', sortable: false },
-  { title: 'Status', key: 'status' },
-  { title: 'Updated', key: 'updatedAt' },
+  { title: translate('workspace.cv'), key: 'name' },
+  ...(!isPersonView.value ? [{ title: translate('workspace.person'), key: 'personName' }] : []),
+  { title: translate('workspace.language'), key: 'language' },
+  { title: translate('workspace.tags'), key: 'tags', sortable: false },
+  { title: translate('workspace.status'), key: 'status' },
+  { title: translate('workspace.updated'), key: 'updatedAt' },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ])
 const duplicatePersonOptions = computed(() => personStore.people.map((person) => ({
@@ -246,7 +247,7 @@ async function loadCvs() {
     }
     await Promise.all([store.fetchCvs(personId.value), personStore.fetchPeople()])
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to load CVs.'
+    error.value = cause instanceof Error ? cause.message : translate('workspace.loadError')
   }
 }
 
@@ -255,7 +256,7 @@ function statusColor(status: CvStatus) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
+  return new Intl.DateTimeFormat(locale.value === 'lv' ? 'lv-LV' : 'en-US', { dateStyle: 'medium' }).format(new Date(value))
 }
 
 async function exportCv(cv: Cv, format: 'pdf' | 'docx' | 'json') {
@@ -264,7 +265,7 @@ async function exportCv(cv: Cv, format: 'pdf' | 'docx' | 'json') {
   exportingFormat.value = format
   error.value = ''
   try {
-    const version = await cvApi.createVersion(cv.id, 'Exported from CV library')
+    const version = await cvApi.createVersion(cv.id, translate('workspace.exportVersionDescription'))
     const file = await cvApi.exportVersion(version.id, format)
     const url = URL.createObjectURL(file.content)
     const link = document.createElement('a')
@@ -275,7 +276,7 @@ async function exportCv(cv: Cv, format: 'pdf' | 'docx' | 'json') {
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : `Unable to export this CV as ${format.toUpperCase()}.`
+    error.value = cause instanceof Error ? cause.message : translate('workspace.exportError', { format: format.toUpperCase() })
   } finally {
     exportingCvId.value = ''
     exportingFormat.value = null
@@ -302,7 +303,7 @@ async function confirmDuplicate() {
     const copy = await cvApi.duplicate(cvToDuplicate.value.id, duplicateName.value.trim(), duplicatePersonId.value)
     await router.push(`/cvs/${copy.id}/content`)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to duplicate this CV.'
+    error.value = cause instanceof Error ? cause.message : translate('workspace.duplicateError')
   } finally {
     duplicating.value = false
     duplicateDialog.value = false
@@ -319,7 +320,7 @@ async function openImport() {
       await personStore.fetchPeople()
       importPersonId.value = personOptions.value[0]?.id ?? ''
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : 'Unable to load people for import.'
+      error.value = cause instanceof Error ? cause.message : translate('workspace.loadPeopleError')
       return
     }
   }
@@ -340,7 +341,7 @@ async function confirmImport() {
     importDialog.value = false
     await router.push(`/cvs/${importedCv.id}/content`)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to import this CV.'
+    error.value = cause instanceof Error ? cause.message : translate('workspace.importError')
   } finally {
     importing.value = false
   }
@@ -355,7 +356,7 @@ async function confirmDelete() {
     deleteDialog.value = false
     selectedCv.value = null
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to delete this CV.'
+    error.value = cause instanceof Error ? cause.message : translate('workspace.deleteError')
   } finally {
     deleting.value = false
   }
