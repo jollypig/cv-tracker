@@ -22,12 +22,20 @@
         <openhtml.version>1.0.10</openhtml.version>
         <pdfbox.version>2.0.35</pdfbox.version>
         <jsoup.version>1.20.1</jsoup.version>
+        <spring-ai.version>1.0.3</spring-ai.version>
         <aws-sdk.version>2.31.54</aws-sdk.version>
         <apache-poi.version>5.4.1</apache-poi.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>software.amazon.awssdk</groupId>
                 <artifactId>bom</artifactId>
@@ -39,6 +47,10 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>

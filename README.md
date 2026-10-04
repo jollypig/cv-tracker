@@ -50,6 +50,8 @@ Flyway applies SQL migrations from `backend/src/main/resources/db/migration` on 
 
 Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, and `DATABASE_PASSWORD`. The local Hikari pool can be tuned with `DB_POOL_MAX_SIZE`, `DB_POOL_MIN_IDLE`, and `DB_CONNECTION_TIMEOUT_MS`.
 
+CV import uses a local Ollama server by default. Start Ollama and pull the configured model (`ollama pull llama3.2`) before using extraction. Configure `OLLAMA_BASE_URL` (default `http://localhost:11434`), `OLLAMA_MODEL` (default `llama3.2`), and `CV_AI_REQUEST_TIMEOUT` (default `60s`) as needed. `CV_AI_PROVIDER` defaults to `ollama`.
+
 ## Production image
 
 Build the backend image from the repository root with `docker build -t cv-management .`. Run it with the Spring `prod` profile and provide `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `FRONTEND_URL`, and `CORS_ALLOWED_ORIGINS` through the deployment environment or secret manager. Configure `OIDC_ISSUER_URI` and `OIDC_CLIENT_ID` to enable sign-in; set `OIDC_CLIENT_SECRET` when required by the identity provider. The production profile enables secure session cookies, structured JSON logs, readiness/liveness health probes, and Prometheus metrics. OpenAPI docs and Swagger UI are disabled by default in production and can be enabled with `OPENAPI_DOCS_ENABLED` and `OPENAPI_SWAGGER_UI_ENABLED`.

@@ -1,6 +1,15 @@
 spring:
   application:
     name: cv-management
+  ai:
+    model:
+      chat: ${CV_AI_PROVIDER:ollama}
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_MODEL:llama3.2}
+          temperature: 0
   config:
     import: "optional:file:./.env[.properties],optional:file:./backend/.env[.properties]"
   profiles:
@@ -62,3 +71,8 @@ app:
     url: ${FRONTEND_URL:http://localhost:5173/}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177}
+
+cv:
+  ai:
+    provider: ${CV_AI_PROVIDER:ollama}
+    request-timeout: ${CV_AI_REQUEST_TIMEOUT:60s}
