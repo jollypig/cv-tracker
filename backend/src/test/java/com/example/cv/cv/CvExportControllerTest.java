@@ -48,6 +48,19 @@ class CvExportControllerTest {
     }
 
     @Test
+    void createsDocxExportForAVersion() throws Exception {
+        UUID versionId = UUID.randomUUID();
+        when(exportService.exportDocx(versionId)).thenReturn(new CvExportResponse(UUID.randomUUID(), versionId,
+                2, "Jane_Doe_Resume_v2.docx", 4096, Instant.parse("2026-01-01T00:00:00Z"), "/download"));
+
+        mockMvc.perform(post("/api/v1/cv-versions/{versionId}/exports/docx", versionId))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.versionId").value(versionId.toString()))
+                .andExpect(jsonPath("$.fileName").value("Jane_Doe_Resume_v2.docx"));
+        verify(exportService).exportDocx(versionId);
+    }
+
+    @Test
     void listsExportHistoryForAVersion() throws Exception {
         UUID versionId = UUID.randomUUID();
         when(exportService.findHistory(versionId)).thenReturn(List.of());
@@ -69,6 +82,21 @@ class CvExportControllerTest {
                 .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF))
                 .andExpect(content().bytes(pdf));
+        verify(exportService).download(exportId);
+    }
+
+    @Test
+    void downloadsDocxWithWordContentTypeAndAttachmentHeaders() throws Exception {
+        UUID exportId = UUID.randomUUID();
+        byte[] docx = "docx-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        when(exportService.download(exportId)).thenReturn(new CvExportFile("Jane_Doe_Resume_v2.docx", docx,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+
+        mockMvc.perform(get("/api/v1/exports/{exportId}/download", exportId))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .andExpect(content().bytes(docx));
         verify(exportService).download(exportId);
     }
 }

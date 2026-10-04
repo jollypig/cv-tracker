@@ -9,7 +9,8 @@
       <div class="content-heading-actions">
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">All versions</v-btn>
         <v-btn color="secondary" prepend-icon="mdi-source-branch" :disabled="!version" @click="openBranchDialog">Branch CV</v-btn>
-        <v-btn color="primary" prepend-icon="mdi-file-pdf-box" :loading="exporting" :disabled="!version" @click="exportPdf">Export PDF</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-file-pdf-box" :loading="exportingFormat === 'pdf'" :disabled="!version || !!exportingFormat" @click="exportFile('pdf')">Export PDF</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-file-word-box" :loading="exportingFormat === 'docx'" :disabled="!version || !!exportingFormat" @click="exportFile('docx')">Export DOCX</v-btn>
         <v-btn color="primary" prepend-icon="mdi-backup-restore" @click="restoreDialog = true">Restore as new version</v-btn>
       </div>
     </div>
@@ -149,7 +150,7 @@ const version = ref<CvVersionDetail | null>(null)
 const snapshot = computed<CvVersionSnapshot | null>(() => version.value?.snapshot ?? null)
 const loading = ref(true)
 const restoring = ref(false)
-const exporting = ref(false)
+const exportingFormat = ref<'pdf' | 'docx' | null>(null)
 const error = ref('')
 const restoreDialog = ref(false)
 const restoreDescription = ref('')
@@ -186,12 +187,12 @@ async function restore() {
   }
 }
 
-async function exportPdf() {
+async function exportFile(format: 'pdf' | 'docx') {
   if (!version.value) return
-  exporting.value = true
+  exportingFormat.value = format
   error.value = ''
   try {
-    const file = await cvApi.exportVersionPdf(version.value.id)
+    const file = await cvApi.exportVersion(version.value.id, format)
     const url = URL.createObjectURL(file.content)
     const link = document.createElement('a')
     link.href = url
@@ -201,9 +202,9 @@ async function exportPdf() {
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to export this CV version.'
+    error.value = cause instanceof Error ? cause.message : `Unable to export this CV version as ${format.toUpperCase()}.`
   } finally {
-    exporting.value = false
+    exportingFormat.value = null
   }
 }
 

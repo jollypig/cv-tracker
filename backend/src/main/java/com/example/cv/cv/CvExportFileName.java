@@ -11,8 +11,13 @@ public final class CvExportFileName {
     }
 
     public static String generate(String firstName, String lastName, String cvName, int versionNumber) {
+        return generate(firstName, lastName, cvName, versionNumber, "pdf");
+    }
+
+    public static String generate(String firstName, String lastName, String cvName, int versionNumber,
+            String extension) {
         return component(firstName) + "_" + component(lastName) + "_" + component(cvName)
-                + "_v" + versionNumber + ".pdf";
+                + "_v" + versionNumber + "." + extension;
     }
 
     private static String component(String value) {
