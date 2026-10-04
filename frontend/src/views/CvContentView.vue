@@ -2,15 +2,15 @@
   <main class="cv-content-view">
     <div class="page-heading form-heading">
       <div>
-        <div class="eyebrow">STRUCTURED CV</div>
-        <h1>{{ cv?.name ?? 'Edit CV content' }}</h1>
-        <p>{{ cv?.personName ?? 'Build each section of this CV.' }}</p>
+        <div class="eyebrow">{{ translate('editor.eyebrow') }}</div>
+        <h1>{{ cv?.name ?? translate('editor.defaultTitle') }}</h1>
+        <p>{{ cv?.personName ?? translate('editor.tagline') }}</p>
       </div>
       <div class="content-heading-actions">
-        <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">Duplicate CV</v-btn>
-        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">Versions</v-btn>
-        <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">CV details</v-btn>
-        <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">Save content</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">{{ translate('editor.duplicate') }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('editor.versions') }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">{{ translate('editor.cvDetails') }}</v-btn>
+        <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">{{ translate('editor.save') }}</v-btn>
       </div>
     </div>
 
@@ -18,23 +18,23 @@
       {{ error }}
     </v-alert>
     <v-alert v-if="saved" class="view-alert" type="success" variant="tonal" closable @click:close="saved = false">
-      CV content saved.
+      {{ translate('editor.saved') }}
     </v-alert>
     <v-alert v-if="draftStatus" class="view-alert" type="info" variant="tonal">
-      {{ draftStatus }}
+      {{ translate(draftStatus) }}
     </v-alert>
     <v-progress-linear v-if="loading" class="form-loading" color="primary" indeterminate />
 
     <v-dialog v-model="duplicateDialog" max-width="480">
       <v-card>
-        <v-card-title class="dialog-title">Duplicate this CV</v-card-title>
+        <v-card-title class="dialog-title">{{ translate('editor.duplicateTitle') }}</v-card-title>
         <v-card-text>
-          <v-text-field v-model="duplicateName" label="Copy name" maxlength="255" variant="outlined" autofocus />
+          <v-text-field v-model="duplicateName" :label="translate('editor.copyName')" maxlength="255" variant="outlined" autofocus />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="duplicateDialog = false">Cancel</v-btn>
-          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="duplicateCv">Create copy</v-btn>
+          <v-btn variant="text" @click="duplicateDialog = false">{{ translate('editor.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="duplicateCv">{{ translate('editor.createCopy') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -43,8 +43,8 @@
     <v-form ref="editorForm" class="content-editor" @submit.prevent="saveContent">
       <section class="content-order-section">
         <div class="form-section-heading">
-          <h2>Section order and visibility</h2>
-          <p>Drag sections into reading order, or change their order with the arrow controls.</p>
+          <h2>{{ translate('editor.orderTitle') }}</h2>
+          <p>{{ translate('editor.orderHelp') }}</p>
         </div>
         <div class="content-section-order">
           <div
@@ -60,78 +60,78 @@
             <v-icon icon="mdi-drag" class="drag-handle" aria-hidden="true" />
             <span class="order-number">{{ index + 1 }}</span>
             <span class="order-label">{{ sectionTitle(section.type) }}</span>
-            <v-switch v-model="section.visible" :aria-label="`Show ${sectionTitle(section.type)}`" color="primary" density="compact" hide-details />
-            <v-btn :disabled="index === 0" aria-label="Move section up" icon="mdi-arrow-up" size="small" variant="text" @click="moveSection(index, -1)" />
-            <v-btn :disabled="index === content.sections.length - 1" aria-label="Move section down" icon="mdi-arrow-down" size="small" variant="text" @click="moveSection(index, 1)" />
+            <v-switch v-model="section.visible" :aria-label="translate('editor.showSection', { section: sectionTitle(section.type) })" color="primary" density="compact" hide-details />
+            <v-btn :disabled="index === 0" :aria-label="translate('editor.moveSectionUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveSection(index, -1)" />
+            <v-btn :disabled="index === content.sections.length - 1" :aria-label="translate('editor.moveSectionDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveSection(index, 1)" />
           </div>
         </div>
       </section>
 
       <v-expansion-panels multiple class="content-panels">
         <v-expansion-panel value="summary">
-          <v-expansion-panel-title>Professional summary</v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.summary') }}</v-expansion-panel-title>
           <v-expansion-panel-text>
-            <v-textarea v-model="content.summary" label="Summary" rows="5" counter="10000" variant="outlined" />
+            <v-textarea v-model="content.summary" :label="translate('editor.summaryField')" rows="5" counter="10000" variant="outlined" />
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="experience">
-          <v-expansion-panel-title>Experience <span class="panel-count">{{ content.experiences.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.experience') }} <span class="panel-count">{{ content.experiences.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <div v-for="(experience, index) in content.experiences" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>Position {{ index + 1 }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" aria-label="Move experience up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.experiences, index, -1)" />
-                <v-btn :disabled="index === content.experiences.length - 1" aria-label="Move experience down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.experiences, index, 1)" />
-                <v-btn :aria-label="`Remove position ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.experiences, index)" />
+              <div class="entry-heading"><h3>{{ translate('editor.positionNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
+                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveExperienceUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.experiences, index, -1)" />
+                <v-btn :disabled="index === content.experiences.length - 1" :aria-label="translate('editor.moveExperienceDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.experiences, index, 1)" />
+                <v-btn :aria-label="translate('editor.removePosition', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.experiences, index)" />
               </div></div>
               <div class="content-field-grid">
-                <v-text-field v-model="experience.company" label="Company" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="experience.position" label="Position" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="experience.location" label="Location" variant="outlined" />
-                <v-select v-model="experience.employmentType" :items="employmentTypes" label="Employment type" variant="outlined" clearable />
-                <v-select v-model="experience.employmentLocation" :items="employmentLocations" label="Employment location" variant="outlined" clearable />
-                <v-text-field v-model="experience.startDate" label="Start date" type="date" variant="outlined" />
-                <v-text-field v-model="experience.endDate" label="End date" type="date" variant="outlined" :rules="[() => dateOrderRule(experience.startDate, experience.endDate)]" />
-                <v-checkbox v-model="experience.current" label="I currently work here" hide-details />
+                <v-text-field v-model="experience.company" :label="translate('editor.company')" variant="outlined" :rules="[requiredRule]" />
+                <v-text-field v-model="experience.position" :label="translate('editor.position')" variant="outlined" :rules="[requiredRule]" />
+                <v-text-field v-model="experience.location" :label="translate('editor.location')" variant="outlined" />
+                <v-select v-model="experience.employmentType" :items="employmentTypes" item-title="title" item-value="value" :label="translate('editor.employmentType')" variant="outlined" clearable />
+                <v-select v-model="experience.employmentLocation" :items="employmentLocations" item-title="title" item-value="value" :label="translate('editor.employmentLocation')" variant="outlined" clearable />
+                <v-text-field v-model="experience.startDate" :label="translate('editor.startDate')" type="date" variant="outlined" />
+                <v-text-field v-model="experience.endDate" :label="translate('editor.endDate')" type="date" variant="outlined" :rules="[() => dateOrderRule(experience.startDate, experience.endDate)]" />
+                <v-checkbox v-model="experience.current" :label="translate('editor.currentWork')" hide-details />
               </div>
-              <v-textarea v-model="experience.description" label="Description" rows="3" variant="outlined" />
+              <v-textarea v-model="experience.description" :label="translate('editor.description')" rows="3" variant="outlined" />
               <div class="nested-editor">
-                <div class="entry-heading"><h4>Projects at this position</h4><v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience)">Add project</v-btn></div>
+                <div class="entry-heading"><h4>{{ translate('editor.projectsAtPosition') }}</h4><v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience)">{{ translate('editor.addProject') }}</v-btn></div>
                 <div v-for="(project, projectIndex) in experience.projects" :key="projectIndex" class="nested-entry">
-                  <div class="entry-heading"><span>Project {{ projectIndex + 1 }}</span><v-btn :aria-label="`Remove project ${projectIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(experience.projects, projectIndex)" /></div>
+                  <div class="entry-heading"><span>{{ translate('editor.projectNumber', { number: projectIndex + 1 }) }}</span><v-btn :aria-label="translate('editor.removeProject', { number: projectIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(experience.projects, projectIndex)" /></div>
                   <div class="content-field-grid">
                     <v-checkbox
                         :model-value="project.showProjectName === false && project.showCustomerCompany === false"
                         class="project-visibility-toggle"
-                        label="Hide Project Name and Company"
+                        :label="translate('editor.hideProjectNameCompany')"
                         hide-details
                         @update:model-value="setProjectNameAndCompanyHidden(project, $event)"
                     />
-                    <v-text-field v-model="project.projectName" label="Project name" variant="outlined" :rules="[requiredRule]" />
-                    <v-text-field v-model="project.company" label="Customer company" variant="outlined" />
-                    <v-textarea v-model="project.projectDescription" class="project-description-field" label="Project description" rows="2" variant="outlined" />
-                    <v-text-field v-model="project.industries" label="Industries" variant="outlined" />
-                    <v-text-field v-model="project.position" label="Project position" variant="outlined" />
-                    <v-text-field v-model="project.periodFrom" label="From" type="date" variant="outlined" />
-                    <v-text-field v-model="project.periodTo" label="To" type="date" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom, project.periodTo)]" />
-                    <v-text-field v-model.number="project.teamSize" label="Team size" type="number" min="0" variant="outlined" />
-                    <v-text-field v-model="project.externalLink" label="External link" type="url" variant="outlined" :rules="[optionalUrlRule]" />
+                    <v-text-field v-model="project.projectName" :label="translate('editor.projectName')" variant="outlined" :rules="[requiredRule]" />
+                    <v-text-field v-model="project.company" :label="translate('editor.customerCompany')" variant="outlined" />
+                    <v-textarea v-model="project.projectDescription" class="project-description-field" :label="translate('editor.projectDescription')" rows="2" variant="outlined" />
+                    <v-text-field v-model="project.industries" :label="translate('editor.industries')" variant="outlined" />
+                    <v-text-field v-model="project.position" :label="translate('editor.projectPosition')" variant="outlined" />
+                    <v-text-field v-model="project.periodFrom" :label="translate('editor.from')" type="date" variant="outlined" />
+                    <v-text-field v-model="project.periodTo" :label="translate('editor.to')" type="date" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom, project.periodTo)]" />
+                    <v-text-field v-model.number="project.teamSize" :label="translate('editor.teamSize')" type="number" min="0" variant="outlined" />
+                    <v-text-field v-model="project.externalLink" :label="translate('editor.externalLink')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
                   </div>
-                  <v-textarea v-model="project.responsibilities" label="Responsibilities" rows="2" variant="outlined" />
-                  <v-textarea v-model="project.technologies" label="Technologies and tools" rows="2" variant="outlined" />
+                  <v-textarea v-model="project.responsibilities" :label="translate('editor.responsibilities')" rows="2" variant="outlined" />
+                  <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
                   <v-autocomplete
                     :model-value="linkedSkillIds(project)"
                     :items="projectSkillOptions"
                     item-title="title"
                     item-value="value"
-                    label="Linked skills"
+                    :label="translate('editor.linkedSkills')"
                     variant="outlined"
                     density="compact"
                     multiple
                     chips
                     closable-chips
                     clearable
-                    no-data-text="Add skills in the Skills section first"
+                    :no-data-text="translate('editor.addSkillsFirst')"
                     @update:model-value="updateProjectSkills(project, $event)"
                   >
                     <template #item="{ props: itemProps, item }">
@@ -141,165 +141,165 @@
                 </div>
               </div>
             </div>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addExperience">Add experience</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addExperience">{{ translate('editor.addExperience') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="education">
-          <v-expansion-panel-title>Education <span class="panel-count">{{ content.education.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.education') }} <span class="panel-count">{{ content.education.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <div v-for="(education, index) in content.education" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>Education {{ index + 1 }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" aria-label="Move education up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.education, index, -1)" />
-                <v-btn :disabled="index === content.education.length - 1" aria-label="Move education down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.education, index, 1)" />
-                <v-btn :aria-label="`Remove education ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.education, index)" />
+              <div class="entry-heading"><h3>{{ translate('editor.educationNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
+                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveEducationUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.education, index, -1)" />
+                <v-btn :disabled="index === content.education.length - 1" :aria-label="translate('editor.moveEducationDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.education, index, 1)" />
+                <v-btn :aria-label="translate('editor.removeEducation', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.education, index)" />
               </div></div>
               <div class="content-field-grid">
-                <v-text-field v-model="education.institution" label="Institution" variant="outlined" :rules="[requiredRule]" />
-                <v-select v-model="education.degree" :items="degreeOptions" label="Degree" clearable variant="outlined" />
-                <v-text-field v-model="education.fieldOfStudy" label="Field of study" variant="outlined" />
-                <v-text-field v-model="education.startDate" label="Start date" type="date" variant="outlined" />
-                <v-text-field v-model="education.endDate" label="End date" type="date" variant="outlined" :rules="[() => dateOrderRule(education.startDate, education.endDate)]" />
-                <v-checkbox v-model="education.current" label="I currently study here" hide-details />
+                <v-text-field v-model="education.institution" :label="translate('editor.institution')" variant="outlined" :rules="[requiredRule]" />
+                <v-select v-model="education.degree" :items="degreeOptions" item-title="title" item-value="value" :label="translate('editor.degree')" clearable variant="outlined" />
+                <v-text-field v-model="education.fieldOfStudy" :label="translate('editor.fieldOfStudy')" variant="outlined" />
+                <v-text-field v-model="education.startDate" :label="translate('editor.startDate')" type="date" variant="outlined" />
+                <v-text-field v-model="education.endDate" :label="translate('editor.endDate')" type="date" variant="outlined" :rules="[() => dateOrderRule(education.startDate, education.endDate)]" />
+                <v-checkbox v-model="education.current" :label="translate('editor.currentStudy')" hide-details />
               </div>
-              <v-textarea v-model="education.diplomaDegreeWork" label="Diploma/Degree Work" rows="2" variant="outlined" />
-              <v-textarea v-model="education.description" label="Description" rows="2" variant="outlined" />
+              <v-textarea v-model="education.diplomaDegreeWork" :label="translate('editor.diplomaWork')" rows="2" variant="outlined" />
+              <v-textarea v-model="education.description" :label="translate('editor.description')" rows="2" variant="outlined" />
             </div>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addEducation">Add education</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addEducation">{{ translate('editor.addEducation') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="skills">
-          <v-expansion-panel-title>Skill groups <span class="panel-count">{{ content.skillGroups.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.skillGroups') }} <span class="panel-count">{{ content.skillGroups.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <v-expansion-panels v-model="expandedSkillGroups" multiple class="skill-group-panels">
               <v-expansion-panel v-for="(group, groupIndex) in content.skillGroups" :key="groupIndex" :value="groupIndex">
                 <v-expansion-panel-title>
-                  <span>{{ group.name || `Skill group ${groupIndex + 1}` }}</span>
+                  <span>{{ group.name || translate('editor.skillGroupNumber', { number: groupIndex + 1 }) }}</span>
                   <span class="panel-count">{{ group.skills.length }}</span>
                   <template #actions>
                     <div class="entry-actions" @click.stop>
-                      <v-btn :disabled="groupIndex === 0" aria-label="Move skill group up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, -1)" />
-                      <v-btn :disabled="groupIndex === content.skillGroups.length - 1" aria-label="Move skill group down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, 1)" />
-                      <v-btn :aria-label="`Remove ${group.name || 'skill group'}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.skillGroups, groupIndex)" />
+                      <v-btn :disabled="groupIndex === 0" :aria-label="translate('editor.moveSkillGroupUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, -1)" />
+                      <v-btn :disabled="groupIndex === content.skillGroups.length - 1" :aria-label="translate('editor.moveSkillGroupDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.skillGroups, groupIndex, 1)" />
+                      <v-btn :aria-label="translate('editor.removeSkillGroup', { name: group.name || translate('editor.skillGroups') })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.skillGroups, groupIndex)" />
                       <v-icon class="skill-group-expand-icon" icon="mdi-chevron-down" aria-hidden="true" />
                     </div>
                   </template>
                 </v-expansion-panel-title>
                 <v-expansion-panel-text>
-                  <v-text-field v-model="group.name" label="Group name" variant="outlined" :rules="[requiredRule]" />
+                  <v-text-field v-model="group.name" :label="translate('editor.groupName')" variant="outlined" :rules="[requiredRule]" />
                   <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="skill-item">
                     <div class="content-field-grid skill-entry">
-                      <v-text-field v-model="skill.name" label="Skill" variant="outlined" :rules="[requiredRule]" />
-                      <v-select v-model="skill.level" :items="skillLevels" label="Level" variant="outlined" />
+                      <v-text-field v-model="skill.name" :label="translate('editor.skill')" variant="outlined" :rules="[requiredRule]" />
+                      <v-select v-model="skill.level" :items="skillLevels" item-title="title" item-value="value" :label="translate('editor.level')" variant="outlined" />
                       <div class="entry-actions">
-                        <v-btn :disabled="skillIndex === 0" aria-label="Move skill up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
-                        <v-btn :disabled="skillIndex === group.skills.length - 1" aria-label="Move skill down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
-                        <v-btn :aria-label="`Remove skill ${skillIndex + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                        <v-btn :disabled="skillIndex === 0" :aria-label="translate('editor.moveSkillUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
+                        <v-btn :disabled="skillIndex === group.skills.length - 1" :aria-label="translate('editor.moveSkillDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
+                        <v-btn :aria-label="translate('editor.removeSkill', { number: skillIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
                       </div>
                     </div>
-                    <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details label="Include in output" />
+                    <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details :label="translate('editor.includeOutput')" />
                     <SkillDetailsEditor :skill="skill" :content="content" />
                   </div>
-                  <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">Add skill</v-btn>
+                  <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">{{ translate('editor.addSkill') }}</v-btn>
                 </v-expansion-panel-text>
               </v-expansion-panel>
             </v-expansion-panels>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addSkillGroup">Add skill group</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addSkillGroup">{{ translate('editor.addSkillGroup') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="languages">
-          <v-expansion-panel-title>Languages <span class="panel-count">{{ content.languages.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.languages') }} <span class="panel-count">{{ content.languages.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <div v-for="(language, index) in content.languages" :key="index" class="language-entry">
               <div class="content-field-grid list-entry">
-                <v-text-field v-model="language.language" label="Language" variant="outlined" :rules="[requiredRule]" />
-                <v-select v-model="language.level" :items="languageLevels" label="Proficiency" variant="outlined" />
+                <v-text-field v-model="language.language" :label="translate('editor.language')" variant="outlined" :rules="[requiredRule]" />
+                <v-select v-model="language.level" :items="languageLevels" item-title="title" item-value="value" :label="translate('editor.proficiency')" variant="outlined" />
                 <div class="entry-actions">
-                  <v-btn :disabled="index === 0" aria-label="Move language up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.languages, index, -1)" />
-                  <v-btn :disabled="index === content.languages.length - 1" aria-label="Move language down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.languages, index, 1)" />
-                  <v-btn :aria-label="`Remove language ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.languages, index)" />
+                  <v-btn :disabled="index === 0" :aria-label="translate('editor.moveLanguageUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.languages, index, -1)" />
+                  <v-btn :disabled="index === content.languages.length - 1" :aria-label="translate('editor.moveLanguageDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.languages, index, 1)" />
+                  <v-btn :aria-label="translate('editor.removeLanguage', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.languages, index)" />
                 </div>
               </div>
-              <v-checkbox :model-value="hasDetailedLevels(language)" density="compact" hide-details label="Add skill-specific levels" @update:model-value="setDetailedLevels(language, $event)" />
+              <v-checkbox :model-value="hasDetailedLevels(language)" density="compact" hide-details :label="translate('editor.detailedLevels')" @update:model-value="setDetailedLevels(language, $event)" />
               <div v-if="hasDetailedLevels(language)" class="language-detail-grid">
-                <v-select v-model="language.reading" :items="languageLevels" label="Reading" variant="outlined" />
-                <v-select v-model="language.writing" :items="languageLevels" label="Writing" variant="outlined" />
-                <v-select v-model="language.speaking" :items="languageLevels" label="Speaking" variant="outlined" />
+                <v-select v-model="language.reading" :items="languageLevels" item-title="title" item-value="value" :label="translate('editor.reading')" variant="outlined" />
+                <v-select v-model="language.writing" :items="languageLevels" item-title="title" item-value="value" :label="translate('editor.writing')" variant="outlined" />
+                <v-select v-model="language.speaking" :items="languageLevels" item-title="title" item-value="value" :label="translate('editor.speaking')" variant="outlined" />
               </div>
             </div>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addLanguage">Add language</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addLanguage">{{ translate('editor.addLanguage') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="projects">
-          <v-expansion-panel-title>Projects <span class="panel-count">{{ content.projects.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.projects') }} <span class="panel-count">{{ content.projects.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <div v-for="(project, index) in content.projects" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>{{ project.name || `Project ${index + 1}` }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" aria-label="Move project up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.projects, index, -1)" />
-                <v-btn :disabled="index === content.projects.length - 1" aria-label="Move project down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.projects, index, 1)" />
-                <v-btn :aria-label="`Remove project ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.projects, index)" />
+              <div class="entry-heading"><h3>{{ project.name || translate('editor.projectNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
+                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveProjectUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.projects, index, -1)" />
+                <v-btn :disabled="index === content.projects.length - 1" :aria-label="translate('editor.moveProjectDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.projects, index, 1)" />
+                <v-btn :aria-label="translate('editor.removeProject', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.projects, index)" />
               </div></div>
               <div class="content-field-grid">
-                <v-text-field v-model="project.name" label="Project name" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="project.role" label="Role" variant="outlined" />
-                <v-text-field v-model="project.technologies" label="Technologies" variant="outlined" />
-                <v-text-field v-model="project.url" label="Project URL" type="url" variant="outlined" :rules="[optionalUrlRule]" />
-                <v-text-field v-model="project.periodFrom" label="Period from" type="date" variant="outlined" />
-                <v-text-field v-model="project.periodTo" label="Period to" type="date" :disabled="project.current" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom ?? null, project.periodTo ?? null)]" />
+                <v-text-field v-model="project.name" :label="translate('editor.projectName')" variant="outlined" :rules="[requiredRule]" />
+                <v-text-field v-model="project.role" :label="translate('editor.projectRole')" variant="outlined" />
+                <v-text-field v-model="project.technologies" :label="translate('editor.technologiesShort')" variant="outlined" />
+                <v-text-field v-model="project.url" :label="translate('editor.projectUrl')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
+                <v-text-field v-model="project.periodFrom" :label="translate('editor.periodFrom')" type="date" variant="outlined" />
+                <v-text-field v-model="project.periodTo" :label="translate('editor.periodTo')" type="date" :disabled="project.current" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom ?? null, project.periodTo ?? null)]" />
               </div>
-              <v-checkbox v-model="project.current" label="Current project" density="compact" hide-details @update:model-value="project.periodTo = null" />
-              <v-textarea v-model="project.description" label="Description" rows="2" variant="outlined" />
+              <v-checkbox v-model="project.current" :label="translate('editor.currentProject')" density="compact" hide-details @update:model-value="project.periodTo = null" />
+              <v-textarea v-model="project.description" :label="translate('editor.description')" rows="2" variant="outlined" />
             </div>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addProject">Add project</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addProject">{{ translate('editor.addProject') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="certifications">
-          <v-expansion-panel-title>Certifications <span class="panel-count">{{ content.certifications.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.certifications') }} <span class="panel-count">{{ content.certifications.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <div v-for="(certification, index) in content.certifications" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>{{ certification.name || `Certification ${index + 1}` }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" aria-label="Move certification up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.certifications, index, -1)" />
-                <v-btn :disabled="index === content.certifications.length - 1" aria-label="Move certification down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.certifications, index, 1)" />
-                <v-btn :aria-label="`Remove certification ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.certifications, index)" />
+              <div class="entry-heading"><h3>{{ certification.name || translate('editor.certificationNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
+                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveCertificationUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.certifications, index, -1)" />
+                <v-btn :disabled="index === content.certifications.length - 1" :aria-label="translate('editor.moveCertificationDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.certifications, index, 1)" />
+                <v-btn :aria-label="translate('editor.removeCertification', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.certifications, index)" />
               </div></div>
               <div class="content-field-grid">
-                <v-text-field v-model="certification.name" label="Certification" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="certification.issuer" label="Issuing organization" variant="outlined" />
-                <v-text-field v-model="certification.issueDate" label="Issue date" type="date" variant="outlined" />
-                <v-text-field v-model="certification.expiryDate" label="Expiry date" type="date" variant="outlined" :rules="[() => dateOrderRule(certification.issueDate, certification.expiryDate)]" />
-                <v-text-field v-model="certification.credentialId" label="Credential ID" variant="outlined" />
-                <v-text-field v-model="certification.credentialUrl" label="Credential URL" type="url" variant="outlined" :rules="[optionalUrlRule]" />
+                <v-text-field v-model="certification.name" :label="translate('editor.certification')" variant="outlined" :rules="[requiredRule]" />
+                <v-text-field v-model="certification.issuer" :label="translate('editor.issuer')" variant="outlined" />
+                <v-text-field v-model="certification.issueDate" :label="translate('editor.issueDate')" type="date" variant="outlined" />
+                <v-text-field v-model="certification.expiryDate" :label="translate('editor.expiryDate')" type="date" variant="outlined" :rules="[() => dateOrderRule(certification.issueDate, certification.expiryDate)]" />
+                <v-text-field v-model="certification.credentialId" :label="translate('editor.credentialId')" variant="outlined" />
+                <v-text-field v-model="certification.credentialUrl" :label="translate('editor.credentialUrl')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
               </div>
-              <v-textarea v-model="certification.description" label="Description" variant="outlined" rows="3" auto-grow />
+              <v-textarea v-model="certification.description" :label="translate('editor.description')" variant="outlined" rows="3" auto-grow />
             </div>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addCertification">Add certification</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addCertification">{{ translate('editor.addCertification') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
 
         <v-expansion-panel value="custom">
-          <v-expansion-panel-title>Custom sections <span class="panel-count">{{ content.customSections.length }}</span></v-expansion-panel-title>
+          <v-expansion-panel-title>{{ translate('editor.customSections') }} <span class="panel-count">{{ content.customSections.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
             <div v-for="(section, index) in content.customSections" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>{{ section.title || `Custom section ${index + 1}` }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" aria-label="Move custom section up" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.customSections, index, -1)" />
-                <v-btn :disabled="index === content.customSections.length - 1" aria-label="Move custom section down" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.customSections, index, 1)" />
-                <v-btn :aria-label="`Remove custom section ${index + 1}`" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.customSections, index)" />
+              <div class="entry-heading"><h3>{{ section.title || translate('editor.customSectionNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
+                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveCustomSectionUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.customSections, index, -1)" />
+                <v-btn :disabled="index === content.customSections.length - 1" :aria-label="translate('editor.moveCustomSectionDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.customSections, index, 1)" />
+                <v-btn :aria-label="translate('editor.removeCustomSection', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.customSections, index)" />
               </div></div>
-              <v-text-field v-model="section.title" label="Section title" variant="outlined" :rules="[requiredRule]" />
-              <v-textarea v-model="section.content" label="Content" rows="4" variant="outlined" />
+              <v-text-field v-model="section.title" :label="translate('editor.sectionTitle')" variant="outlined" :rules="[requiredRule]" />
+              <v-textarea v-model="section.content" :label="translate('editor.content')" rows="4" variant="outlined" />
             </div>
-            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addCustomSection">Add custom section</v-btn>
+            <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addCustomSection">{{ translate('editor.addCustomSection') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
       </v-expansion-panels>
 
       <div class="form-actions content-save-actions">
-        <v-btn variant="text" :to="`/cvs/${cvId}/edit`">Cancel</v-btn>
-        <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save-outline">Save content</v-btn>
+        <v-btn variant="text" :to="`/cvs/${cvId}/edit`">{{ translate('editor.cancel') }}</v-btn>
+        <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save-outline">{{ translate('editor.save') }}</v-btn>
       </div>
     </v-form>
     <CvPreview
@@ -328,6 +328,7 @@ import type {
   CvLanguage, CvProject, CvSection, CvSectionType, CvSkill, CvSkillGroup,
 } from '../shared/api/cvTypes'
 import type { Person } from '../shared/api/personTypes'
+import { translate } from '../shared/i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -349,28 +350,39 @@ const draftTracking = ref(false)
 let draftTimer: ReturnType<typeof setTimeout> | undefined
 const draggedSection = ref<number | null>(null)
 const editorForm = ref<{ validate: () => Promise<{ valid: boolean }> } | null>(null)
-const sectionDefinitions: Array<{ type: CvSectionType; title: string }> = [
-  { type: 'SUMMARY', title: 'Professional summary' },
-  { type: 'EXPERIENCE', title: 'Experience' },
-  { type: 'EDUCATION', title: 'Education' },
-  { type: 'SKILLS', title: 'Skills' },
-  { type: 'LANGUAGES', title: 'Languages' },
-  { type: 'PROJECTS', title: 'Projects' },
-  { type: 'CERTIFICATIONS', title: 'Certifications' },
-  { type: 'CUSTOM', title: 'Custom sections' },
+const sectionDefinitions: Array<{ type: CvSectionType }> = [
+  { type: 'SUMMARY' },
+  { type: 'EXPERIENCE' },
+  { type: 'EDUCATION' },
+  { type: 'SKILLS' },
+  { type: 'LANGUAGES' },
+  { type: 'PROJECTS' },
+  { type: 'CERTIFICATIONS' },
+  { type: 'CUSTOM' },
 ]
-const languageLevels = ['Native (C2)', 'Fluent (C1)', 'Advanced (B2)', 'Intermediate (B1)', 'Basic (A1–A2)']
-const skillLevels = ['Basic', 'Intermediate', 'Advanced', 'Expert']
-const employmentTypes = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship', 'Self-employed']
-const employmentLocations = ['On-site', 'Hybrid', 'Remote']
-const degreeOptions = [
-  'High School',
-  'Professional',
-  'Associate Degree',
-  'Bachelor’s Degree',
-  'Master’s Degree',
-  'Doctorate (PhD)',
-]
+const sectionTitleKeys: Record<CvSectionType, string> = {
+  SUMMARY: 'editor.summary', EXPERIENCE: 'editor.experience', EDUCATION: 'editor.education', SKILLS: 'editor.skills',
+  LANGUAGES: 'editor.languages', PROJECTS: 'editor.projects', CERTIFICATIONS: 'editor.certifications', CUSTOM: 'editor.customSections',
+}
+const languageLevels = computed(() => [
+  ['editor.native', 'Native (C2)'], ['editor.fluent', 'Fluent (C1)'], ['editor.advanced', 'Advanced (B2)'],
+  ['editor.intermediate', 'Intermediate (B1)'], ['editor.basic', 'Basic (A1–A2)'],
+].map(([key, value]) => ({ title: translate(key!), value: value! })))
+const skillLevels = computed(() => [
+  ['editor.skillBasic', 'Basic'], ['editor.skillIntermediate', 'Intermediate'],
+  ['editor.skillAdvanced', 'Advanced'], ['editor.skillExpert', 'Expert'],
+].map(([key, value]) => ({ title: translate(key!), value: value! })))
+const employmentTypes = computed(() => [
+  ['editor.fullTime', 'Full-time'], ['editor.partTime', 'Part-time'], ['editor.contract', 'Contract'],
+  ['editor.freelance', 'Freelance'], ['editor.internship', 'Internship'], ['editor.selfEmployed', 'Self-employed'],
+].map(([key, value]) => ({ title: translate(key!), value: value! })))
+const employmentLocations = computed(() => [
+  ['editor.onSite', 'On-site'], ['editor.hybrid', 'Hybrid'], ['editor.remote', 'Remote'],
+].map(([key, value]) => ({ title: translate(key!), value: value! })))
+const degreeOptions = computed(() => [
+  ['editor.highSchool', 'High School'], ['editor.professional', 'Professional'], ['editor.associate', 'Associate Degree'],
+  ['editor.bachelor', 'Bachelor’s Degree'], ['editor.master', 'Master’s Degree'], ['editor.doctorate', 'Doctorate (PhD)'],
+].map(([key, value]) => ({ title: translate(key!), value: value! })))
 const detailedLanguages = reactive(new Set<CvLanguage>())
 const expandedSkillGroups = ref<number[]>([])
 const content = reactive<CvContent>(emptyContent())
@@ -378,7 +390,7 @@ const projectSkillOptions = computed(() => content.skillGroups.flatMap((group, g
   group.skills.flatMap((skill, skillIndex) => skill.name.trim() ? [{
     value: `${groupIndex}:${skillIndex}`,
     title: skill.name,
-    group: group.name || 'Ungrouped',
+    group: group.name || translate('editor.ungrouped'),
   }] : [])))
 
 onMounted(async () => {
@@ -397,7 +409,7 @@ onMounted(async () => {
     initializeSkillDetails()
     draftTracking.value = true
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to load CV content.'
+    error.value = cause instanceof Error ? cause.message : translate('editor.loadError')
   } finally {
     loading.value = false
   }
@@ -418,7 +430,7 @@ async function duplicateCv() {
     const copy = await cvApi.duplicate(cvId, duplicateName.value.trim())
     await router.push(`/cvs/${copy.id}/content`)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to duplicate this CV.'
+    error.value = cause instanceof Error ? cause.message : translate('editor.duplicateError')
   } finally {
     duplicating.value = false
     duplicateDialog.value = false
@@ -439,7 +451,7 @@ function emptyContent(): CvContent {
 }
 
 function sectionTitle(type: CvSectionType) {
-  return sectionDefinitions.find((section) => section.type === type)?.title ?? type
+  return translate(sectionTitleKeys[type])
 }
 
 async function selectTemplate(templateId: string) {
@@ -450,27 +462,27 @@ async function selectTemplate(templateId: string) {
     cv.value = await cvApi.selectTemplate(cvId, templateId)
     selectedTemplateId.value = templateId
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to select this template.'
+    error.value = cause instanceof Error ? cause.message : translate('editor.templateError')
   } finally {
     selectingTemplate.value = false
   }
 }
 
 function requiredRule(value: string | null) {
-  return Boolean(value?.trim()) || 'This field is required.'
+  return Boolean(value?.trim()) || translate('editor.required')
 }
 
 function dateOrderRule(start: string | null, end: string | null) {
-  return !start || !end || end >= start || 'End date must be on or after the start date.'
+  return !start || !end || end >= start || translate('editor.dateOrder')
 }
 
 function optionalUrlRule(value: string | null) {
   if (!value?.trim()) return true
   try {
     const protocol = new URL(value).protocol
-    return (protocol === 'http:' || protocol === 'https:') || 'Enter a valid HTTP or HTTPS URL.'
+    return (protocol === 'http:' || protocol === 'https:') || translate('editor.invalidUrl')
   } catch {
-    return 'Enter a valid HTTP or HTTPS URL.'
+    return translate('editor.invalidUrl')
   }
 }
 
@@ -622,12 +634,12 @@ async function saveContent() {
       localStorage.removeItem(draftStorageKey())
       draftStatus.value = ''
     } catch {
-      draftStatus.value = 'CV content saved, but the local draft could not be cleared.'
+      draftStatus.value = 'editor.unsavedClearError'
     }
     draftTracking.value = true
     saved.value = true
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to save CV content.'
+    error.value = cause instanceof Error ? cause.message : translate('editor.saveError')
   } finally {
     saving.value = false
   }
@@ -647,9 +659,9 @@ function restoreLocalDraft() {
       return
     }
     Object.assign(content, draft)
-    draftStatus.value = 'Recovered an unsaved draft from this device.'
+    draftStatus.value = 'editor.recoveredDraft'
   } catch {
-    draftStatus.value = 'Unable to read the saved draft from this device.'
+    draftStatus.value = 'editor.unreadableDraft'
   }
 }
 
@@ -662,7 +674,7 @@ function isContentDraft(value: unknown): value is CvContent {
 
 function scheduleLocalDraft() {
   if (!draftTracking.value) return
-  draftStatus.value = 'Saving draft on this device...'
+  draftStatus.value = 'editor.saveDraftStatus'
   if (draftTimer) clearTimeout(draftTimer)
   draftTimer = setTimeout(saveLocalDraft, 700)
 }
@@ -671,9 +683,9 @@ function saveLocalDraft() {
   if (!draftTracking.value) return
   try {
     localStorage.setItem(draftStorageKey(), JSON.stringify(content))
-    draftStatus.value = 'Draft autosaved on this device (Click Save Content to persist the changes for export and new versions).'
+    draftStatus.value = 'editor.autosavedStatus'
   } catch {
-    draftStatus.value = 'Unable to autosave a draft on this device.'
+    draftStatus.value = 'editor.autosaveError'
   }
 }
 </script>

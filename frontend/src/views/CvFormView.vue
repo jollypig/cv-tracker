@@ -2,11 +2,11 @@
   <main class="cv-form-view">
     <div class="page-heading form-heading">
       <div>
-        <div class="eyebrow">CV DETAILS</div>
-        <h1>{{ isEdit ? 'Edit CV' : 'Create a CV' }}</h1>
-        <p>{{ isEdit ? 'Update the title, language, or status.' : 'Start a new CV for a person in your workspace.' }}</p>
+        <div class="eyebrow">{{ translate('cvForm.eyebrow') }}</div>
+        <h1>{{ translate(isEdit ? 'navigation.editCv' : 'cvForm.createTitle') }}</h1>
+        <p>{{ translate(isEdit ? 'cvForm.editDescription' : 'cvForm.createDescription') }}</p>
       </div>
-      <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="backRoute">Back to CVs</v-btn>
+      <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="backRoute">{{ translate('cvForm.back') }}</v-btn>
     </div>
 
     <v-alert v-if="error" class="view-alert" type="error" variant="tonal">{{ error }}</v-alert>
@@ -15,8 +15,8 @@
     <form v-else @submit.prevent="saveCv">
       <section class="form-section">
         <div class="form-section-heading">
-          <h2>About this CV</h2>
-          <p>Choose a clear title so it is easy to find in the library.</p>
+          <h2>{{ translate('cvForm.about') }}</h2>
+          <p>{{ translate('cvForm.aboutDescription') }}</p>
         </div>
 
         <v-select
@@ -25,17 +25,17 @@
           :items="personOptions"
           item-title="name"
           item-value="id"
-          label="Person"
+          :label="translate('cvForm.person')"
           variant="outlined"
           :rules="[requiredRule]"
           required
         />
-        <v-text-field v-else :model-value="personName" label="Person" variant="outlined" readonly />
+        <v-text-field v-else :model-value="personName" :label="translate('cvForm.person')" variant="outlined" readonly />
 
         <v-text-field
           v-model="form.name"
-          label="CV title"
-          placeholder="e.g. Product designer"
+          :label="translate('cvForm.title')"
+          :placeholder="translate('cvForm.titlePlaceholder')"
           variant="outlined"
           :rules="[requiredRule]"
           maxlength="255"
@@ -43,17 +43,17 @@
         />
         <v-textarea
           v-model="form.description"
-          label="Description"
-          placeholder="Optional notes about this version or its intended role"
+          :label="translate('cvForm.description')"
+          :placeholder="translate('cvForm.descriptionPlaceholder')"
           variant="outlined"
           rows="3"
           auto-grow
         />
         <v-combobox
           v-model="form.tags"
-          label="Tags"
-          placeholder="e.g. backend, leadership"
-          hint="Add up to 20 tags to organize this CV."
+          :label="translate('cvForm.tags')"
+          :placeholder="translate('cvForm.tagsPlaceholder')"
+          :hint="translate('cvForm.tagsHint')"
           persistent-hint
           variant="outlined"
           multiple
@@ -66,27 +66,27 @@
 
       <section class="form-section">
         <div class="form-section-heading">
-          <h2>Language and status</h2>
-          <p>Set the language and lifecycle state for this CV.</p>
+          <h2>{{ translate('cvForm.languageStatus') }}</h2>
+          <p>{{ translate('cvForm.languageStatusDescription') }}</p>
         </div>
         <div class="cv-form-grid">
           <v-text-field
             v-model="form.language"
-            label="Language code"
+            :label="translate('cvForm.languageCode')"
             placeholder="en"
             variant="outlined"
             :rules="[requiredRule]"
             maxlength="10"
             required
           />
-          <v-select v-model="form.status" :items="statuses" label="Status" variant="outlined" />
+          <v-select v-model="form.status" :items="statuses" item-title="title" item-value="value" :label="translate('cvForm.status')" variant="outlined" />
         </div>
       </section>
 
       <div class="form-actions">
-        <v-btn variant="text" :to="backRoute">Cancel</v-btn>
+        <v-btn variant="text" :to="backRoute">{{ translate('cvForm.cancel') }}</v-btn>
         <v-btn color="primary" type="submit" :loading="saving" prepend-icon="mdi-content-save-outline">
-          {{ isEdit ? 'Save changes' : 'Create CV' }}
+          {{ translate(isEdit ? 'cvForm.save' : 'cvForm.create') }}
         </v-btn>
       </div>
     </form>
@@ -99,6 +99,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
 import type { CvInput, CvStatus } from '../shared/api/cvTypes'
+import { translate } from '../shared/i18n'
 
 const route = useRoute()
 const router = useRouter()
@@ -112,16 +113,19 @@ const saving = ref(false)
 const error = ref('')
 const selectedPersonId = ref(routePersonId ?? '')
 const personName = ref('')
-const statuses: CvStatus[] = ['DRAFT', 'ACTIVE', 'ARCHIVED']
+const statuses = computed(() => (['DRAFT', 'ACTIVE', 'ARCHIVED'] as CvStatus[]).map((value) => ({
+  value,
+  title: translate(`cvForm.${value.toLowerCase()}`),
+})))
 const personOptions = computed(() => personStore.people.map((person) => ({
   id: person.id,
   name: `${person.firstName} ${person.lastName}`,
 })))
 const backRoute = computed(() => routePersonId ? `/people/${routePersonId}/cvs` : '/cvs')
 const form = reactive<CvInput>({ name: '', description: null, language: 'en', status: 'DRAFT', tags: [] })
-const requiredRule = (value: string) => Boolean(value?.trim()) || 'This field is required.'
-const tagCountRule = (values: string[]) => values.length <= 20 || 'Use no more than 20 tags.'
-const tagLengthRule = (values: string[]) => values.every((value) => value.trim().length <= 50) || 'Tags must be 50 characters or fewer.'
+const requiredRule = (value: string) => Boolean(value?.trim()) || translate('cvForm.required')
+const tagCountRule = (values: string[]) => values.length <= 20 || translate('cvForm.tagCount')
+const tagLengthRule = (values: string[]) => values.every((value) => value.trim().length <= 50) || translate('cvForm.tagLength')
 
 onMounted(async () => {
   try {
@@ -144,7 +148,7 @@ onMounted(async () => {
       personName.value = cv.personName
     }
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to load this CV.'
+    error.value = cause instanceof Error ? cause.message : translate('cvForm.loadError')
   } finally {
     loading.value = false
   }
@@ -153,11 +157,11 @@ onMounted(async () => {
 async function saveCv() {
   error.value = ''
   if (!form.name.trim() || !form.language.trim()) {
-    error.value = 'Enter a CV title and language.'
+    error.value = translate('cvForm.titleLanguageRequired')
     return
   }
   if (!isEdit.value && !selectedPersonId.value) {
-    error.value = 'Choose a person for this CV.'
+    error.value = translate('cvForm.choosePerson')
     return
   }
 
@@ -177,7 +181,7 @@ async function saveCv() {
     }
     await router.push(backRoute.value)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to save this CV.'
+    error.value = cause instanceof Error ? cause.message : translate('cvForm.saveError')
   } finally {
     saving.value = false
   }

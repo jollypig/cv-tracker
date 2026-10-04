@@ -2,13 +2,13 @@
   <main class="cv-version-diff-view">
     <div class="page-heading form-heading">
       <div>
-        <div class="eyebrow">VERSION COMPARISON</div>
+        <div class="eyebrow">{{ translate('diff.eyebrow') }}</div>
         <h1>{{ cv?.name ?? 'Compare versions' }}</h1>
         <p v-if="diff">v{{ diff.fromVersion.versionNumber }} to v{{ diff.toVersion.versionNumber }}</p>
       </div>
       <div class="content-heading-actions">
-        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">All versions</v-btn>
-        <v-btn v-if="diff" variant="text" prepend-icon="mdi-open-in-new" :to="`/cvs/${cvId}/versions/${diff.toVersion.versionNumber}`">View v{{ diff.toVersion.versionNumber }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('diff.allVersions') }}</v-btn>
+        <v-btn v-if="diff" variant="text" prepend-icon="mdi-open-in-new" :to="`/cvs/${cvId}/versions/${diff.toVersion.versionNumber}`">{{ translate('diff.viewVersion', { version: diff.toVersion.versionNumber }) }}</v-btn>
       </div>
     </div>
 
@@ -16,42 +16,42 @@
     <v-progress-linear v-if="loading" color="primary" indeterminate />
 
     <template v-else-if="diff">
-      <section class="diff-summary" aria-label="Comparison summary">
+      <section class="diff-summary" :aria-label="translate('diff.summary')">
         <div>
-          <span>FROM</span>
+          <span>{{ translate('diff.from') }}</span>
           <strong>v{{ diff.fromVersion.versionNumber }}</strong>
           <small>{{ diff.fromVersion.description || formatDate(diff.fromVersion.createdAt) }}</small>
         </div>
         <v-icon icon="mdi-arrow-right" aria-hidden="true" />
         <div>
-          <span>TO</span>
+          <span>{{ translate('diff.to') }}</span>
           <strong>v{{ diff.toVersion.versionNumber }}</strong>
           <small>{{ diff.toVersion.description || formatDate(diff.toVersion.createdAt) }}</small>
         </div>
         <div class="diff-counts">
-          <span>{{ count('ADDED') }} added</span>
-          <span>{{ count('REMOVED') }} removed</span>
-          <span>{{ count('MODIFIED') }} modified</span>
+          <span>{{ count('ADDED') }} {{ translate('diff.added') }}</span>
+          <span>{{ count('REMOVED') }} {{ translate('diff.removed') }}</span>
+          <span>{{ count('MODIFIED') }} {{ translate('diff.modified') }}</span>
         </div>
       </section>
 
-      <section v-if="diff.changes.length" class="diff-change-list" aria-label="Changed fields">
+      <section v-if="diff.changes.length" class="diff-change-list" :aria-label="translate('diff.changedFields')">
         <article v-for="(change, index) in diff.changes" :key="`${change.path}-${index}`" class="diff-change" :class="`change-${change.type.toLowerCase()}`">
           <div class="change-heading">
             <code>{{ change.path }}</code>
-            <v-chip size="small" label :color="changeColor(change.type)">{{ change.type.toLowerCase() }}</v-chip>
+            <v-chip size="small" label :color="changeColor(change.type)">{{ translate(`diff.${change.type.toLowerCase()}`) }}</v-chip>
           </div>
           <div v-if="change.type !== 'ADDED'" class="change-value old-value">
-            <span>Before</span><pre>{{ formatValue(change.oldValue) }}</pre>
+            <span>{{ translate('diff.before') }}</span><pre>{{ formatValue(change.oldValue) }}</pre>
           </div>
           <div v-if="change.type !== 'REMOVED'" class="change-value new-value">
-            <span>After</span><pre>{{ formatValue(change.newValue) }}</pre>
+            <span>{{ translate('diff.after') }}</span><pre>{{ formatValue(change.newValue) }}</pre>
           </div>
         </article>
       </section>
       <div v-else class="diff-empty">
         <v-icon icon="mdi-check-circle-outline" size="28" />
-        <h2>No changes between these versions</h2>
+        <h2>{{ translate('diff.emptyTitle') }}</h2>
       </div>
     </template>
   </main>
@@ -62,6 +62,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import cvApi from '../shared/api/cvApi'
 import type { Cv, CvVersionChangeType, CvVersionDiff } from '../shared/api/cvTypes'
+import { locale, translate } from '../shared/i18n'
 
 const route = useRoute()
 const cvId = typeof route.params.id === 'string' ? route.params.id : ''
@@ -79,7 +80,7 @@ async function load() {
   error.value = ''
   try {
     if (!Number.isInteger(fromVersion.value) || !Number.isInteger(toVersion.value) || fromVersion.value < 1 || toVersion.value < 1) {
-      throw new Error('Select two valid CV versions to compare.')
+      throw new Error(translate('diff.invalidVersions'))
     }
     const [cvData, diffData] = await Promise.all([
       cvApi.get(cvId), cvApi.getVersionDiff(cvId, fromVersion.value, toVersion.value),
@@ -87,7 +88,7 @@ async function load() {
     cv.value = cvData
     diff.value = diffData
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to compare these CV versions.'
+    error.value = cause instanceof Error ? cause.message : translate('diff.loadError')
   } finally {
     loading.value = false
   }
@@ -102,12 +103,12 @@ function changeColor(type: CvVersionChangeType) {
 }
 
 function formatValue(value: unknown) {
-  if (value === null || value === undefined) return 'Not set'
+  if (value === null || value === undefined) return translate('diff.notSet')
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  return new Intl.DateTimeFormat(locale.value === 'lv' ? 'lv-LV' : 'en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
 }
 </script>
 

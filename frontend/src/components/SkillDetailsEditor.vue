@@ -1,43 +1,43 @@
 <template>
   <div v-if="skill.details" class="skill-details">
     <div class="skill-details-grid">
-      <v-text-field :model-value="skill.details.yearsOfExperience" label="Years of experience" type="number" min="0" step="0.1" variant="outlined" :rules="[nonNegativeRule]" @update:model-value="skill.details.yearsOfExperience = numberOrNull($event)" />
-      <v-text-field :model-value="skill.details.yearsActivelyUsed" label="Years actively used" type="number" min="0" step="0.1" variant="outlined" :rules="[nonNegativeRule]" @update:model-value="skill.details.yearsActivelyUsed = numberOrNull($event)" />
-      <v-text-field v-model="skill.details.startedFrom" label="Started from" placeholder="YYYY or YYYY-MM-DD" variant="outlined" clearable :rules="[dateRule, dateOrderRule]" />
-      <v-text-field v-model="skill.details.lastUsed" label="Last used" placeholder="YYYY or YYYY-MM-DD" variant="outlined" clearable :rules="[dateRule, dateOrderRule]" />
-      <v-select v-model="skill.details.frequency" :items="['daily', 'occasionally', 'rarely']" label="Frequency" variant="outlined" clearable />
-      <v-select v-model="skill.details.status" :items="['active', 'learning', 'maintaining', 'deprecated']" label="Status" variant="outlined" clearable />
+      <v-text-field :model-value="skill.details.yearsOfExperience" :label="translate('skillDetails.yearsExperience')" type="number" min="0" step="0.1" variant="outlined" :rules="[nonNegativeRule]" @update:model-value="skill.details.yearsOfExperience = numberOrNull($event)" />
+      <v-text-field :model-value="skill.details.yearsActivelyUsed" :label="translate('skillDetails.yearsUsed')" type="number" min="0" step="0.1" variant="outlined" :rules="[nonNegativeRule]" @update:model-value="skill.details.yearsActivelyUsed = numberOrNull($event)" />
+      <v-text-field v-model="skill.details.startedFrom" :label="translate('skillDetails.startedFrom')" :placeholder="translate('skillDetails.datePlaceholder')" variant="outlined" clearable :rules="[dateRule, dateOrderRule]" />
+      <v-text-field v-model="skill.details.lastUsed" :label="translate('skillDetails.lastUsed')" :placeholder="translate('skillDetails.datePlaceholder')" variant="outlined" clearable :rules="[dateRule, dateOrderRule]" />
+      <v-select v-model="skill.details.frequency" :items="frequencyOptions" item-title="title" item-value="value" :label="translate('skillDetails.frequency')" variant="outlined" clearable />
+      <v-select v-model="skill.details.status" :items="statusOptions" item-title="title" item-value="value" :label="translate('skillDetails.status')" variant="outlined" clearable />
     </div>
     <dl class="skill-metrics">
-      <div><dt>Total experience</dt><dd>{{ metrics.totalExperience ?? '-' }} years</dd></div>
-      <div><dt>Last used</dt><dd>{{ metrics.lastUsed ?? '-' }}</dd></div>
+      <div><dt>{{ translate('skillDetails.totalExperience') }}</dt><dd>{{ metrics.totalExperience ?? '-' }} {{ translate('skillDetails.years') }}</dd></div>
+      <div><dt>{{ translate('skillDetails.lastUsed') }}</dt><dd>{{ metrics.lastUsed ?? '-' }}</dd></div>
     </dl>
-    <p v-if="metrics.stale" class="skill-warning" role="status"><v-icon icon="mdi-clock-alert-outline" size="small" /> Not used in over 5 years</p>
+    <p v-if="metrics.stale" class="skill-warning" role="status"><v-icon icon="mdi-clock-alert-outline" size="small" /> {{ translate('skillDetails.stale') }}</p>
     <v-autocomplete
       v-model="selectedProjects"
       :items="projectOptions"
       :custom-filter="(_value, query, item) => matchesSkillProject(item?.raw, query)"
       item-title="title"
       item-value="key"
-      label="Linked projects"
+      :label="translate('skillDetails.linkedProjects')"
       variant="outlined"
       density="compact"
       multiple
       chips
       closable-chips
       clearable
-      no-data-text="No matching projects"
+      :no-data-text="translate('skillDetails.noProjects')"
     >
       <template #item="{ props: itemProps, item }">
         <v-list-item v-bind="itemProps" :subtitle="item.raw.description" />
       </template>
     </v-autocomplete>
     <div v-for="(link, index) in skill.details.linkedProjects" :key="link.projectKey" class="skill-link-row">
-      <div class="skill-linked-project">{{ projects.find((project) => project.key === link.projectKey)?.title || 'Project removed' }}</div>
-      <v-text-field v-model="link.outcome" label="Outcome" maxlength="1000" variant="outlined" density="compact" />
-      <v-btn icon="mdi-link-off" aria-label="Unlink project" variant="text" size="small" @click="skill.details.linkedProjects.splice(index, 1)" />
+      <div class="skill-linked-project">{{ projects.find((project) => project.key === link.projectKey)?.title || translate('skillDetails.projectRemoved') }}</div>
+      <v-text-field v-model="link.outcome" :label="translate('skillDetails.outcome')" maxlength="1000" variant="outlined" density="compact" />
+      <v-btn icon="mdi-link-off" :aria-label="translate('skillDetails.unlink')" variant="text" size="small" @click="skill.details.linkedProjects.splice(index, 1)" />
     </div>
-    <v-checkbox v-model="skill.details.includeInOutput" label="Include experience and project outcomes in output" density="compact" hide-details />
+    <v-checkbox v-model="skill.details.includeInOutput" :label="translate('skillDetails.includeOutput')" density="compact" hide-details />
   </div>
 </template>
 
@@ -45,6 +45,7 @@
 import { computed } from 'vue'
 import type { CvContent, CvSkill } from '../shared/api/cvTypes'
 import { calculateSkill, matchesSkillProject, selectSkillProjects, skillDate, skillProjects } from '../shared/skillMetrics'
+import { translate } from '../shared/i18n'
 
 const props = defineProps<{ skill: CvSkill; content: CvContent }>()
 const projects = computed(() => skillProjects(props.content))
@@ -52,30 +53,32 @@ const projectOptions = computed(() => [
   ...projects.value.filter((project) => project.key),
   ...(props.skill.details?.linkedProjects ?? [])
     .filter((link) => !projects.value.some((project) => project.key === link.projectKey))
-    .map((link) => ({ key: link.projectKey, title: 'Project removed', description: '' })),
+    .map((link) => ({ key: link.projectKey, title: translate('skillDetails.projectRemoved'), description: '' })),
 ])
 const selectedProjects = computed({
   get: () => props.skill.details?.linkedProjects.map((link) => link.projectKey) ?? [],
   set: (keys: string[]) => selectSkillProjects(props.skill, keys ?? []),
 })
 const metrics = computed(() => calculateSkill(props.skill, props.content))
+const frequencyOptions = computed(() => ['daily', 'occasionally', 'rarely'].map((value) => ({ value, title: translate(`skillDetails.${value}`) })))
+const statusOptions = computed(() => ['active', 'learning', 'maintaining', 'deprecated'].map((value) => ({ value, title: translate(`skillDetails.${value}`) })))
 
 function numberOrNull(value: string | number | null): number | null {
   return value === null || value === '' ? null : Number(value)
 }
 
 function nonNegativeRule(value: string | number | null) {
-  return value === null || value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0) || 'Enter a non-negative number.'
+  return value === null || value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0) || translate('skillDetails.nonNegative')
 }
 
 function dateRule(value: string | null) {
-  return !value || Boolean(skillDate(value)) || 'Enter a valid year or date (YYYY-MM-DD).'
+  return !value || Boolean(skillDate(value)) || translate('skillDetails.invalidDate')
 }
 
 function dateOrderRule() {
   const start = skillDate(props.skill.details?.startedFrom)
   const end = skillDate(props.skill.details?.lastUsed)
-  return !start || !end || start <= end || 'Started from must not be after last used.'
+  return !start || !end || start <= end || translate('skillDetails.dateOrder')
 }
 
 </script>
