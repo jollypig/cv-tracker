@@ -2,5 +2,7 @@ package com.example.cv.cv;
 
 import jakarta.validation.constraints.Size;
 
-public record CvDuplicateRequest(@Size(max = 255) String name) {
+import java.util.UUID;
+
+public record CvDuplicateRequest(@Size(max = 255) String name, UUID personId) {
 }

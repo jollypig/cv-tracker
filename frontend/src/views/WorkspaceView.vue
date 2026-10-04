@@ -125,11 +125,12 @@
         <v-card-title class="dialog-title">Duplicate this CV</v-card-title>
         <v-card-text>
           <v-text-field v-model="duplicateName" label="Copy name" maxlength="255" variant="outlined" autofocus />
+          <v-select v-model="duplicatePersonId" :items="duplicatePersonOptions" label="Destination person" variant="outlined" />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="duplicateDialog = false">Cancel</v-btn>
-          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="confirmDuplicate">Create copy</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim() || !duplicatePersonId" @click="confirmDuplicate">Create copy</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -189,6 +190,7 @@ const deleteDialog = ref(false)
 const deleting = ref(false)
 const duplicateDialog = ref(false)
 const duplicateName = ref('')
+const duplicatePersonId = ref('')
 const duplicating = ref(false)
 const exportingCvId = ref('')
 const exportingFormat = ref<'pdf' | 'docx' | 'json' | null>(null)
@@ -211,6 +213,10 @@ const headers = computed(() => [
   { title: 'Updated', key: 'updatedAt' },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ])
+const duplicatePersonOptions = computed(() => personStore.people.map((person) => ({
+  title: `${person.firstName} ${person.lastName}`,
+  value: person.id,
+})))
 
 watch(personId, () => loadCvs(), { immediate: true })
 
@@ -223,7 +229,7 @@ async function loadCvs() {
     } else {
       personName.value = ''
     }
-    await store.fetchCvs(personId.value)
+    await Promise.all([store.fetchCvs(personId.value), personStore.fetchPeople()])
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to load CVs.'
   }
@@ -269,6 +275,7 @@ function openDelete(cv: Cv) {
 function openDuplicate(cv: Cv) {
   cvToDuplicate.value = cv
   duplicateName.value = `${cv.name} (Copy)`
+  duplicatePersonId.value = cv.personId
   duplicateDialog.value = true
 }
 
@@ -277,7 +284,7 @@ async function confirmDuplicate() {
   duplicating.value = true
   error.value = ''
   try {
-    const copy = await cvApi.duplicate(cvToDuplicate.value.id, duplicateName.value.trim())
+    const copy = await cvApi.duplicate(cvToDuplicate.value.id, duplicateName.value.trim(), duplicatePersonId.value)
     await router.push(`/cvs/${copy.id}/content`)
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : 'Unable to duplicate this CV.'

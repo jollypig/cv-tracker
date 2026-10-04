@@ -1,5 +1,7 @@
 package com.example.cv.cv;
 
+import com.example.cv.person.Person;
+import com.example.cv.person.PersonRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,28 +14,31 @@ import java.util.UUID;
 public class CvDuplicationService {
 
     private final CvRepository cvRepository;
+    private final PersonRepository personRepository;
     private final CvContentService contentService;
     private final CvVersionRepository versionRepository;
     private final CvVersionService versionService;
     private final CvVersionSnapshotSerializer snapshotSerializer;
 
-    public CvDuplicationService(CvRepository cvRepository, CvContentService contentService,
+    public CvDuplicationService(CvRepository cvRepository, PersonRepository personRepository,
+            CvContentService contentService,
             CvVersionRepository versionRepository, CvVersionService versionService,
             CvVersionSnapshotSerializer snapshotSerializer) {
         this.cvRepository = cvRepository;
+        this.personRepository = personRepository;
         this.contentService = contentService;
         this.versionRepository = versionRepository;
         this.versionService = versionService;
         this.snapshotSerializer = snapshotSerializer;
     }
 
-    public CvResponse duplicate(UUID cvId, String requestedName) {
-        return duplicate(cvId, null, requestedName);
-    }
-
-    public CvResponse duplicate(UUID cvId, Integer sourceVersionNumber, String requestedName) {
+    public CvResponse duplicate(UUID cvId, Integer sourceVersionNumber, String requestedName,
+            UUID targetPersonId, UUID ownerId) {
         Cv source = cvRepository.findById(cvId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found"));
+        Person targetPerson = targetPersonId == null ? source.getPerson()
+                : personRepository.findByIdAndOwner_Id(targetPersonId, ownerId)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
         CvVersion parentVersion;
         CvVersionSnapshot sourceSnapshot;
         if (sourceVersionNumber == null) {
@@ -53,7 +58,7 @@ public class CvDuplicationService {
                 ? sourceName + " (Copy)"
                 : requestedName.trim();
 
-        Cv copy = new Cv(source.getPerson(), name, sourceLanguage, CvStatus.DRAFT);
+        Cv copy = new Cv(targetPerson, name, sourceLanguage, CvStatus.DRAFT);
         copy.setDescription(sourceDescription);
         copy.setTemplateId(sourceTemplateId);
         copy = cvRepository.save(copy);
@@ -61,8 +66,8 @@ public class CvDuplicationService {
         CvVersionResponse initialVersion = versionService.create(copy.getId(),
                 "Copied from " + sourceName, parentVersion == null ? null : parentVersion.getId());
 
-        return new CvResponse(copy.getId(), source.getPerson().getId(),
-                source.getPerson().getFirstName() + " " + source.getPerson().getLastName(),
+        return new CvResponse(copy.getId(), targetPerson.getId(),
+            targetPerson.getFirstName() + " " + targetPerson.getLastName(),
                 copy.getName(), copy.getDescription(), copy.getLanguage(), copy.getStatus(), copy.getTemplateId(),
                 initialVersion.id(), copy.getCreatedAt(), copy.getUpdatedAt());
     }
