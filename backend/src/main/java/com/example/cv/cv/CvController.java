@@ -73,15 +73,19 @@ public class CvController {
 
     @PostMapping("/cvs/{id}/duplicate")
     public ResponseEntity<CvResponse> duplicate(@PathVariable UUID id,
-            @Valid @RequestBody(required = false) CvDuplicateRequest request) {
-        CvResponse copy = duplicationService.duplicate(id, request == null ? null : request.name());
+            @Valid @RequestBody(required = false) CvDuplicateRequest request,
+            @AuthenticationPrincipal OidcUser principal) {
+        CvResponse copy = duplicationService.duplicate(id, null, request == null ? null : request.name(),
+                request == null ? null : request.personId(), authenticatedUsers.synchronize(principal).getId());
         return createdCvResponse(copy);
         }
 
         @PostMapping("/cvs/{id}/versions/{versionNumber}/branch")
         public ResponseEntity<CvResponse> branch(@PathVariable UUID id, @PathVariable int versionNumber,
-            @Valid @RequestBody(required = false) CvDuplicateRequest request) {
-        CvResponse copy = duplicationService.duplicate(id, versionNumber, request == null ? null : request.name());
+            @Valid @RequestBody(required = false) CvDuplicateRequest request,
+            @AuthenticationPrincipal OidcUser principal) {
+        CvResponse copy = duplicationService.duplicate(id, versionNumber, request == null ? null : request.name(),
+                request == null ? null : request.personId(), authenticatedUsers.synchronize(principal).getId());
         return createdCvResponse(copy);
         }
 
