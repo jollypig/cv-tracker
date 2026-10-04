@@ -1,6 +1,11 @@
 package com.example.cv.importing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.cv.cv.CvImportRequest;
+import com.example.cv.cv.CvResponse;
+import com.example.cv.cv.CvStatus;
+import com.example.cv.cv.CvImportService;
+import jakarta.validation.Validation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,11 +18,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -33,6 +40,8 @@ class CvDocumentImportServiceTest {
     @Mock
     private CvAiExtractor extractor;
     @Mock
+    private CvImportService cvImportService;
+    @Mock
     private ObjectMapper objectMapper;
 
     private CvDocumentImportService service;
@@ -42,7 +51,8 @@ class CvDocumentImportServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        service = new CvDocumentImportService(imports, pdfParser, htmlParser, extractor, objectMapper, 1024);
+        service = new CvDocumentImportService(imports, pdfParser, htmlParser, extractor, cvImportService,
+                new ParsedCvToContentMapper(Validation.buildDefaultValidatorFactory().getValidator()), objectMapper, 1024);
         Mockito.lenient().when(imports.save(any(CvDocumentImport.class))).thenAnswer(invocation -> {
             CvDocumentImport saved = invocation.getArgument(0);
             savedImport.set(saved);
@@ -61,7 +71,7 @@ class CvDocumentImportServiceTest {
 
         CvDocumentImportResponse response = service.startImport(file);
 
-        assertThat(response.status()).isEqualTo(CvImportStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo(CvImportStatus.NEEDS_REVIEW);
         assertThat(response.result()).isEqualTo(parsedCv);
         assertThat(response.createdAt()).isNotNull();
         assertThat(response.updatedAt()).isNotNull();
@@ -77,7 +87,7 @@ class CvDocumentImportServiceTest {
 
         CvDocumentImportResponse retrieved = service.findById(created.importId());
 
-        assertThat(retrieved.status()).isEqualTo(CvImportStatus.COMPLETED);
+        assertThat(retrieved.status()).isEqualTo(CvImportStatus.NEEDS_REVIEW);
         assertThat(retrieved.result()).isEqualTo(parsedCv);
         verify(htmlParser).parse(file.getBytes(), "text/html");
     }
@@ -117,5 +127,50 @@ class CvDocumentImportServiceTest {
         assertThatThrownBy(() -> service.findById(missingId))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("CV import was not found");
+    }
+
+    @Test
+    void savesCorrectedDraftForReview() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "resume.pdf", "application/pdf", new byte[] {1});
+        CvDocumentImportResponse created = service.startImport(file);
+        ParsedCv corrected = new ParsedCv(null, null, List.of(), List.of(), List.of(), List.of(), List.of(),
+                List.of("reviewed"));
+        when(imports.findById(created.importId())).thenReturn(Optional.of(savedImport.get()));
+        when(objectMapper.writeValueAsString(corrected)).thenReturn("corrected");
+
+        CvDocumentImportResponse updated = service.updateDraft(created.importId(), corrected);
+
+        assertThat(updated.status()).isEqualTo(CvImportStatus.NEEDS_REVIEW);
+        assertThat(updated.result()).isEqualTo(corrected);
+        assertThat(savedImport.get().getResultJson()).isEqualTo("corrected");
+        verify(imports, org.mockito.Mockito.times(3)).save(any(CvDocumentImport.class));
+    }
+
+    @Test
+    void approvalCreatesCvAndCanOnlyBeAppliedOnce() throws Exception {
+        MockMultipartFile file = new MockMultipartFile("file", "resume.pdf", "application/pdf", new byte[] {1});
+        CvDocumentImportResponse created = service.startImport(file);
+        UUID personId = UUID.randomUUID();
+        UUID cvId = UUID.randomUUID();
+        when(imports.findById(created.importId())).thenReturn(Optional.of(savedImport.get()));
+        when(cvImportService.importCv(eq(personId), any())).thenReturn(new CvResponse(cvId, personId,
+                "Test Person", "Resume", null, "en", CvStatus.DRAFT, null, null, List.of(),
+                Instant.now(), Instant.now()));
+        CvDraftApprovalRequest request = new CvDraftApprovalRequest(personId, "Resume", "en", CvStatus.DRAFT,
+                List.of());
+
+        CvDocumentImportResponse approved = service.approveDraft(created.importId(), request);
+
+        assertThat(approved.status()).isEqualTo(CvImportStatus.APPROVED);
+        assertThat(approved.cvId()).isEqualTo(cvId);
+        org.mockito.ArgumentCaptor<CvImportRequest> requestCaptor =
+                org.mockito.ArgumentCaptor.forClass(CvImportRequest.class);
+        verify(cvImportService).importCv(eq(personId), requestCaptor.capture());
+        assertThat(requestCaptor.getValue().name()).isEqualTo("Resume");
+        assertThat(requestCaptor.getValue().content().experiences()).isEmpty();
+        assertThatThrownBy(() -> service.approveDraft(created.importId(), request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("not awaiting review");
+        verify(cvImportService, org.mockito.Mockito.times(1)).importCv(eq(personId), any());
     }
 }

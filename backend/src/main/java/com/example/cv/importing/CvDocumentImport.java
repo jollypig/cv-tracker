@@ -8,6 +8,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +39,9 @@ public class CvDocumentImport {
 
     @Column(name = "result_json", columnDefinition = "text")
     private String resultJson;
+
+    @Column(name = "cv_id", unique = true)
+    private UUID cvId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -76,11 +81,31 @@ public class CvDocumentImport {
         updatedAt = Instant.now();
     }
 
-    public void complete(String resultJson, boolean needsReview) {
+    public void complete(String resultJson) {
         this.resultJson = resultJson;
-        this.status = needsReview ? CvImportStatus.NEEDS_REVIEW : CvImportStatus.COMPLETED;
+        this.status = CvImportStatus.NEEDS_REVIEW;
         this.errorMessage = null;
         updatedAt = Instant.now();
+    }
+
+    public void updateDraft(String resultJson) {
+        assertReviewable();
+        this.resultJson = resultJson;
+        this.status = CvImportStatus.NEEDS_REVIEW;
+        updatedAt = Instant.now();
+    }
+
+    public void approve(UUID cvId) {
+        assertReviewable();
+        this.cvId = cvId;
+        this.status = CvImportStatus.APPROVED;
+        updatedAt = Instant.now();
+    }
+
+    public void assertReviewable() {
+        if (resultJson == null || status == CvImportStatus.FAILED || status == CvImportStatus.APPROVED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "CV import is not awaiting review");
+        }
     }
 
     public void fail(String errorMessage) {
@@ -97,6 +122,7 @@ public class CvDocumentImport {
     public CvImportStatus getStatus() { return status; }
     public String getErrorMessage() { return errorMessage; }
     public String getResultJson() { return resultJson; }
+    public UUID getCvId() { return cvId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }
