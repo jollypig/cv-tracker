@@ -48,13 +48,19 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
 
     private final ChatModel chatModel;
     private final ObjectMapper objectMapper;
+    private final ParsedCvOutputValidator outputValidator;
     private final BeanOutputConverter<DetectedCvSections> sectionOutputConverter =
             new BeanOutputConverter<>(DetectedCvSections.class);
     private final BeanOutputConverter<ParsedCv> outputConverter = new BeanOutputConverter<>(ParsedCv.class);
 
-    public OllamaCvAiExtractor(ChatModel chatModel, ObjectMapper objectMapper) {
+    public OllamaCvAiExtractor(
+            ChatModel chatModel,
+            ObjectMapper objectMapper,
+            ParsedCvOutputValidator outputValidator
+    ) {
         this.chatModel = chatModel;
         this.objectMapper = objectMapper;
+        this.outputValidator = outputValidator;
     }
 
     @Override
@@ -99,7 +105,7 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
             if (parsedCv == null) {
                 throw new IllegalArgumentException("The model returned no CV data");
             }
-            return CvPersonalDataEnricher.enrich(parsedCv, document);
+            return outputValidator.validate(CvPersonalDataEnricher.enrich(parsedCv, document));
         } catch (JsonProcessingException | RuntimeException exception) {
             if (exception instanceof CvAiExtractionException extractionException) {
                 throw extractionException;

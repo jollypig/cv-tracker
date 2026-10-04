@@ -1,7 +1,9 @@
 package com.example.cv.importing;
 
+import jakarta.validation.Valid;
+
 public record ParsedLanguage(
-        ExtractedValue<String> name,
-        ExtractedValue<String> proficiency
+        @Valid ExtractedValue<String> name,
+        @Valid ExtractedValue<String> proficiency
 ) {
 }
