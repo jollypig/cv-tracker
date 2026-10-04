@@ -118,6 +118,44 @@ class OllamaCvAiExtractorTest {
         org.mockito.Mockito.verify(chatModel, org.mockito.Mockito.times(2)).call(any(Prompt.class));
     }
 
+        @Test
+        void extractsContactDetailsDeterministicallyAndRejectsUnsupportedPersonalData() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse sectionResponse = mock(ChatResponse.class);
+        Generation sectionGeneration = mock(Generation.class);
+        AssistantMessage sectionMessage = mock(AssistantMessage.class);
+        ChatResponse extractionResponse = mock(ChatResponse.class);
+        Generation extractionGeneration = mock(Generation.class);
+        AssistantMessage extractionMessage = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(sectionResponse, extractionResponse);
+        when(sectionResponse.getResult()).thenReturn(sectionGeneration);
+        when(sectionGeneration.getOutput()).thenReturn(sectionMessage);
+        when(sectionMessage.getText()).thenReturn("not json");
+        when(extractionResponse.getResult()).thenReturn(extractionGeneration);
+        when(extractionGeneration.getOutput()).thenReturn(extractionMessage);
+        when(extractionMessage.getText()).thenReturn("""
+            {"personalData":{"firstName":{"value":"Invented","confidence":1.0,"sourceText":"Alice Example"},
+            "lastName":null,"email":{"value":"invented@example.com","confidence":1.0,"sourceText":"Alice Example"},
+            "phone":null,"location":null,"urls":[]},"professionalSummary":null,"employment":[],
+            "projects":[],"education":[],"languages":[],"skills":[]}
+            """);
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+            new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT,
+                "Alice Example\nEmail: alice@example.com\nEmployment: 2020-2024\nPhone: +1 (555) 123-4567", null),
+            new NormalizedCvBlock(NormalizedCvBlock.Type.LINK, "Portfolio", null, "https://portfolio.example")
+        ));
+
+        ParsedCv extracted = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).extract(document);
+        PersonalData result = extracted.personalData();
+
+        assertThat(result.firstName()).isNull();
+        assertThat(result.email()).isEqualTo(new ExtractedValue<>("alice@example.com", 1.0, "alice@example.com"));
+        assertThat(result.phone()).isEqualTo(new ExtractedValue<>("+1 (555) 123-4567", 0.95,
+            "+1 (555) 123-4567"));
+        assertThat(result.urls()).containsExactly(new ExtractedValue<>("https://portfolio.example", 1.0, "Portfolio"));
+        assertThat(extracted.warnings()).anyMatch(warning -> warning.contains("first name requires review"));
+        }
+
     @Test
     void fallsBackToHeadingsWhenModelReturnsInvalidSectionRanges() {
         ChatModel chatModel = mock(ChatModel.class);

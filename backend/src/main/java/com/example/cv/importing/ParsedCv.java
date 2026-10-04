@@ -10,8 +10,21 @@ public record ParsedCv(
         List<ParsedProject> projects,
         List<ParsedEducation> education,
         List<ParsedLanguage> languages,
-        List<ParsedSkill> skills
+        List<ParsedSkill> skills,
+        List<String> warnings
 ) {
+
+    public ParsedCv(
+            PersonalData personalData,
+            ExtractedValue<String> professionalSummary,
+            List<ParsedEmployment> employment,
+            List<ParsedProject> projects,
+            List<ParsedEducation> education,
+            List<ParsedLanguage> languages,
+            List<ParsedSkill> skills
+    ) {
+        this(personalData, professionalSummary, employment, projects, education, languages, skills, List.of());
+    }
 
     public ParsedCv {
         Objects.requireNonNull(employment, "employment");
@@ -19,6 +32,7 @@ public record ParsedCv(
         Objects.requireNonNull(education, "education");
         Objects.requireNonNull(languages, "languages");
         Objects.requireNonNull(skills, "skills");
+        warnings = warnings == null ? List.of() : List.copyOf(warnings);
         employment = List.copyOf(employment);
         projects = List.copyOf(projects);
         education = List.copyOf(education);

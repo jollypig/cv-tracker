@@ -32,6 +32,10 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
             Extract the CV data from the normalized document below.
             Use only information present in the document. Do not invent values.
             Use null for unknown scalar values and empty arrays for unknown collections.
+            For ambiguous skill names, you may suggest a canonical name only from this allowlist:
+            %s
+            Preserve each raw skill name. Never assign canonical IDs or calculate skill experience.
+            Leave unmatched skills without a canonical suggestion so they remain available for review.
             Detected logical sections:
             %s
 
@@ -84,6 +88,7 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
             String normalizedDocument = objectMapper.writeValueAsString(document);
             String normalizedSections = objectMapper.writeValueAsString(sections);
             String promptText = EXTRACTION_INSTRUCTIONS.formatted(
+                    SkillCatalog.canonicalNames(),
                     normalizedSections,
                     outputConverter.getFormat(),
                     normalizedDocument
@@ -94,7 +99,7 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
             if (parsedCv == null) {
                 throw new IllegalArgumentException("The model returned no CV data");
             }
-            return parsedCv;
+            return CvPersonalDataEnricher.enrich(parsedCv, document);
         } catch (JsonProcessingException | RuntimeException exception) {
             if (exception instanceof CvAiExtractionException extractionException) {
                 throw extractionException;
