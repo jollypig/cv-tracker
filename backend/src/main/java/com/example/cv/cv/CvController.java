@@ -25,12 +25,14 @@ import java.util.UUID;
 public class CvController {
 
     private final CvService cvService;
+    private final CvImportService importService;
     private final CvDuplicationService duplicationService;
     private final AuthenticatedUserService authenticatedUsers;
 
-    public CvController(CvService cvService, CvDuplicationService duplicationService,
+    public CvController(CvService cvService, CvImportService importService, CvDuplicationService duplicationService,
             AuthenticatedUserService authenticatedUsers) {
         this.cvService = cvService;
+        this.importService = importService;
         this.duplicationService = duplicationService;
         this.authenticatedUsers = authenticatedUsers;
     }
@@ -60,6 +62,13 @@ public class CvController {
         URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/api/v1/cvs/{id}").buildAndExpand(cv.id()).toUri();
         return ResponseEntity.created(location).body(cv);
+    }
+
+    @PostMapping("/persons/{personId}/cvs/import")
+    public ResponseEntity<CvResponse> importCv(@PathVariable UUID personId,
+            @Valid @RequestBody CvImportRequest request) {
+        CvResponse cv = importService.importCv(personId, request);
+        return createdCvResponse(cv);
     }
 
     @PostMapping("/cvs/{id}/duplicate")
