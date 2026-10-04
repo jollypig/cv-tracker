@@ -22,6 +22,10 @@ spring:
     open-in-view: false
     hibernate:
       ddl-auto: validate
+  servlet:
+    multipart:
+      max-file-size: ${CV_IMPORT_MAX_FILE_SIZE:10MB}
+      max-request-size: ${CV_IMPORT_MAX_REQUEST_SIZE:11MB}
   flyway:
     enabled: true
 
