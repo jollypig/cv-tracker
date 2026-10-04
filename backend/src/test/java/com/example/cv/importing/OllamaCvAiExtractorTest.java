@@ -25,6 +25,10 @@ class OllamaCvAiExtractorTest {
             {"personalData":null,"professionalSummary":null,"employment":[],"projects":[],"education":[],"languages":[],"skills":[]}
             """;
 
+        private static final String SECTIONS_JSON = """
+            {"sections":[{"type":"WORK HISTORY","start":0,"end":25}]}
+            """;
+
     @Test
     void convertsModelResponseToParsedCv() {
         ChatModel chatModel = mock(ChatModel.class);
@@ -54,6 +58,103 @@ class OllamaCvAiExtractorTest {
                 .isInstanceOf(CvAiExtractionException.class)
                 .hasMessage("CV extraction failed; verify the configured AI provider and its response.")
                 .hasCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void detectsSectionsAndNormalizesCommonHeadingVariations() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn(SECTIONS_JSON);
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Work History and projects", null)
+        ));
+
+        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+
+        assertThat(result.sections()).containsExactly(new DetectedCvSection("EXPERIENCE", 0, 25));
+    }
+
+    @Test
+    void fallsBackToUnknownSectionWhenModelCallFails() {
+        ChatModel chatModel = mock(ChatModel.class);
+        when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("connection refused"));
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Unlabeled CV content", null)
+        ));
+
+        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+
+        assertThat(result.sections()).containsExactly(new DetectedCvSection("UNKNOWN", 0, 20));
+    }
+
+    @Test
+    void detectsSectionsBeforeExtractingCvData() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse sectionResponse = mock(ChatResponse.class);
+        Generation sectionGeneration = mock(Generation.class);
+        AssistantMessage sectionMessage = mock(AssistantMessage.class);
+        ChatResponse extractionResponse = mock(ChatResponse.class);
+        Generation extractionGeneration = mock(Generation.class);
+        AssistantMessage extractionMessage = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(sectionResponse, extractionResponse);
+        when(sectionResponse.getResult()).thenReturn(sectionGeneration);
+        when(sectionGeneration.getOutput()).thenReturn(sectionMessage);
+        when(sectionMessage.getText()).thenReturn(SECTIONS_JSON);
+        when(extractionResponse.getResult()).thenReturn(extractionGeneration);
+        when(extractionGeneration.getOutput()).thenReturn(extractionMessage);
+        when(extractionMessage.getText()).thenReturn(PARSED_CV_JSON);
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Work History and projects", null)
+        ));
+
+        ParsedCv result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).extract(document);
+
+        assertThat(result).isNotNull();
+        org.mockito.Mockito.verify(chatModel, org.mockito.Mockito.times(2)).call(any(Prompt.class));
+    }
+
+    @Test
+    void fallsBackToHeadingsWhenModelReturnsInvalidSectionRanges() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn("{\"sections\":[{\"type\":\"SKILLS\",\"start\":4,\"end\":2}]}");
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.HEADING, "Technical Skills", null),
+                new NormalizedCvBlock(NormalizedCvBlock.Type.LIST_ITEM, "Java", null)
+        ));
+
+        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+
+        assertThat(result.sections()).containsExactly(new DetectedCvSection("SKILLS", 0, 21));
+    }
+
+    @Test
+    void preservesUnknownSectionsAsUnknown() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn("{\"sections\":[{\"type\":\"Hobbies\",\"start\":0,\"end\":6}]}");
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Hobbies", null)
+        ));
+
+        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+
+        assertThat(result.sections()).containsExactly(new DetectedCvSection("UNKNOWN", 0, 6));
     }
 
     @Test
