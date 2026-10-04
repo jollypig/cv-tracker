@@ -71,6 +71,24 @@ class CvImportDomainTest {
     }
 
     @Test
+    void normalizedDocumentCleansTextAndPreservesBlockMetadataAndOrder() {
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT,
+                        "\uFEFF  Senior   Engineer\r\n\r\n \tRemote\u00A0work\u0000 ", 2),
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "\u200B", 3),
+                new NormalizedCvBlock(NormalizedCvBlock.Type.LINK, " Portfolio\tsite ", 4, "https://example.com")
+        ));
+
+        assertThat(document.blocks())
+                .extracting(NormalizedCvBlock::text)
+                .containsExactly("Senior Engineer\n\nRemote work", "Portfolio site");
+        assertThat(document.blocks())
+                .extracting(NormalizedCvBlock::pageNumber)
+                .containsExactly(2, 4);
+        assertThat(document.blocks().get(1).link()).isEqualTo("https://example.com");
+    }
+
+    @Test
     void rejectsConfidenceOutsideZeroToOne() {
         assertThatThrownBy(() -> new ExtractedValue<>("value", 1.1, "source"))
                 .isInstanceOf(IllegalArgumentException.class);

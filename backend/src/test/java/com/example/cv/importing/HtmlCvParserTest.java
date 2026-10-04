@@ -39,7 +39,7 @@ class HtmlCvParserTest {
                         "Ada Lovelace",
                         "Engineer & mathematician",
                         "Analytical Engine",
-                        "Role |  | Programmer",
+                        "Role | | Programmer",
                         "Profile");
         assertThat(document.blocks().get(4).link()).isEqualTo("https://example.com/profile");
     }

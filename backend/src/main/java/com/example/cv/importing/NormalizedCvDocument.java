@@ -7,6 +7,6 @@ public record NormalizedCvDocument(List<NormalizedCvBlock> blocks) {
 
     public NormalizedCvDocument {
         Objects.requireNonNull(blocks, "blocks");
-        blocks = List.copyOf(blocks);
+        blocks = CvDocumentNormalizer.normalize(List.copyOf(blocks));
     }
 }
