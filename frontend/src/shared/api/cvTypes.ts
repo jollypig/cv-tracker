@@ -85,6 +85,16 @@ export interface CvVersionDetail extends CvVersion {
   snapshot: CvVersionSnapshot
 }
 
+export interface CvShareStatus {
+  enabled: boolean
+  createdAt: string | null
+}
+
+export interface CvShareLink {
+  url: string
+  createdAt: string
+}
+
 export interface CvExperience {
   company: string
   position: string

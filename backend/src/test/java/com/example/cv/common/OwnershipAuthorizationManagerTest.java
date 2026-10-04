@@ -72,6 +72,18 @@ class OwnershipAuthorizationManagerTest {
     }
 
     @Test
+    void cvShareManagementRequestsMustBelongToTheAuthenticatedAccount() {
+        UUID ownerId = UUID.randomUUID();
+        UUID cvId = UUID.randomUUID();
+        stubAccount(ownerId);
+        when(cvRepository.existsByIdAndPerson_Owner_Id(cvId, ownerId)).thenReturn(true, false);
+        OwnershipAuthorizationManager manager = manager();
+
+        assertTrue(authorize(manager, "/api/v1/cvs/" + cvId + "/share"));
+        assertFalse(authorize(manager, "/api/v1/cvs/" + cvId + "/share"));
+    }
+
+    @Test
     void exportDownloadsMustBelongToTheAuthenticatedAccount() {
         UUID ownerId = UUID.randomUUID();
         UUID exportId = UUID.randomUUID();

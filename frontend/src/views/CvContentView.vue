@@ -7,6 +7,7 @@
         <p>{{ cv?.personName ?? translate('editor.tagline') }}</p>
       </div>
       <div class="content-heading-actions">
+        <v-btn variant="text" prepend-icon="mdi-share-variant" :disabled="loading || !cv" @click="openShareDialog">{{ translate('editor.share') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">{{ translate('editor.duplicate') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-translate" @click="openLanguageVersionDialog">{{ translate('editor.createLanguageVersion') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('editor.versions') }}</v-btn>
@@ -45,6 +46,35 @@
           <v-btn variant="text" @click="duplicateDialog = false">{{ translate('editor.cancel') }}</v-btn>
           <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim() || (duplicateAsLanguageVersion && !duplicateLanguage.trim())" @click="duplicateCv">
             {{ translate(duplicateAsLanguageVersion ? 'editor.createLanguageVersionAction' : 'editor.createCopy') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="shareDialog" max-width="520">
+      <v-card>
+        <v-card-title class="dialog-title">{{ translate('editor.shareTitle') }}</v-card-title>
+        <v-card-text>
+          <p>{{ translate('editor.shareDescription') }}</p>
+          <v-alert v-if="shareEnabled" class="share-status" type="success" variant="tonal">
+            {{ translate('editor.shareEnabled') }}
+          </v-alert>
+          <v-text-field v-if="shareUrl" :model-value="shareUrl" :label="translate('editor.shareLink')" readonly variant="outlined">
+            <template #append-inner>
+              <v-btn icon="mdi-content-copy" size="small" variant="text" :aria-label="translate('editor.copyShareLink')" :title="translate('editor.copyShareLink')" @click="copyShareLink" />
+            </template>
+          </v-text-field>
+          <v-alert v-if="shareCopied" type="success" variant="tonal">{{ translate('editor.shareCopied') }}</v-alert>
+          <v-alert v-if="shareError" type="error" variant="tonal">{{ translate(shareError) }}</v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn v-if="shareEnabled" color="error" variant="text" :loading="shareLoading" @click="revokeShareLink">
+            {{ translate('editor.revokeShareLink') }}
+          </v-btn>
+          <v-spacer />
+          <v-btn variant="text" @click="shareDialog = false">{{ translate('editor.cancel') }}</v-btn>
+          <v-btn color="primary" :loading="shareLoading" @click="createShareLink">
+            {{ translate(shareEnabled ? 'editor.replaceShareLink' : 'editor.createShareLink') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -354,6 +384,12 @@ const selectingTemplate = ref(false)
 const error = ref('')
 const saved = ref(false)
 const duplicateDialog = ref(false)
+const shareDialog = ref(false)
+const shareEnabled = ref(false)
+const shareUrl = ref('')
+const shareLoading = ref(false)
+const shareError = ref('')
+const shareCopied = ref(false)
 const duplicateName = ref('')
 const duplicateLanguage = ref('')
 const duplicateAsLanguageVersion = ref(false)
@@ -434,6 +470,62 @@ function openDuplicateDialog() {
   duplicateAsLanguageVersion.value = false
   duplicateName.value = `${cv.value?.name ?? 'CV'} (Copy)`
   duplicateDialog.value = true
+}
+
+async function openShareDialog() {
+  if (!await saveContent()) return
+  shareDialog.value = true
+  shareLoading.value = true
+  shareError.value = ''
+  try {
+    const status = await cvApi.shareStatus(cvId)
+    shareEnabled.value = status.enabled
+  } catch {
+    shareError.value = 'editor.shareLoadError'
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+async function createShareLink() {
+  shareLoading.value = true
+  shareError.value = ''
+  shareCopied.value = false
+  try {
+    const link = await cvApi.createShareLink(cvId)
+    shareEnabled.value = true
+    shareUrl.value = link.url
+  } catch {
+    shareError.value = 'editor.shareCreateError'
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+async function revokeShareLink() {
+  shareLoading.value = true
+  shareError.value = ''
+  shareCopied.value = false
+  try {
+    await cvApi.revokeShareLink(cvId)
+    shareEnabled.value = false
+    shareUrl.value = ''
+  } catch {
+    shareError.value = 'editor.shareRevokeError'
+  } finally {
+    shareLoading.value = false
+  }
+}
+
+async function copyShareLink() {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    shareCopied.value = true
+    shareError.value = ''
+  } catch {
+    shareCopied.value = false
+    shareError.value = 'editor.shareClipboardError'
+  }
 }
 
 function openLanguageVersionDialog() {
@@ -637,13 +729,13 @@ function addCustomSection() {
   content.customSections.push({ title: '', content: '', sortOrder: content.customSections.length })
 }
 
-async function saveContent() {
+async function saveContent(): Promise<boolean> {
   error.value = ''
   saved.value = false
   if (draftTimer) clearTimeout(draftTimer)
   saveLocalDraft()
   const validation = await editorForm.value?.validate()
-  if (validation && !validation.valid) return
+  if (validation && !validation.valid) return false
   saving.value = true
   try {
     content.sections.forEach((section, index) => { section.sortOrder = index })
@@ -660,8 +752,10 @@ async function saveContent() {
     }
     draftTracking.value = true
     saved.value = true
+    return true
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : translate('editor.saveError')
+    return false
   } finally {
     saving.value = false
   }

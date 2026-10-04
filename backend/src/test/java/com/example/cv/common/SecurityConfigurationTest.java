@@ -1,6 +1,8 @@
 package com.example.cv.common;
 
 import jakarta.servlet.http.Cookie;
+import com.example.cv.cv.CvShareController;
+import com.example.cv.cv.CvShareService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -22,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest({SecurityConfigurationTest.ProbeController.class, StatusController.class})
+@WebMvcTest({SecurityConfigurationTest.ProbeController.class, StatusController.class, CvShareController.class})
 @Import(SecurityConfiguration.class)
 class SecurityConfigurationTest {
 
@@ -31,6 +33,9 @@ class SecurityConfigurationTest {
 
     @MockitoBean
     private OwnershipAuthorizationManager ownershipManager;
+
+    @MockitoBean
+    private CvShareService shareService;
 
     @Test
     void apiRequiresAuthentication() throws Exception {
@@ -45,11 +50,20 @@ class SecurityConfigurationTest {
     }
 
     @Test
+    void sharedCvEndpointIsPublic() throws Exception {
+        mockMvc.perform(get("/api/v1/public/cv-shares/test-token"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void ownedResourcesReturnForbiddenWhenOwnershipIsDenied() throws Exception {
         when(ownershipManager.check(any(), any())).thenReturn(new AuthorizationDecision(false));
 
         mockMvc.perform(get("/api/v1/persons/{id}", UUID.randomUUID()).with(oidcLogin()))
                 .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/cvs/{id}/share", UUID.randomUUID()).with(oidcLogin()))
+            .andExpect(status().isForbidden());
     }
 
     @Test
