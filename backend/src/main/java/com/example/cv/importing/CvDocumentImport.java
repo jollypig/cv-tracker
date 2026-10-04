@@ -49,6 +49,9 @@ public class CvDocumentImport {
     @Column(name = "cv_id", unique = true)
     private UUID cvId;
 
+    @Column(name = "owner_id")
+    private UUID ownerId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -58,12 +61,13 @@ public class CvDocumentImport {
     protected CvDocumentImport() {
     }
 
-    public CvDocumentImport(String fileName, String mediaType, long fileSize) {
+    public CvDocumentImport(String fileName, String mediaType, long fileSize, UUID ownerId) {
         Instant now = Instant.now();
         this.id = UUID.randomUUID();
         this.fileName = fileName;
         this.mediaType = mediaType;
         this.fileSize = fileSize;
+        this.ownerId = ownerId;
         this.status = CvImportStatus.PENDING;
         this.createdAt = now;
         this.updatedAt = now;
@@ -136,6 +140,7 @@ public class CvDocumentImport {
     public String getAiModelName() { return aiModelName; }
     public String getAiModelVersion() { return aiModelVersion; }
     public UUID getCvId() { return cvId; }
+    public UUID getOwnerId() { return ownerId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

@@ -5,6 +5,7 @@ import com.example.cv.auth.AuthenticatedUserRepository;
 import com.example.cv.cv.CvExportRepository;
 import com.example.cv.cv.CvRepository;
 import com.example.cv.cv.CvVersionRepository;
+import com.example.cv.importing.CvDocumentImportRepository;
 import com.example.cv.person.PersonRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,6 +45,8 @@ class OwnershipAuthorizationManagerTest {
     private CvVersionRepository versionRepository;
     @Mock
     private CvExportRepository exportRepository;
+    @Mock
+    private CvDocumentImportRepository importRepository;
 
     @Test
     void personRequestsMustBelongToTheAuthenticatedAccount() {
@@ -93,9 +96,21 @@ class OwnershipAuthorizationManagerTest {
         assertFalse(authorize(manager(), "/api/v1/exports/" + exportId + "/download"));
     }
 
+    @Test
+    void importReviewRequestsMustBelongToTheAuthenticatedAccount() {
+        UUID ownerId = UUID.randomUUID();
+        UUID importId = UUID.randomUUID();
+        stubAccount(ownerId);
+        when(importRepository.existsByIdAndOwnerId(importId, ownerId)).thenReturn(true, false);
+        OwnershipAuthorizationManager manager = manager();
+
+        assertTrue(authorize(manager, "/api/v1/cvs/import/" + importId + "/draft"));
+        assertFalse(authorize(manager, "/api/v1/cvs/import/" + importId + "/approve"));
+    }
+
     private OwnershipAuthorizationManager manager() {
         return new OwnershipAuthorizationManager(
-                userRepository, personRepository, cvRepository, versionRepository, exportRepository);
+            userRepository, personRepository, cvRepository, versionRepository, exportRepository, importRepository);
     }
 
     private void stubAccount(UUID ownerId) {

@@ -64,6 +64,9 @@ class SecurityConfigurationTest {
 
         mockMvc.perform(get("/api/v1/cvs/{id}/share", UUID.randomUUID()).with(oidcLogin()))
             .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/cvs/import/{id}", UUID.randomUUID()).with(oidcLogin()))
+            .andExpect(status().isForbidden());
     }
 
     @Test
