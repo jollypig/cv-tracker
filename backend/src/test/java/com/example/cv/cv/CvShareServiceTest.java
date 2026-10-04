@@ -7,6 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,13 +50,17 @@ class CvShareServiceTest {
     @Test
     void rendersTheCurrentCvForAValidShareToken() {
         UUID cvId = UUID.randomUUID();
+        UUID shareId = UUID.randomUUID();
         String token = "share-token";
         Cv cv = mock(Cv.class);
+        CvShare share = mock(CvShare.class);
         CvContent content = mock(CvContent.class);
         CvVersionSnapshot snapshot = mock(CvVersionSnapshot.class);
         JsonNode serialized = mock(JsonNode.class);
         when(cv.getId()).thenReturn(cvId);
-        when(shareRepository.findByTokenHash(hash(token))).thenReturn(Optional.of(new CvShare(cv, hash(token))));
+        when(share.getId()).thenReturn(shareId);
+        when(share.getCv()).thenReturn(cv);
+        when(shareRepository.findByTokenHash(hash(token))).thenReturn(Optional.of(share));
         when(cvRepository.findById(cvId)).thenReturn(Optional.of(cv));
         when(contentService.get(cvId)).thenReturn(content);
         when(snapshotSerializer.serialize(cv, content)).thenReturn(serialized);
@@ -64,6 +69,26 @@ class CvShareServiceTest {
 
         assertThat(service.render(token)).isEqualTo("<html>published CV</html>");
         verify(htmlRenderer).render(snapshot, "modern");
+        verify(shareRepository).recordView(eq(shareId), any(Instant.class));
+    }
+
+    @Test
+    void reportsViewMetricsForAnEnabledShare() {
+        UUID cvId = UUID.randomUUID();
+        Instant lastViewedAt = Instant.parse("2026-10-04T12:00:00Z");
+        Cv cv = mock(Cv.class);
+        CvShare share = mock(CvShare.class);
+        when(cvRepository.findById(cvId)).thenReturn(Optional.of(cv));
+        when(shareRepository.findByCv_Id(cvId)).thenReturn(Optional.of(share));
+        when(share.getCreatedAt()).thenReturn(Instant.parse("2026-10-01T12:00:00Z"));
+        when(share.getViewCount()).thenReturn(8L);
+        when(share.getLastViewedAt()).thenReturn(lastViewedAt);
+
+        CvShareStatus status = service.status(cvId);
+
+        assertThat(status.enabled()).isTrue();
+        assertThat(status.viewCount()).isEqualTo(8);
+        assertThat(status.lastViewedAt()).isEqualTo(lastViewedAt);
     }
 
     @Test
@@ -73,6 +98,7 @@ class CvShareServiceTest {
         assertThatThrownBy(() -> service.render("unknown"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("404 NOT_FOUND");
+        verify(shareRepository, org.mockito.Mockito.never()).recordView(any(), any());
     }
 
     private String hash(String token) {

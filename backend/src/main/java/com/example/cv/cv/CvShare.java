@@ -32,6 +32,12 @@ public class CvShare {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "view_count", nullable = false)
+    private long viewCount;
+
+    @Column(name = "last_viewed_at")
+    private Instant lastViewedAt;
+
     protected CvShare() {
     }
 
@@ -50,4 +56,6 @@ public class CvShare {
     public String getTokenHash() { return tokenHash; }
     public void setTokenHash(String tokenHash) { this.tokenHash = tokenHash; }
     public Instant getCreatedAt() { return createdAt; }
+    public long getViewCount() { return viewCount; }
+    public Instant getLastViewedAt() { return lastViewedAt; }
 }

@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
@@ -41,8 +42,8 @@ public class CvShareService {
     public CvShareStatus status(UUID cvId) {
         getCv(cvId);
         return shareRepository.findByCv_Id(cvId)
-                .map(share -> new CvShareStatus(true, share.getCreatedAt()))
-                .orElseGet(() -> new CvShareStatus(false, null));
+            .map(share -> new CvShareStatus(true, share.getCreatedAt(), share.getViewCount(), share.getLastViewedAt()))
+            .orElseGet(() -> new CvShareStatus(false, null, 0, null));
     }
 
     public CvShareCreated createOrRotate(UUID cvId) {
@@ -69,7 +70,9 @@ public class CvShareService {
                 snapshotSerializer.serialize(cv, contentService.get(cv.getId())));
         String templateKey = cv.getTemplateId() == null ? "modern"
                 : templateRepository.findById(cv.getTemplateId()).map(CvTemplate::getTemplateKey).orElse("modern");
-        return htmlRenderer.render(snapshot, templateKey);
+        String html = htmlRenderer.render(snapshot, templateKey);
+        shareRepository.recordView(share.getId(), Instant.now());
+        return html;
     }
 
     private Cv getCv(UUID cvId) {
