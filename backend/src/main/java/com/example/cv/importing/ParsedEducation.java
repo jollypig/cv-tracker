@@ -1,11 +1,13 @@
 package com.example.cv.importing;
 
+import jakarta.validation.Valid;
+
 public record ParsedEducation(
-        ExtractedValue<String> institution,
-        ExtractedValue<String> degree,
-        ExtractedValue<String> fieldOfStudy,
-        ExtractedValue<String> startDate,
-        ExtractedValue<String> endDate,
-        ExtractedValue<String> description
+        @Valid ExtractedValue<String> institution,
+        @Valid ExtractedValue<String> degree,
+        @Valid ExtractedValue<String> fieldOfStudy,
+        @Valid ExtractedValue<String> startDate,
+        @Valid ExtractedValue<String> endDate,
+        @Valid ExtractedValue<String> description
 ) {
 }

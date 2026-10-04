@@ -19,8 +19,12 @@ import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
 import static org.mockito.Mockito.doThrow;
 
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+
 class OllamaCvAiExtractorTest {
 
+    private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
     private static final String PARSED_CV_JSON = """
             {"personalData":null,"professionalSummary":null,"employment":[],"projects":[],"education":[],"languages":[],"skills":[]}
             """;
@@ -40,7 +44,7 @@ class OllamaCvAiExtractorTest {
         when(generation.getOutput()).thenReturn(message);
         when(message.getText()).thenReturn(PARSED_CV_JSON);
 
-        OllamaCvAiExtractor extractor = new OllamaCvAiExtractor(chatModel, new ObjectMapper());
+        OllamaCvAiExtractor extractor = extractor(chatModel);
         ParsedCv result = extractor.extract(new NormalizedCvDocument(List.of()));
 
         assertThat(result).isNotNull();
@@ -52,7 +56,7 @@ class OllamaCvAiExtractorTest {
     void reportsProviderFailureWithoutIncludingCvContent() {
         ChatModel chatModel = mock(ChatModel.class);
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("connection refused"));
-        OllamaCvAiExtractor extractor = new OllamaCvAiExtractor(chatModel, new ObjectMapper());
+        OllamaCvAiExtractor extractor = extractor(chatModel);
 
         assertThatThrownBy(() -> extractor.extract(new NormalizedCvDocument(List.of())))
                 .isInstanceOf(CvAiExtractionException.class)
@@ -74,7 +78,7 @@ class OllamaCvAiExtractorTest {
                 new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Work History and projects", null)
         ));
 
-        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+        DetectedCvSections result = extractor(chatModel).detectSections(document);
 
         assertThat(result.sections()).containsExactly(new DetectedCvSection("EXPERIENCE", 0, 25));
     }
@@ -87,7 +91,7 @@ class OllamaCvAiExtractorTest {
                 new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Unlabeled CV content", null)
         ));
 
-        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+        DetectedCvSections result = extractor(chatModel).detectSections(document);
 
         assertThat(result.sections()).containsExactly(new DetectedCvSection("UNKNOWN", 0, 20));
     }
@@ -112,7 +116,7 @@ class OllamaCvAiExtractorTest {
                 new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Work History and projects", null)
         ));
 
-        ParsedCv result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).extract(document);
+        ParsedCv result = extractor(chatModel).extract(document);
 
         assertThat(result).isNotNull();
         org.mockito.Mockito.verify(chatModel, org.mockito.Mockito.times(2)).call(any(Prompt.class));
@@ -145,7 +149,7 @@ class OllamaCvAiExtractorTest {
             new NormalizedCvBlock(NormalizedCvBlock.Type.LINK, "Portfolio", null, "https://portfolio.example")
         ));
 
-        ParsedCv extracted = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).extract(document);
+        ParsedCv extracted = extractor(chatModel).extract(document);
         PersonalData result = extracted.personalData();
 
         assertThat(result.firstName()).isNull();
@@ -171,7 +175,7 @@ class OllamaCvAiExtractorTest {
                 new NormalizedCvBlock(NormalizedCvBlock.Type.LIST_ITEM, "Java", null)
         ));
 
-        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+        DetectedCvSections result = extractor(chatModel).detectSections(document);
 
         assertThat(result.sections()).containsExactly(new DetectedCvSection("SKILLS", 0, 21));
     }
@@ -190,7 +194,7 @@ class OllamaCvAiExtractorTest {
                 new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Hobbies", null)
         ));
 
-        DetectedCvSections result = new OllamaCvAiExtractor(chatModel, new ObjectMapper()).detectSections(document);
+        DetectedCvSections result = extractor(chatModel).detectSections(document);
 
         assertThat(result.sections()).containsExactly(new DetectedCvSection("UNKNOWN", 0, 6));
     }
@@ -215,5 +219,28 @@ class OllamaCvAiExtractorTest {
 
         assertThat(health.getStatus()).isEqualTo(Status.DOWN);
         assertThat(health.getDetails()).containsEntry("status", "unavailable");
+    }
+
+    @Test
+    void returnsPartialDataWithActionableWarningForInvalidConfidence() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn(PARSED_CV_JSON.replace("\"professionalSummary\":null",
+                "\"professionalSummary\":{\"value\":\"Engineer\",\"confidence\":1.5,\"sourceText\":\"Engineer\"}"));
+
+        ParsedCv result = extractor(chatModel).extract(new NormalizedCvDocument(List.of()));
+
+        assertThat(result.professionalSummary().value()).isEqualTo("Engineer");
+        assertThat(result.warnings()).anyMatch(warning -> warning.contains("professionalSummary.confidence")
+                && warning.contains("less than or equal to 1.0"));
+    }
+
+    private OllamaCvAiExtractor extractor(ChatModel chatModel) {
+        return new OllamaCvAiExtractor(chatModel, new ObjectMapper(), new ParsedCvOutputValidator(VALIDATOR));
     }
 }

@@ -1,6 +1,8 @@
 package com.example.cv.importing;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -12,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CvImportDomainTest {
 
+        private static final Validator VALIDATOR = Validation.buildDefaultValidatorFactory().getValidator();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
@@ -91,9 +94,10 @@ class CvImportDomainTest {
     }
 
     @Test
-    void rejectsConfidenceOutsideZeroToOne() {
-        assertThatThrownBy(() -> new ExtractedValue<>("value", 1.1, "source"))
-                .isInstanceOf(IllegalArgumentException.class);
+        void validatesConfidenceOutsideZeroToOne() {
+                assertThat(VALIDATOR.validate(new ExtractedValue<>("value", 1.1, "source")))
+                                .extracting(violation -> violation.getPropertyPath().toString())
+                                .containsExactly("confidence");
     }
 
     @Test

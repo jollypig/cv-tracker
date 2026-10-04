@@ -1,18 +1,20 @@
 package com.example.cv.importing;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Objects;
 
 public record ParsedProject(
-        ExtractedValue<String> company,
-        List<ExtractedValue<String>> industries,
-        ExtractedValue<String> projectName,
-        ExtractedValue<String> projectDescription,
-        ExtractedValue<String> startDate,
-        ExtractedValue<String> endDate,
-        ExtractedValue<String> position,
-        List<ExtractedValue<String>> responsibilities,
-        List<ExtractedValue<String>> technologiesAndTools
+    @Valid ExtractedValue<String> company,
+    @NotNull List<@NotNull @Valid ExtractedValue<String>> industries,
+    @Valid ExtractedValue<String> projectName,
+    @Valid ExtractedValue<String> projectDescription,
+    @Valid ExtractedValue<String> startDate,
+    @Valid ExtractedValue<String> endDate,
+    @Valid ExtractedValue<String> position,
+    @NotNull List<@NotNull @Valid ExtractedValue<String>> responsibilities,
+    @NotNull List<@NotNull @Valid ExtractedValue<String>> technologiesAndTools
 ) {
 
     public ParsedProject {
