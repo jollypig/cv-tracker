@@ -59,12 +59,12 @@ class CvDuplicationServiceTest {
         when(versionService.create(branchId, "Copied from Historical title", parentId)).thenReturn(initial);
 
         CvResponse branch = new CvDuplicationService(cvs, people, content, versions, versionService, serializer)
-                .duplicate(sourceId, 2, "Branch name", targetPersonId, ownerId);
+            .duplicate(sourceId, 2, "Branch name", "lv", targetPersonId, ownerId);
 
         assertThat(branch.name()).isEqualTo("Branch name");
         assertThat(branch.personId()).isEqualTo(targetPersonId);
         assertThat(branch.personName()).isEqualTo("Grace Hopper");
-        assertThat(branch.language()).isEqualTo("fr");
+        assertThat(branch.language()).isEqualTo("lv");
         assertThat(branch.status()).isEqualTo(CvStatus.DRAFT);
         verify(content).replace(branchId, content("historical content"));
         verify(versionService).create(branchId, "Copied from Historical title", parentId);
@@ -85,7 +85,7 @@ class CvDuplicationServiceTest {
                 mock(CvVersionRepository.class), mock(CvVersionService.class),
                 new CvVersionSnapshotSerializer(new ObjectMapper().findAndRegisterModules()));
 
-        assertThatThrownBy(() -> service.duplicate(sourceId, null, "Copy", targetPersonId, ownerId))
+        assertThatThrownBy(() -> service.duplicate(sourceId, null, "Copy", null, targetPersonId, ownerId))
             .isInstanceOf(ResponseStatusException.class)
             .extracting("statusCode")
             .isEqualTo(HttpStatus.NOT_FOUND);

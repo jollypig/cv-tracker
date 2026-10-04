@@ -43,8 +43,8 @@ const cvApi = {
     await apiClient.delete(`/cvs/${id}`)
   },
 
-  async duplicate(id: string, name: string, personId?: string): Promise<Cv> {
-    const response = await apiClient.post<Cv>(`/cvs/${id}/duplicate`, { name, personId })
+  async duplicate(id: string, name: string, personId?: string, language?: string): Promise<Cv> {
+    const response = await apiClient.post<Cv>(`/cvs/${id}/duplicate`, { name, personId, language })
     return response.data
   },
 

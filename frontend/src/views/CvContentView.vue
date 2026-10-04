@@ -8,6 +8,7 @@
       </div>
       <div class="content-heading-actions">
         <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">{{ translate('editor.duplicate') }}</v-btn>
+        <v-btn variant="text" prepend-icon="mdi-translate" @click="openLanguageVersionDialog">{{ translate('editor.createLanguageVersion') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('editor.versions') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">{{ translate('editor.cvDetails') }}</v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">{{ translate('editor.save') }}</v-btn>
@@ -27,14 +28,24 @@
 
     <v-dialog v-model="duplicateDialog" max-width="480">
       <v-card>
-        <v-card-title class="dialog-title">{{ translate('editor.duplicateTitle') }}</v-card-title>
+        <v-card-title class="dialog-title">{{ translate(duplicateAsLanguageVersion ? 'editor.languageVersionTitle' : 'editor.duplicateTitle') }}</v-card-title>
         <v-card-text>
           <v-text-field v-model="duplicateName" :label="translate('editor.copyName')" maxlength="255" variant="outlined" autofocus />
+          <v-text-field
+            v-if="duplicateAsLanguageVersion"
+            v-model="duplicateLanguage"
+            :label="translate('editor.cvLanguageCode')"
+            maxlength="10"
+            variant="outlined"
+            required
+          />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="duplicateDialog = false">{{ translate('editor.cancel') }}</v-btn>
-          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim()" @click="duplicateCv">{{ translate('editor.createCopy') }}</v-btn>
+          <v-btn color="primary" :loading="duplicating" :disabled="!duplicateName.trim() || (duplicateAsLanguageVersion && !duplicateLanguage.trim())" @click="duplicateCv">
+            {{ translate(duplicateAsLanguageVersion ? 'editor.createLanguageVersionAction' : 'editor.createCopy') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -344,6 +355,8 @@ const error = ref('')
 const saved = ref(false)
 const duplicateDialog = ref(false)
 const duplicateName = ref('')
+const duplicateLanguage = ref('')
+const duplicateAsLanguageVersion = ref(false)
 const duplicating = ref(false)
 const draftStatus = ref('')
 const draftTracking = ref(false)
@@ -418,16 +431,25 @@ onMounted(async () => {
 watch(content, scheduleLocalDraft, { deep: true })
 
 function openDuplicateDialog() {
+  duplicateAsLanguageVersion.value = false
   duplicateName.value = `${cv.value?.name ?? 'CV'} (Copy)`
   duplicateDialog.value = true
 }
 
+function openLanguageVersionDialog() {
+  duplicateAsLanguageVersion.value = true
+  duplicateName.value = cv.value?.name ?? 'CV'
+  duplicateLanguage.value = ''
+  duplicateDialog.value = true
+}
+
 async function duplicateCv() {
-  if (!duplicateName.value.trim()) return
+  if (!duplicateName.value.trim() || (duplicateAsLanguageVersion.value && !duplicateLanguage.value.trim())) return
   duplicating.value = true
   error.value = ''
   try {
-    const copy = await cvApi.duplicate(cvId, duplicateName.value.trim())
+    const copy = await cvApi.duplicate(cvId, duplicateName.value.trim(), undefined,
+      duplicateAsLanguageVersion.value ? duplicateLanguage.value.trim() : undefined)
     await router.push(`/cvs/${copy.id}/content`)
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : translate('editor.duplicateError')
