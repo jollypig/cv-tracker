@@ -40,7 +40,7 @@ class CvServiceTest {
         when(cvRepository.save(any(Cv.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         CvResponse response = cvService.create(personId,
-                new CvRequest(" Backend ", "  ", " en ", CvStatus.DRAFT));
+            new CvRequest(" Backend ", "  ", " en ", CvStatus.DRAFT, List.of(" backend ", "platform")));
 
         ArgumentCaptor<Cv> captor = ArgumentCaptor.forClass(Cv.class);
         verify(cvRepository).save(captor.capture());
@@ -50,6 +50,8 @@ class CvServiceTest {
         assertEquals("en", response.language());
         assertEquals(null, response.description());
         assertEquals(CvStatus.DRAFT, response.status());
+        assertEquals(List.of("backend", "platform"), response.tags());
+        assertEquals(List.of("backend", "platform"), captor.getValue().getTags().stream().sorted().toList());
     }
 
     @Test
@@ -77,6 +79,6 @@ class CvServiceTest {
         when(personRepository.findById(personId)).thenReturn(Optional.empty());
 
         assertThrows(ResponseStatusException.class, () -> cvService.create(personId,
-                new CvRequest("Backend", null, "en", CvStatus.DRAFT)));
+            new CvRequest("Backend", null, "en", CvStatus.DRAFT, null)));
     }
 }

@@ -50,6 +50,12 @@
       <template #item.status="{ item }">
         <v-chip size="small" :color="statusColor(item.status)" variant="tonal">{{ item.status }}</v-chip>
       </template>
+      <template #item.tags="{ item }">
+        <div class="cv-tag-list">
+          <v-chip v-for="tag in item.tags" :key="tag" size="small" variant="outlined">{{ tag }}</v-chip>
+          <span v-if="!item.tags.length" class="muted-cell">None</span>
+        </div>
+      </template>
       <template #item.updatedAt="{ item }">
         <span class="muted-cell">{{ formatDate(item.updatedAt) }}</span>
       </template>
@@ -209,6 +215,7 @@ const headers = computed(() => [
   { title: 'CV', key: 'name' },
   ...(!isPersonView.value ? [{ title: 'Person', key: 'personName' }] : []),
   { title: 'Language', key: 'language' },
+  { title: 'Tags', key: 'tags', sortable: false },
   { title: 'Status', key: 'status' },
   { title: 'Updated', key: 'updatedAt' },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },

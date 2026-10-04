@@ -56,6 +56,7 @@ public class CvService {
         Person person = getPerson(personId);
         Cv cv = new Cv(person, request.name().trim(), request.language().trim(), request.status());
         cv.setDescription(blankToNull(request.description()));
+        cv.replaceTags(request.tags());
         return toResponse(cvRepository.save(cv));
     }
 
@@ -65,6 +66,9 @@ public class CvService {
         cv.setDescription(blankToNull(request.description()));
         cv.setLanguage(request.language().trim());
         cv.setStatus(request.status());
+        if (request.tags() != null) {
+            cv.replaceTags(request.tags());
+        }
         return toResponse(cvRepository.save(cv));
     }
 
@@ -86,7 +90,7 @@ public class CvService {
         Person person = cv.getPerson();
         return new CvResponse(cv.getId(), person.getId(), person.getFirstName() + " " + person.getLastName(),
                 cv.getName(), cv.getDescription(), cv.getLanguage(), cv.getStatus(), cv.getTemplateId(),
-                cv.getCurrentVersionId(), cv.getCreatedAt(), cv.getUpdatedAt());
+            cv.getCurrentVersionId(), cv.getTags().stream().sorted().toList(), cv.getCreatedAt(), cv.getUpdatedAt());
     }
 
     private String blankToNull(String value) {

@@ -93,6 +93,7 @@ class CvControllerTest {
                           "description":"Java roles",
                           "language":"en",
                           "status":"DRAFT",
+                          "tags":["backend","platform"],
                           "content":{
                             "summary":"Java engineer",
                             "experiences":[],
@@ -134,9 +135,17 @@ class CvControllerTest {
                 .andExpect(jsonPath("$[0].personId").value(personId.toString()));
         mockMvc.perform(put("/api/v1/cvs/{id}", cvId)
                         .contentType("application/json")
-                        .content("{\"name\":\"Backend\",\"language\":\"en\",\"status\":\"ACTIVE\"}"))
+                        .content("{\"name\":\"Backend\",\"language\":\"en\",\"status\":\"ACTIVE\",\"tags\":[\"backend\"]}"))
                 .andExpect(status().isOk());
         verify(cvService).update(eq(cvId), any(CvRequest.class));
+    }
+
+    @Test
+    void rejectsInvalidCvTags() throws Exception {
+        mockMvc.perform(post("/api/v1/persons/{personId}/cvs", UUID.randomUUID())
+                        .contentType("application/json")
+                        .content("{\"name\":\"Backend\",\"language\":\"en\",\"status\":\"DRAFT\",\"tags\":[\" \"]}"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -183,6 +192,6 @@ class CvControllerTest {
     private CvResponse cv(UUID id, UUID personId) {
         Instant timestamp = Instant.parse("2026-10-01T00:00:00Z");
         return new CvResponse(id, personId, "Ada Lovelace", "Backend", null, "en", CvStatus.DRAFT,
-                null, null, timestamp, timestamp);
+            null, null, List.of(), timestamp, timestamp);
     }
 }

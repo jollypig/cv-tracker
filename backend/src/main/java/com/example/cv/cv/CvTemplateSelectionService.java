@@ -30,6 +30,7 @@ public class CvTemplateSelectionService {
         Person person = saved.getPerson();
         return new CvResponse(saved.getId(), person.getId(), person.getFirstName() + " " + person.getLastName(),
                 saved.getName(), saved.getDescription(), saved.getLanguage(), saved.getStatus(),
-                saved.getTemplateId(), saved.getCurrentVersionId(), saved.getCreatedAt(), saved.getUpdatedAt());
+                saved.getTemplateId(), saved.getCurrentVersionId(), saved.getTags().stream().sorted().toList(),
+                saved.getCreatedAt(), saved.getUpdatedAt());
     }
 }

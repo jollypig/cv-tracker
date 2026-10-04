@@ -1,0 +1,5 @@
+CREATE TABLE cv_tag (
+    cv_id UUID NOT NULL REFERENCES cv(id) ON DELETE CASCADE,
+    tag VARCHAR(50) NOT NULL,
+    PRIMARY KEY (cv_id, tag)
+);

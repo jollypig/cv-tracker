@@ -61,6 +61,7 @@ public class CvDuplicationService {
         Cv copy = new Cv(targetPerson, name, sourceLanguage, CvStatus.DRAFT);
         copy.setDescription(sourceDescription);
         copy.setTemplateId(sourceTemplateId);
+        copy.replaceTags(sourceSnapshot == null ? source.getTags() : sourceSnapshot.tags());
         copy = cvRepository.save(copy);
         contentService.replace(copy.getId(), sourceContent);
         CvVersionResponse initialVersion = versionService.create(copy.getId(),
@@ -69,6 +70,6 @@ public class CvDuplicationService {
         return new CvResponse(copy.getId(), targetPerson.getId(),
             targetPerson.getFirstName() + " " + targetPerson.getLastName(),
                 copy.getName(), copy.getDescription(), copy.getLanguage(), copy.getStatus(), copy.getTemplateId(),
-                initialVersion.id(), copy.getCreatedAt(), copy.getUpdatedAt());
+                initialVersion.id(), copy.getTags().stream().sorted().toList(), copy.getCreatedAt(), copy.getUpdatedAt());
     }
 }
