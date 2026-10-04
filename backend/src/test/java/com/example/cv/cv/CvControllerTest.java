@@ -43,6 +43,9 @@ class CvControllerTest {
     @MockitoBean
     private CvService cvService;
 
+    @MockitoBean
+    private CvImportService importService;
+
         @MockitoBean
         private CvDuplicationService duplicationService;
 
@@ -74,6 +77,50 @@ class CvControllerTest {
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/api/v1/cvs/" + cvId)));
     }
+
+            @Test
+            void importsCvSnapshotAndReturnsItsResourceLocation() throws Exception {
+            UUID personId = UUID.randomUUID();
+            UUID cvId = UUID.randomUUID();
+            when(importService.importCv(eq(personId), any(CvImportRequest.class)))
+                .thenReturn(cv(cvId, personId));
+
+            mockMvc.perform(post("/api/v1/persons/{personId}/cvs/import", personId)
+                    .contentType("application/json")
+                    .content("""
+                        {
+                          "name":"Backend",
+                          "description":"Java roles",
+                          "language":"en",
+                          "status":"DRAFT",
+                          "content":{
+                            "summary":"Java engineer",
+                            "experiences":[],
+                            "education":[],
+                            "skillGroups":[],
+                            "languages":[],
+                            "projects":[],
+                            "certifications":[],
+                            "customSections":[],
+                            "sections":[]
+                          },
+                          "templateId":null,
+                          "person":null
+                        }
+                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(cvId.toString()))
+                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/api/v1/cvs/" + cvId)));
+            verify(importService).importCv(eq(personId), any(CvImportRequest.class));
+            }
+
+            @Test
+            void rejectsImportedCvWithoutRequiredContent() throws Exception {
+            mockMvc.perform(post("/api/v1/persons/{personId}/cvs/import", UUID.randomUUID())
+                    .contentType("application/json")
+                    .content("{\"name\":\"Backend\",\"language\":\"en\",\"status\":\"DRAFT\"}"))
+                .andExpect(status().isBadRequest());
+            }
 
     @Test
     void listsAndUpdatesCvs() throws Exception {

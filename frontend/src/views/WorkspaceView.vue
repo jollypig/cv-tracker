@@ -6,7 +6,10 @@
         <h1>{{ isPersonView ? personName || 'CVs' : 'CV library' }}</h1>
         <p>{{ isPersonView ? 'CVs connected to this profile.' : 'Every CV across your workspace.' }}</p>
       </div>
-      <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" :to="createRoute">Create CV</v-btn>
+      <div class="workspace-heading-actions">
+        <v-btn variant="outlined" prepend-icon="mdi-code-json" @click="openImport">Import JSON</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" :to="createRoute">Create CV</v-btn>
+      </div>
     </div>
 
     <v-alert v-if="error" class="view-alert" type="error" variant="tonal" closable @click:close="error = ''">
@@ -125,6 +128,37 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="importDialog" max-width="480">
+      <v-card>
+        <v-card-title class="dialog-title">Import CV JSON</v-card-title>
+        <v-card-text>
+          <v-select
+            v-if="!personId"
+            v-model="importPersonId"
+            :items="personOptions"
+            item-title="name"
+            item-value="id"
+            label="Person"
+            variant="outlined"
+            :loading="personStore.loading"
+          />
+          <v-file-input
+            v-model="importFile"
+            accept=".json,application/json"
+            label="JSON file"
+            prepend-icon="mdi-code-json"
+            show-size
+            variant="outlined"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" @click="importDialog = false">Cancel</v-btn>
+          <v-btn color="primary" :loading="importing" :disabled="!canImport" @click="confirmImport">Import</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </main>
 </template>
 
@@ -134,7 +168,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import cvApi from '../shared/api/cvApi'
 import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
-import type { Cv, CvStatus } from '../shared/api/cvTypes'
+import type { Cv, CvStatus, CvVersionSnapshot } from '../shared/api/cvTypes'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,8 +187,17 @@ const duplicateName = ref('')
 const duplicating = ref(false)
 const exportingCvId = ref('')
 const exportingFormat = ref<'pdf' | 'docx' | null>(null)
+const importDialog = ref(false)
+const importing = ref(false)
+const importPersonId = ref('')
+const importFile = ref<File | File[] | null>(null)
 const selectedCv = ref<Cv | null>(null)
 const cvToDuplicate = ref<Cv | null>(null)
+const personOptions = computed(() => personStore.people.map((person) => ({
+  id: person.id,
+  name: `${person.firstName} ${person.lastName}`,
+})))
+const canImport = computed(() => Boolean(importFile.value && (personId.value || importPersonId.value)))
 const headers = computed(() => [
   { title: 'CV', key: 'name' },
   ...(!isPersonView.value ? [{ title: 'Person', key: 'personName' }] : []),
@@ -237,6 +280,42 @@ async function confirmDuplicate() {
     duplicating.value = false
     duplicateDialog.value = false
     cvToDuplicate.value = null
+  }
+}
+
+async function openImport() {
+  error.value = ''
+  importFile.value = null
+  importPersonId.value = personId.value ?? ''
+  if (!personId.value) {
+    try {
+      await personStore.fetchPeople()
+      importPersonId.value = personOptions.value[0]?.id ?? ''
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : 'Unable to load people for import.'
+      return
+    }
+  }
+  importDialog.value = true
+}
+
+async function confirmImport() {
+  const file = Array.isArray(importFile.value) ? importFile.value[0] : importFile.value
+  const destinationPersonId = personId.value ?? importPersonId.value
+  if (!file || !destinationPersonId) return
+
+  importing.value = true
+  error.value = ''
+  try {
+    const snapshot = JSON.parse(await file.text()) as CvVersionSnapshot
+    const importedCv = await cvApi.importSnapshot(destinationPersonId, snapshot)
+    await store.fetchCvs(personId.value)
+    importDialog.value = false
+    await router.push(`/cvs/${importedCv.id}/content`)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : 'Unable to import this CV.'
+  } finally {
+    importing.value = false
   }
 }
 
