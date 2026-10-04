@@ -38,6 +38,12 @@ public class CvExportController {
         return exportService.exportDocx(versionId);
     }
 
+    @PostMapping("/cv-versions/{versionId}/exports/json")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CvExportResponse exportJson(@PathVariable UUID versionId) {
+        return exportService.exportJson(versionId);
+    }
+
     @GetMapping("/cv-versions/{versionId}/exports")
     public List<CvExportResponse> findHistory(@PathVariable UUID versionId) {
         return exportService.findHistory(versionId);

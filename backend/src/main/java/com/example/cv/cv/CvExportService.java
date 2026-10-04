@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,6 +58,14 @@ public class CvExportService {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         }
 
+        public CvExportResponse exportJson(UUID versionId) {
+        CvVersion version = versionRepository.findById(versionId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV version not found"));
+        CvVersionSnapshot snapshot = snapshotSerializer.deserialize(version.getSnapshot());
+        byte[] json = version.getSnapshot().toString().getBytes(StandardCharsets.UTF_8);
+        return saveExport(version, snapshot, json, "json", "application/json");
+        }
+
         private CvExportResponse saveExport(CvVersion version, CvVersionSnapshot snapshot, byte[] content,
             String extension, String contentType) {
         CvVersionSnapshot.PersonProfile person = snapshot.person();
@@ -102,8 +111,9 @@ public class CvExportService {
     }
 
     private String contentType(String fileName) {
-        return fileName.endsWith(".docx")
-                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                : "application/pdf";
+        if (fileName.endsWith(".docx")) {
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+        return fileName.endsWith(".json") ? "application/json" : "application/pdf";
     }
 }

@@ -60,6 +60,19 @@ class CvExportControllerTest {
         verify(exportService).exportDocx(versionId);
     }
 
+        @Test
+        void createsJsonExportForAVersion() throws Exception {
+                UUID versionId = UUID.randomUUID();
+                when(exportService.exportJson(versionId)).thenReturn(new CvExportResponse(UUID.randomUUID(), versionId,
+                                2, "Jane_Doe_Resume_v2.json", 4096, Instant.parse("2026-01-01T00:00:00Z"), "/download"));
+
+                mockMvc.perform(post("/api/v1/cv-versions/{versionId}/exports/json", versionId))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.versionId").value(versionId.toString()))
+                                .andExpect(jsonPath("$.fileName").value("Jane_Doe_Resume_v2.json"));
+                verify(exportService).exportJson(versionId);
+        }
+
     @Test
     void listsExportHistoryForAVersion() throws Exception {
         UUID versionId = UUID.randomUUID();
@@ -99,4 +112,19 @@ class CvExportControllerTest {
                 .andExpect(content().bytes(docx));
         verify(exportService).download(exportId);
     }
+
+        @Test
+        void downloadsJsonWithJsonContentTypeAndAttachmentHeaders() throws Exception {
+                UUID exportId = UUID.randomUUID();
+                byte[] json = "{\"name\":\"Java Backend\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                when(exportService.download(exportId)).thenReturn(new CvExportFile("Jane_Doe_Resume_v2.json", json,
+                                "application/json"));
+
+                mockMvc.perform(get("/api/v1/exports/{exportId}/download", exportId))
+                                .andExpect(status().isOk())
+                                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment")))
+                                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                                .andExpect(content().bytes(json));
+                verify(exportService).download(exportId);
+        }
 }
