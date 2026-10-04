@@ -175,18 +175,20 @@ class CvControllerTest {
                 UUID cvId = UUID.randomUUID();
                 UUID copyId = UUID.randomUUID();
                 UUID targetPersonId = UUID.randomUUID();
-                when(duplicationService.duplicate(cvId, null, "Backend Copy", targetPersonId, ownerId))
-                    .thenReturn(cv(copyId, targetPersonId));
+                when(duplicationService.duplicate(cvId, null, "Backend Copy", "lv", targetPersonId, ownerId))
+                    .thenReturn(new CvResponse(copyId, targetPersonId, "Ada Lovelace", "Backend Copy", null, "lv",
+                            CvStatus.DRAFT, null, null, List.of(), Instant.now(), Instant.now()));
 
                 mockMvc.perform(post("/api/v1/cvs/{id}/duplicate", cvId)
                         .contentType("application/json")
                         .content("""
-                            {"name":"Backend Copy","personId":"%s"}
+                            {"name":"Backend Copy","personId":"%s","language":"lv"}
                             """.formatted(targetPersonId)))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.id").value(copyId.toString()))
+                                .andExpect(jsonPath("$.language").value("lv"))
                                 .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/api/v1/cvs/" + copyId)));
-                verify(duplicationService).duplicate(cvId, null, "Backend Copy", targetPersonId, ownerId);
+                verify(duplicationService).duplicate(cvId, null, "Backend Copy", "lv", targetPersonId, ownerId);
         }
 
     private CvResponse cv(UUID id, UUID personId) {

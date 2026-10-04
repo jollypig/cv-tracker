@@ -76,7 +76,8 @@ public class CvController {
             @Valid @RequestBody(required = false) CvDuplicateRequest request,
             @AuthenticationPrincipal OidcUser principal) {
         CvResponse copy = duplicationService.duplicate(id, null, request == null ? null : request.name(),
-                request == null ? null : request.personId(), authenticatedUsers.synchronize(principal).getId());
+                request == null ? null : request.language(), request == null ? null : request.personId(),
+                authenticatedUsers.synchronize(principal).getId());
         return createdCvResponse(copy);
         }
 
@@ -85,7 +86,8 @@ public class CvController {
             @Valid @RequestBody(required = false) CvDuplicateRequest request,
             @AuthenticationPrincipal OidcUser principal) {
         CvResponse copy = duplicationService.duplicate(id, versionNumber, request == null ? null : request.name(),
-                request == null ? null : request.personId(), authenticatedUsers.synchronize(principal).getId());
+                request == null ? null : request.language(), request == null ? null : request.personId(),
+                authenticatedUsers.synchronize(principal).getId());
         return createdCvResponse(copy);
         }
 

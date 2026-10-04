@@ -33,7 +33,7 @@ public class CvDuplicationService {
     }
 
     public CvResponse duplicate(UUID cvId, Integer sourceVersionNumber, String requestedName,
-            UUID targetPersonId, UUID ownerId) {
+            String requestedLanguage, UUID targetPersonId, UUID ownerId) {
         Cv source = cvRepository.findById(cvId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found"));
         Person targetPerson = targetPersonId == null ? source.getPerson()
@@ -58,7 +58,10 @@ public class CvDuplicationService {
                 ? sourceName + " (Copy)"
                 : requestedName.trim();
 
-        Cv copy = new Cv(targetPerson, name, sourceLanguage, CvStatus.DRAFT);
+        String language = requestedLanguage == null || requestedLanguage.isBlank()
+                ? sourceLanguage
+                : requestedLanguage.trim();
+        Cv copy = new Cv(targetPerson, name, language, CvStatus.DRAFT);
         copy.setDescription(sourceDescription);
         copy.setTemplateId(sourceTemplateId);
         copy.replaceTags(sourceSnapshot == null ? source.getTags() : sourceSnapshot.tags());
