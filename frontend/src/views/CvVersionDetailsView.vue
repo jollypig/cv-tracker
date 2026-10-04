@@ -11,6 +11,7 @@
         <v-btn color="secondary" prepend-icon="mdi-source-branch" :disabled="!version" @click="openBranchDialog">Branch CV</v-btn>
         <v-btn color="primary" prepend-icon="mdi-file-pdf-box" :loading="exportingFormat === 'pdf'" :disabled="!version || !!exportingFormat" @click="exportFile('pdf')">Export PDF</v-btn>
         <v-btn color="primary" prepend-icon="mdi-file-word-box" :loading="exportingFormat === 'docx'" :disabled="!version || !!exportingFormat" @click="exportFile('docx')">Export DOCX</v-btn>
+        <v-btn color="primary" prepend-icon="mdi-code-json" :loading="exportingFormat === 'json'" :disabled="!version || !!exportingFormat" @click="exportFile('json')">Export JSON</v-btn>
         <v-btn color="primary" prepend-icon="mdi-backup-restore" @click="restoreDialog = true">Restore as new version</v-btn>
       </div>
     </div>
@@ -150,7 +151,7 @@ const version = ref<CvVersionDetail | null>(null)
 const snapshot = computed<CvVersionSnapshot | null>(() => version.value?.snapshot ?? null)
 const loading = ref(true)
 const restoring = ref(false)
-const exportingFormat = ref<'pdf' | 'docx' | null>(null)
+const exportingFormat = ref<'pdf' | 'docx' | 'json' | null>(null)
 const error = ref('')
 const restoreDialog = ref(false)
 const restoreDescription = ref('')
@@ -187,7 +188,7 @@ async function restore() {
   }
 }
 
-async function exportFile(format: 'pdf' | 'docx') {
+async function exportFile(format: 'pdf' | 'docx' | 'json') {
   if (!version.value) return
   exportingFormat.value = format
   error.value = ''

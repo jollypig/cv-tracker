@@ -77,6 +77,11 @@
               <v-btn v-bind="props" :aria-label="`Export ${item.name} as DOCX`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'docx'" icon="mdi-file-word-box" size="small" variant="text" @click="exportCv(item, 'docx')" />
             </template>
           </v-tooltip>
+          <v-tooltip text="Export current CV as JSON; saves a version">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`Export ${item.name} as JSON`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'json'" icon="mdi-code-json" size="small" variant="text" @click="exportCv(item, 'json')" />
+            </template>
+          </v-tooltip>
           <v-tooltip text="Edit CV">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="`Edit ${item.name}`" icon="mdi-pencil-outline" size="small" variant="text" :to="`/cvs/${item.id}/edit`" />
@@ -152,7 +157,7 @@ const duplicateDialog = ref(false)
 const duplicateName = ref('')
 const duplicating = ref(false)
 const exportingCvId = ref('')
-const exportingFormat = ref<'pdf' | 'docx' | null>(null)
+const exportingFormat = ref<'pdf' | 'docx' | 'json' | null>(null)
 const selectedCv = ref<Cv | null>(null)
 const cvToDuplicate = ref<Cv | null>(null)
 const headers = computed(() => [
@@ -189,7 +194,7 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
 }
 
-async function exportCv(cv: Cv, format: 'pdf' | 'docx') {
+async function exportCv(cv: Cv, format: 'pdf' | 'docx' | 'json') {
   if (exportingCvId.value) return
   exportingCvId.value = cv.id
   exportingFormat.value = format

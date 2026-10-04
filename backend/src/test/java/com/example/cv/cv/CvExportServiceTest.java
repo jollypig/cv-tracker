@@ -35,6 +35,7 @@ class CvExportServiceTest {
     private CvExportRepository exports;
     private CvTemplateRepository templates;
     private CvExportService service;
+    private CvVersionSnapshot snapshot;
 
     @BeforeEach
     void setUp() {
@@ -43,7 +44,7 @@ class CvExportServiceTest {
         templates = mock(CvTemplateRepository.class);
         Cv cv = new Cv(null, "Java Backend", "en", CvStatus.DRAFT);
         setId(cv, UUID.randomUUID());
-        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Java Backend", null, "en", CvStatus.DRAFT,
+        snapshot = new CvVersionSnapshot(null, "Java Backend", null, "en", CvStatus.DRAFT,
                 emptyContent(), new CvVersionSnapshot.PersonProfile("Jane", "Doe", "Engineer", "Riga", List.of()));
         CvVersion version = new CvVersion(cv, 3, "Release", new ObjectMapper().valueToTree(snapshot));
         setId(version, VERSION_ID);
@@ -114,6 +115,22 @@ class CvExportServiceTest {
             assertThat(document.getParagraphs()).extracting(paragraph -> paragraph.getText())
                     .contains("Jane Doe", "Engineer", "Riga");
         }
+    }
+
+    @Test
+    void exportsJsonSnapshotAndDownloadsItWithTheJsonContentType() throws Exception {
+        CvExportResponse response = service.exportJson(VERSION_ID);
+
+        assertThat(response.fileName()).isEqualTo("Jane_Doe_Java_Backend_v3.json");
+        org.mockito.ArgumentCaptor<CvExport> exportCaptor = org.mockito.ArgumentCaptor.forClass(CvExport.class);
+        verify(exports).save(exportCaptor.capture());
+        CvExport saved = exportCaptor.getValue();
+        when(exports.findById(response.id())).thenReturn(Optional.of(saved));
+
+        CvExportFile file = service.download(response.id());
+        assertThat(file.contentType()).isEqualTo("application/json");
+        assertThat(new ObjectMapper().readTree(file.content()))
+                .isEqualTo(new ObjectMapper().valueToTree(snapshot));
     }
 
     private CvContent emptyContent() {
