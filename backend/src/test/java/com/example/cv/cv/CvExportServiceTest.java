@@ -2,12 +2,14 @@ package com.example.cv.cv;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.cv.storage.LocalFileStorage;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.reflect.Field;
+import java.io.ByteArrayInputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -59,7 +61,8 @@ class CvExportServiceTest {
             return PDF_BYTES;
         };
         service = new CvExportService(versions, exports, templates,
-                new CvVersionSnapshotSerializer(new ObjectMapper()), new CvHtmlRenderer(), pdfRenderer, storage);
+            new CvVersionSnapshotSerializer(new ObjectMapper()), new CvHtmlRenderer(), pdfRenderer,
+            new DocxRenderer(), storage);
     }
 
     @Test
@@ -92,6 +95,25 @@ class CvExportServiceTest {
         assertThatThrownBy(() -> service.exportPdf(missingVersionId))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("CV version not found");
+    }
+
+    @Test
+    void exportsDocxSnapshotAndDownloadsItWithTheWordContentType() throws Exception {
+        CvExportResponse response = service.exportDocx(VERSION_ID);
+
+        assertThat(response.fileName()).isEqualTo("Jane_Doe_Java_Backend_v3.docx");
+        org.mockito.ArgumentCaptor<CvExport> exportCaptor = org.mockito.ArgumentCaptor.forClass(CvExport.class);
+        verify(exports).save(exportCaptor.capture());
+        CvExport saved = exportCaptor.getValue();
+        when(exports.findById(response.id())).thenReturn(Optional.of(saved));
+
+        CvExportFile file = service.download(response.id());
+        assertThat(file.contentType())
+                .isEqualTo("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+        try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(file.content()))) {
+            assertThat(document.getParagraphs()).extracting(paragraph -> paragraph.getText())
+                    .contains("Jane Doe", "Engineer", "Riga");
+        }
     }
 
     private CvContent emptyContent() {

@@ -69,7 +69,12 @@
           </v-tooltip>
           <v-tooltip text="Export current CV as PDF; saves a version">
             <template #activator="{ props }">
-              <v-btn v-bind="props" :aria-label="`Export ${item.name} as PDF`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id" icon="mdi-file-pdf-box" size="small" variant="text" @click="exportCv(item)" />
+              <v-btn v-bind="props" :aria-label="`Export ${item.name} as PDF`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'pdf'" icon="mdi-file-pdf-box" size="small" variant="text" @click="exportCv(item, 'pdf')" />
+            </template>
+          </v-tooltip>
+          <v-tooltip text="Export current CV as DOCX; saves a version">
+            <template #activator="{ props }">
+              <v-btn v-bind="props" :aria-label="`Export ${item.name} as DOCX`" :disabled="Boolean(exportingCvId)" :loading="exportingCvId === item.id && exportingFormat === 'docx'" icon="mdi-file-word-box" size="small" variant="text" @click="exportCv(item, 'docx')" />
             </template>
           </v-tooltip>
           <v-tooltip text="Edit CV">
@@ -147,6 +152,7 @@ const duplicateDialog = ref(false)
 const duplicateName = ref('')
 const duplicating = ref(false)
 const exportingCvId = ref('')
+const exportingFormat = ref<'pdf' | 'docx' | null>(null)
 const selectedCv = ref<Cv | null>(null)
 const cvToDuplicate = ref<Cv | null>(null)
 const headers = computed(() => [
@@ -183,13 +189,14 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value))
 }
 
-async function exportCv(cv: Cv) {
+async function exportCv(cv: Cv, format: 'pdf' | 'docx') {
   if (exportingCvId.value) return
   exportingCvId.value = cv.id
+  exportingFormat.value = format
   error.value = ''
   try {
     const version = await cvApi.createVersion(cv.id, 'Exported from CV library')
-    const file = await cvApi.exportVersionPdf(version.id)
+    const file = await cvApi.exportVersion(version.id, format)
     const url = URL.createObjectURL(file.content)
     const link = document.createElement('a')
     link.href = url
@@ -199,9 +206,10 @@ async function exportCv(cv: Cv) {
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 0)
   } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : 'Unable to export this CV.'
+    error.value = cause instanceof Error ? cause.message : `Unable to export this CV as ${format.toUpperCase()}.`
   } finally {
     exportingCvId.value = ''
+    exportingFormat.value = null
   }
 }
 

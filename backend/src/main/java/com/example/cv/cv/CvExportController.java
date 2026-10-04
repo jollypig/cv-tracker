@@ -32,6 +32,12 @@ public class CvExportController {
         return exportService.exportPdf(versionId);
     }
 
+    @PostMapping("/cv-versions/{versionId}/exports/docx")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CvExportResponse exportDocx(@PathVariable UUID versionId) {
+        return exportService.exportDocx(versionId);
+    }
+
     @GetMapping("/cv-versions/{versionId}/exports")
     public List<CvExportResponse> findHistory(@PathVariable UUID versionId) {
         return exportService.findHistory(versionId);
@@ -41,7 +47,7 @@ public class CvExportController {
     public ResponseEntity<byte[]> download(@PathVariable UUID exportId) {
         CvExportFile file = exportService.download(exportId);
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_PDF)
+            .contentType(MediaType.parseMediaType(file.contentType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
                         .filename(file.fileName(), StandardCharsets.UTF_8).build().toString())
                 .body(file.content());
