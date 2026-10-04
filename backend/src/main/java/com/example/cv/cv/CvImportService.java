@@ -19,7 +19,7 @@ public class CvImportService {
 
     public CvResponse importCv(UUID personId, CvImportRequest request) {
         CvResponse cv = cvService.create(personId, new CvRequest(
-                request.name(), request.description(), request.language(), request.status()));
+            request.name(), request.description(), request.language(), request.status(), request.tags()));
         contentService.replace(cv.id(), request.content());
         return cv;
     }

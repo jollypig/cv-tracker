@@ -10,6 +10,7 @@ export interface Cv {
   status: CvStatus
   templateId: string | null
   currentVersionId: string | null
+  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -19,6 +20,7 @@ export interface CvInput {
   description: string | null
   language: string
   status: CvStatus
+  tags: string[]
 }
 
 export interface CvTemplate {
@@ -75,6 +77,7 @@ export interface CvVersionSnapshot {
   description: string | null
   language: string
   status: CvStatus
+  tags?: string[]
   content: CvContent
 }
 

@@ -1,6 +1,7 @@
 package com.example.cv.cv;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record CvResponse(
@@ -13,6 +14,7 @@ public record CvResponse(
         CvStatus status,
         UUID templateId,
         UUID currentVersionId,
+        List<String> tags,
         Instant createdAt,
         Instant updatedAt) {
 }

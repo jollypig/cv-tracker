@@ -26,7 +26,8 @@ public class CvVersionSnapshotSerializer {
                     contact.getType(), contact.getValue(), contact.getSortOrder()))
                 .toList());
         return objectMapper.valueToTree(new CvVersionSnapshot(cv.getTemplateId(), cv.getName(),
-            cv.getDescription(), cv.getLanguage(), cv.getStatus(), content, profile));
+            cv.getDescription(), cv.getLanguage(), cv.getStatus(), content, profile,
+            cv.getTags().stream().sorted().toList()));
     }
 
     public CvVersionSnapshot deserialize(JsonNode snapshot) {

@@ -12,10 +12,17 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import com.example.cv.person.PersonService;
+import com.example.cv.cv.CvRequest;
+import com.example.cv.cv.CvService;
+import com.example.cv.cv.CvStatus;
+
+import java.util.List;
 
 import java.util.UUID;
 
@@ -57,6 +64,12 @@ class PostgresIntegrationTest {
     @Autowired
     private PersonService personService;
 
+    @Autowired
+    private CvService cvService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Test
     void appliesMigrationsAndPersistsPostgresRecords() {
         UUID personId = UUID.randomUUID();
@@ -74,6 +87,22 @@ class PostgresIntegrationTest {
             where schemaname = current_schema()
               and indexname in ('idx_person_owner_name', 'idx_cv_person_updated_at')
             """, Integer.class)).isEqualTo(2);
+        }
+
+        @Test
+        void persistsAndReturnsCvTags() {
+        UUID personId = UUID.randomUUID();
+        jdbcTemplate.update("insert into person (id, first_name, last_name) values (?, ?, ?)",
+            personId, "Ada", "Lovelace");
+
+        var created = cvService.create(personId,
+            new CvRequest("Backend", null, "en", CvStatus.DRAFT, List.of("platform", "backend")));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(cvService.findById(created.id()).tags()).containsExactly("backend", "platform");
+        assertThat(jdbcTemplate.queryForList("select tag from cv_tag where cv_id = ? order by tag", String.class,
+            created.id())).containsExactly("backend", "platform");
         }
 
         @Test

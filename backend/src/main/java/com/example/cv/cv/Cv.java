@@ -2,6 +2,8 @@ package com.example.cv.cv;
 
 import com.example.cv.person.Person;
 import jakarta.persistence.Column;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -18,7 +20,10 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -54,6 +59,11 @@ public class Cv {
 
     @Column(columnDefinition = "text")
     private String summary;
+
+    @ElementCollection
+    @CollectionTable(name = "cv_tag", joinColumns = @JoinColumn(name = "cv_id"))
+    @Column(name = "tag", nullable = false, length = 50)
+    private Set<String> tags = new LinkedHashSet<>();
 
     @OneToMany(mappedBy = "cv", cascade = jakarta.persistence.CascadeType.ALL, orphanRemoval = true)
     private List<CvExperience> experiences = new ArrayList<>();
@@ -123,6 +133,7 @@ public class Cv {
     public void setCurrentVersionId(UUID currentVersionId) { this.currentVersionId = currentVersionId; }
     public String getSummary() { return summary; }
     public void setSummary(String summary) { this.summary = summary; }
+    public Set<String> getTags() { return tags; }
     public List<CvExperience> getExperiences() { return experiences; }
     public List<CvEducation> getEducation() { return education; }
     public List<CvSkillGroup> getSkillGroups() { return skillGroups; }
@@ -140,6 +151,12 @@ public class Cv {
     public void replaceCertifications(List<CvCertification> values) { certifications.clear(); certifications.addAll(values); }
     public void replaceCustomSections(List<CvCustomSection> values) { customSections.clear(); customSections.addAll(values); }
     public void replaceSections(List<CvSection> values) { sections.clear(); sections.addAll(values); }
+    public void replaceTags(Collection<String> values) {
+        tags.clear();
+        if (values != null) {
+            values.stream().map(String::trim).filter(value -> !value.isEmpty()).forEach(tags::add);
+        }
+    }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

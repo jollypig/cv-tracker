@@ -1,6 +1,7 @@
 package com.example.cv.cv;
 
 import java.util.UUID;
+import java.util.List;
 
 public record CvVersionSnapshot(
         UUID templateId,
@@ -9,7 +10,13 @@ public record CvVersionSnapshot(
         String language,
         CvStatus status,
         CvContent content,
-        PersonProfile person) {
+                PersonProfile person,
+                List<String> tags) {
+
+        public CvVersionSnapshot(UUID templateId, String name, String description, String language,
+                        CvStatus status, CvContent content, PersonProfile person) {
+                this(templateId, name, description, language, status, content, person, List.of());
+        }
 
     public record PersonProfile(
             String firstName,

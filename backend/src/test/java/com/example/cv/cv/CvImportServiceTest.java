@@ -33,7 +33,8 @@ class CvImportServiceTest {
         });
         CvContent content = new CvContent("Imported summary", List.of(), List.of(), List.of(), List.of(),
                 List.of(), List.of(), List.of(), List.of());
-        CvImportRequest request = new CvImportRequest("Imported CV", "Imported notes", "en", CvStatus.ACTIVE, content);
+        CvImportRequest request = new CvImportRequest("Imported CV", "Imported notes", "en", CvStatus.ACTIVE,
+            List.of("backend"), content);
 
         CvResponse imported = new CvImportService(new CvService(cvs, people), contentService)
                 .importCv(personId, request);

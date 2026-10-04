@@ -49,6 +49,19 @@
           rows="3"
           auto-grow
         />
+        <v-combobox
+          v-model="form.tags"
+          label="Tags"
+          placeholder="e.g. backend, leadership"
+          hint="Add up to 20 tags to organize this CV."
+          persistent-hint
+          variant="outlined"
+          multiple
+          chips
+          closable-chips
+          clearable
+          :rules="[tagCountRule, tagLengthRule]"
+        />
       </section>
 
       <section class="form-section">
@@ -105,8 +118,10 @@ const personOptions = computed(() => personStore.people.map((person) => ({
   name: `${person.firstName} ${person.lastName}`,
 })))
 const backRoute = computed(() => routePersonId ? `/people/${routePersonId}/cvs` : '/cvs')
-const form = reactive<CvInput>({ name: '', description: null, language: 'en', status: 'DRAFT' })
+const form = reactive<CvInput>({ name: '', description: null, language: 'en', status: 'DRAFT', tags: [] })
 const requiredRule = (value: string) => Boolean(value?.trim()) || 'This field is required.'
+const tagCountRule = (values: string[]) => values.length <= 20 || 'Use no more than 20 tags.'
+const tagLengthRule = (values: string[]) => values.every((value) => value.trim().length <= 50) || 'Tags must be 50 characters or fewer.'
 
 onMounted(async () => {
   try {
@@ -124,6 +139,7 @@ onMounted(async () => {
       form.description = cv.description
       form.language = cv.language
       form.status = cv.status
+      form.tags = [...cv.tags]
       selectedPersonId.value = cv.personId
       personName.value = cv.personName
     }
@@ -151,6 +167,7 @@ async function saveCv() {
     name: form.name.trim(),
     description: form.description?.trim() || null,
     language: form.language.trim(),
+    tags: form.tags.map((tag) => tag.trim()).filter(Boolean),
   }
   try {
     if (cvId) {
