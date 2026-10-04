@@ -671,7 +671,7 @@ function saveLocalDraft() {
   if (!draftTracking.value) return
   try {
     localStorage.setItem(draftStorageKey(), JSON.stringify(content))
-    draftStatus.value = 'Draft autosaved on this device.'
+    draftStatus.value = 'Draft autosaved on this device (Click Save Content to persist the changes for export and new versions).'
   } catch {
     draftStatus.value = 'Unable to autosave a draft on this device.'
   }
