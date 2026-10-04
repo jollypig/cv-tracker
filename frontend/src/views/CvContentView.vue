@@ -7,9 +7,16 @@
         <p>{{ cv?.personName ?? translate('editor.tagline') }}</p>
       </div>
       <div class="content-heading-actions">
-        <v-btn variant="text" prepend-icon="mdi-share-variant" :disabled="loading || !cv" @click="openShareDialog">{{ translate('editor.share') }}</v-btn>
-        <v-btn variant="text" prepend-icon="mdi-content-copy" @click="openDuplicateDialog">{{ translate('editor.duplicate') }}</v-btn>
-        <v-btn variant="text" prepend-icon="mdi-translate" @click="openLanguageVersionDialog">{{ translate('editor.createLanguageVersion') }}</v-btn>
+        <v-menu v-model="moreActionsOpen" location="bottom end">
+          <template #activator="{ props }">
+            <v-btn v-bind="moreActionsActivatorProps(props)" variant="text" prepend-icon="mdi-dots-horizontal">{{ translate('editor.moreActions') }}</v-btn>
+          </template>
+          <v-list>
+            <v-list-item :title="translate('editor.share')" prepend-icon="mdi-share-variant" :disabled="loading || !cv" @click="openShareDialog" />
+            <v-list-item :title="translate('editor.duplicate')" prepend-icon="mdi-content-copy" @click="openDuplicateDialog" />
+            <v-list-item :title="translate('editor.createLanguageVersion')" prepend-icon="mdi-translate" @click="openLanguageVersionDialog" />
+          </v-list>
+        </v-menu>
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('editor.versions') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">{{ translate('editor.cvDetails') }}</v-btn>
         <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">{{ translate('editor.save') }}</v-btn>
@@ -387,6 +394,7 @@ const saving = ref(false)
 const selectingTemplate = ref(false)
 const error = ref('')
 const saved = ref(false)
+const moreActionsOpen = ref(false)
 const duplicateDialog = ref(false)
 const shareDialog = ref(false)
 const shareEnabled = ref(false)
@@ -396,6 +404,16 @@ const shareUrl = ref('')
 const shareLoading = ref(false)
 const shareError = ref('')
 const shareCopied = ref(false)
+
+function moreActionsActivatorProps(props: Record<string, unknown>) {
+  return {
+    ...props,
+    onClick: () => {
+      moreActionsOpen.value = !moreActionsOpen.value
+    },
+  }
+}
+
 const duplicateName = ref('')
 const duplicateLanguage = ref('')
 const duplicateAsLanguageVersion = ref(false)
@@ -823,7 +841,7 @@ function saveLocalDraft() {
 .cv-content-view { max-width: 1440px; margin: 0 auto; }
 .content-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 42%); align-items: start; gap: 30px; }
 .content-editor { min-width: 0; }
-.content-heading-actions { display: flex; align-items: center; gap: 8px; }
+.content-heading-actions { display: flex; flex: 1 1 620px; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
 .content-order-section { padding: 24px 0; border-bottom: 1px solid #e4e5de; }
 .content-section-order { display: grid; max-width: 660px; gap: 5px; }
 .content-order-row { display: grid; min-height: 48px; grid-template-columns: 24px 28px minmax(0, 1fr) 76px 36px 36px; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid #e4e5de; border-radius: 6px; background: #fff; }
@@ -859,7 +877,8 @@ function saveLocalDraft() {
 .skill-entry, .list-entry { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: start; }
 .content-save-actions { padding: 24px 0; }
 @media (max-width: 680px) {
-  .content-heading-actions { align-items: flex-start; flex-direction: column-reverse; }
+  .cv-content-view .page-heading { flex-wrap: wrap; }
+  .cv-content-view .content-heading-actions { flex-basis: 100%; align-items: center; justify-content: flex-start; flex-direction: row; }
   .content-order-row { grid-template-columns: 20px 22px minmax(0, 1fr) 66px 32px 32px; gap: 2px; padding: 4px; }
   .content-field-grid, .skill-entry, .list-entry { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .language-detail-grid { grid-template-columns: minmax(0, 1fr); gap: 0; padding-left: 0; }
