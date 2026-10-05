@@ -40,6 +40,10 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
             Extract the CV data from the normalized document below.
             Use only information present in the document. Do not invent values.
             Use null for unknown scalar values and empty arrays for unknown collections.
+            Extract skills only when they are explicitly listed as skills or clearly identified as a skill set.
+            Do not treat a person's name, job title, employer, or location as a skill.
+            For each skill, name must be an object with value, confidence, and sourceText; evidence must be an array.
+            Do not repeat JSON property names.
             For ambiguous skill names, you may suggest a canonical name only from this allowlist:
             %s
             Preserve each raw skill name. Never assign canonical IDs or calculate skill experience.
@@ -52,6 +56,67 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
 
             Normalized document:
             %s
+            """;
+
+    private static final String EXTRACTION_PROMPT_2 = """
+            You are a deterministic CV-to-JSON extractor.  
+            Your output MUST be a single RFC8259-compliant JSON object matching the schema below.  
+            Do NOT include markdown, explanations, comments, or any text outside the JSON.  
+            Do NOT invent any information.  
+            Do NOT infer skills, projects, dates, or employers unless explicitly present in the input.  
+            If a field is unknown, set it to null (for scalars) or [] (for arrays).  
+            If a section has no data, return an empty array for that section.  
+            Never fabricate skills. Extract skills ONLY when explicitly listed as skills.  
+            Never treat names, job titles, employers, or locations as skills.  
+            Never generate malformed JSON.  
+            Never truncate output.  
+            Never add trailing commas.  
+            Never add duplicate keys.
+
+            INPUT DOCUMENT:
+            Test1 User\nTest Position\nCity
+
+            SCHEMA:
+            {
+            "education": [],
+            "employment": [],
+            "languages": [],
+            "personalData": {
+                "email": null,
+                "firstName": { "value": null, "confidence": 0, "sourceText": null },
+                "lastName": { "value": null, "confidence": 0, "sourceText": null },
+                "location": { "value": null, "confidence": 0, "sourceText": null },
+                "phone": null,
+                "urls": []
+            },
+            "professionalSummary": null,
+            "projects": [],
+            "skills": [],
+            "warnings": []
+            }
+
+            REQUIREMENTS:
+            1. Extract ONLY what is explicitly present in the document.
+            2. For names: split the first line into firstName and lastName ONLY if clearly a two-part personal name.
+            3. For location: extract only if clearly a location.
+            4. For skills: 
+            - Only extract if the document explicitly labels a section as “Skills”, “Technical Skills”, “Key Skills”, etc.
+            - Each skill must be an object with:
+                {
+                "name": { "value": "...", "confidence": 1, "sourceText": "..." },
+                "canonicalName": null,
+                "canonicalSkillId": null,
+                "group": null,
+                "lastUsedDate": null,
+                "requiresReview": false,
+                "yearsOfExperience": null,
+                "evidence": []
+                }
+            - Do NOT invent evidence.
+            5. If the document contains no skills section, return "skills": [].
+            6. Output ONLY the JSON object. No prose.
+
+            Now produce the JSON output.
             """;
 
     private final ChatModel chatModel;

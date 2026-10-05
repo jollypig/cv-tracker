@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.atLeastOnce;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -134,6 +135,30 @@ class OllamaCvAiExtractorTest {
 
         assertThat(result).isNotNull();
         org.mockito.Mockito.verify(chatModel, org.mockito.Mockito.times(2)).call(any(Prompt.class));
+    }
+
+    @Test
+    void extractionPromptDoesNotTreatJobTitlesAsSkillsAndSpecifiesSkillShape() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn(PARSED_CV_JSON);
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT, "Test1 User\nTest Position\nCity", null)
+        ));
+
+        extractor(chatModel).extract(document);
+
+        org.mockito.ArgumentCaptor<Prompt> promptCaptor = org.mockito.ArgumentCaptor.forClass(Prompt.class);
+        org.mockito.Mockito.verify(chatModel, atLeastOnce()).call(promptCaptor.capture());
+        String extractionPrompt = promptCaptor.getAllValues().get(1).getInstructions().get(0).getText();
+        assertThat(extractionPrompt).contains("Do not treat a person's name, job title, employer, or location as a skill")
+                .contains("name must be an object with value, confidence, and sourceText; evidence must be an array")
+                .contains("Do not repeat JSON property names");
     }
 
         @Test
