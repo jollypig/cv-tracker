@@ -7,6 +7,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -18,6 +20,8 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "cv.ai", name = "provider", havingValue = "ollama", matchIfMissing = true)
 public class OllamaCvAiExtractor implements CvAiExtractor {
+
+    private static final Logger log = LoggerFactory.getLogger(OllamaCvAiExtractor.class);
 
     private static final String SECTION_INSTRUCTIONS = """
             Identify the logical sections in this CV. Return JSON matching the schema below.
@@ -200,7 +204,10 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
         Timer.Sample requestTimer = Timer.start(meterRegistry);
         String outcome = "success";
         try {
-            return chatModel.call(prompt);
+            log.info("Requesting model with prompt: {}", prompt);
+            ChatResponse response = chatModel.call(prompt);
+            log.info("Received response from model: {}", response);
+            return response;
         } catch (RuntimeException exception) {
             outcome = "failure";
             Counter.builder("cv.ai.request.failures").register(meterRegistry).increment();

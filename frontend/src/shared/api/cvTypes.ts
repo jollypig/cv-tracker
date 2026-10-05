@@ -81,6 +81,92 @@ export interface CvVersionSnapshot {
   content: CvContent
 }
 
+export interface ExtractedValue<T> {
+  value: T
+  confidence: number | null
+  sourceText: string | null
+}
+
+export interface ParsedCvDocument {
+  personalData: {
+    firstName: ExtractedValue<string> | null
+    lastName: ExtractedValue<string> | null
+    email: ExtractedValue<string> | null
+    phone: ExtractedValue<string> | null
+    location: ExtractedValue<string> | null
+    urls: ExtractedValue<string>[]
+  } | null
+  professionalSummary: ExtractedValue<string> | null
+  employment: {
+    company: ExtractedValue<string> | null
+    position: ExtractedValue<string> | null
+    startDate: ExtractedValue<string> | null
+    endDate: ExtractedValue<string> | null
+    location: ExtractedValue<string> | null
+    employmentType: ExtractedValue<string> | null
+    industry: ExtractedValue<string> | null
+    projects: ParsedCvDocumentProject[]
+  }[]
+  projects: ParsedCvDocumentProject[]
+  education: {
+    institution: ExtractedValue<string> | null
+    degree: ExtractedValue<string> | null
+    fieldOfStudy: ExtractedValue<string> | null
+    startDate: ExtractedValue<string> | null
+    endDate: ExtractedValue<string> | null
+    description: ExtractedValue<string> | null
+  }[]
+  languages: {
+    name: ExtractedValue<string> | null
+    proficiency: ExtractedValue<string> | null
+  }[]
+  skills: {
+    name: ExtractedValue<string> | null
+    group: ExtractedValue<string> | null
+    evidence: ExtractedValue<string>[]
+    canonicalName: string | null
+    yearsOfExperience: number | null
+    lastUsedDate: string | null
+    requiresReview: boolean
+  }[]
+  warnings: string[]
+}
+
+export interface ParsedCvDocumentProject {
+  company: ExtractedValue<string> | null
+  industries: ExtractedValue<string>[]
+  projectName: ExtractedValue<string> | null
+  projectDescription: ExtractedValue<string> | null
+  startDate: ExtractedValue<string> | null
+  endDate: ExtractedValue<string> | null
+  position: ExtractedValue<string> | null
+  responsibilities: ExtractedValue<string>[]
+  technologiesAndTools: ExtractedValue<string>[]
+}
+
+export type CvDocumentImportStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'NEEDS_REVIEW' | 'APPROVED' | 'FAILED'
+
+export interface CvDocumentImportResponse {
+  importId: string
+  fileName: string
+  mediaType: string
+  fileSize: number
+  status: CvDocumentImportStatus
+  errorMessage: string | null
+  result: ParsedCvDocument | null
+  cvId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CvDocumentImportApproval {
+  personId: string
+  name: string
+  language: string
+  status: CvStatus
+  tags: string[]
+}
+
 export interface CvVersionDetail extends CvVersion {
   snapshot: CvVersionSnapshot
 }
