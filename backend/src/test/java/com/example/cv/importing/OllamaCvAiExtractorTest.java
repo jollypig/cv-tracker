@@ -57,6 +57,61 @@ class OllamaCvAiExtractorTest {
     }
 
     @Test
+    void extractsFromFirstNonBlankGenerationWhenPrimaryGenerationIsEmpty() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation emptyGeneration = mock(Generation.class);
+        AssistantMessage emptyMessage = mock(AssistantMessage.class);
+        Generation contentGeneration = mock(Generation.class);
+        AssistantMessage contentMessage = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(emptyGeneration);
+        when(emptyGeneration.getOutput()).thenReturn(emptyMessage);
+        when(emptyMessage.getText()).thenReturn("");
+        when(response.getResults()).thenReturn(List.of(emptyGeneration, contentGeneration));
+        when(contentGeneration.getOutput()).thenReturn(contentMessage);
+        when(contentMessage.getText()).thenReturn(PARSED_CV_JSON);
+
+        ParsedCv result = extractor(chatModel).extract(new NormalizedCvDocument(List.of()));
+
+        assertThat(result).isNotNull();
+        assertThat(result.skills()).isEmpty();
+    }
+
+    @Test
+    void omitsEducationInferredFromSummaryWhenNoEducationSectionWasDetected() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse sectionResponse = mock(ChatResponse.class);
+        Generation sectionGeneration = mock(Generation.class);
+        AssistantMessage sectionMessage = mock(AssistantMessage.class);
+        ChatResponse extractionResponse = mock(ChatResponse.class);
+        Generation extractionGeneration = mock(Generation.class);
+        AssistantMessage extractionMessage = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(sectionResponse, extractionResponse);
+        when(sectionResponse.getResult()).thenReturn(sectionGeneration);
+        when(sectionGeneration.getOutput()).thenReturn(sectionMessage);
+        when(sectionMessage.getText()).thenReturn("not json");
+        when(extractionResponse.getResult()).thenReturn(extractionGeneration);
+        when(extractionGeneration.getOutput()).thenReturn(extractionMessage);
+        when(extractionMessage.getText()).thenReturn("""
+                {"personalData":null,"professionalSummary":null,"employment":[],"projects":[],
+                "education":[{"institution":null,"degree":{"value":"Bachelor's degree","confidence":0.9,
+                "sourceText":"Bachelor's degree in Computer Science"},"fieldOfStudy":{"value":"Computer Science",
+                "confidence":0.9,"sourceText":"Bachelor's degree in Computer Science"},"startDate":null,
+                "endDate":null,"description":null}],"languages":[],"skills":[]}
+                """);
+        NormalizedCvDocument document = new NormalizedCvDocument(List.of(
+                new NormalizedCvBlock(NormalizedCvBlock.Type.TEXT,
+                        "Full stack developer with a Bachelor's degree in Computer Science", null)
+        ));
+
+        ParsedCv result = extractor(chatModel).extract(document);
+
+        assertThat(result.education()).isEmpty();
+        assertThat(result.warnings()).contains("Education entries were omitted because no education section was detected.");
+    }
+
+    @Test
     void reportsProviderFailureWithoutIncludingCvContent() {
         ChatModel chatModel = mock(ChatModel.class);
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("connection refused"));

@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -159,7 +161,7 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
         String output;
         try {
             ChatResponse response = requestModel(new Prompt(promptText));
-            output = response.getResult().getOutput().getText();
+            output = responseText(response);
         } catch (RuntimeException exception) {
             return detectSectionsFromHeadings(document, text);
         }
@@ -185,11 +187,12 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
                     normalizedDocument
             );
             ChatResponse response = requestModel(new Prompt(promptText));
-            String output = response.getResult().getOutput().getText();
+            String output = responseText(response);
             ParsedCv parsedCv = outputConverter.convert(output);
             if (parsedCv == null) {
                 throw new IllegalArgumentException("The model returned no CV data");
             }
+            parsedCv = omitEducationWithoutSection(parsedCv, sections);
             return outputValidator.validate(CvPersonalDataEnricher.enrich(parsedCv, document));
         } catch (JsonProcessingException | RuntimeException exception) {
             if (exception instanceof CvAiExtractionException extractionException) {
@@ -253,6 +256,32 @@ public class OllamaCvAiExtractor implements CvAiExtractor {
         return document.blocks().stream()
                 .map(NormalizedCvBlock::text)
                 .collect(java.util.stream.Collectors.joining("\n"));
+    }
+
+    private String responseText(ChatResponse response) {
+        String resultText = response.getResult().getOutput().getText();
+        if (resultText != null && !resultText.isBlank()) {
+            return resultText;
+        }
+        return response.getResults().stream()
+                .map(Generation::getOutput)
+                .filter(output -> output != null)
+                .map(AssistantMessage::getText)
+                .filter(text -> text != null && !text.isBlank())
+                .findFirst()
+                .orElse("");
+    }
+
+    private ParsedCv omitEducationWithoutSection(ParsedCv parsedCv, DetectedCvSections sections) {
+        if (parsedCv.education().isEmpty() || sections.sections().stream()
+                .anyMatch(section -> section.sectionType() == CvSectionType.EDUCATION)) {
+            return parsedCv;
+        }
+
+        List<String> warnings = new ArrayList<>(parsedCv.warnings());
+        warnings.add("Education entries were omitted because no education section was detected.");
+        return new ParsedCv(parsedCv.personalData(), parsedCv.professionalSummary(), parsedCv.employment(),
+                parsedCv.projects(), List.of(), parsedCv.languages(), parsedCv.skills(), warnings);
     }
 
     private CvAiExtractionException extractionFailure(Exception exception) {
