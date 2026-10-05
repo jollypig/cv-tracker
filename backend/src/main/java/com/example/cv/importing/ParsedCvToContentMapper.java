@@ -59,7 +59,7 @@ public class ParsedCvToContentMapper {
                             skill.lastUsedDate() == null ? null : skill.lastUsedDate().toString(), null, null,
                             null, List.of(), true);
             List<CvContent.Skill> groupedSkills = skillsByGroup.computeIfAbsent(group, ignored -> new ArrayList<>());
-            groupedSkills.add(new CvContent.Skill(name, null, groupedSkills.size(), true, details));
+            groupedSkills.add(new CvContent.Skill(name, value(skill.level()), groupedSkills.size(), true, details));
         }
         List<CvContent.SkillGroup> skillGroups = new ArrayList<>();
         skillsByGroup.forEach((name, skills) -> skillGroups.add(new CvContent.SkillGroup(name,

@@ -16,8 +16,23 @@ public record ParsedSkill(
         String canonicalName,
         BigDecimal yearsOfExperience,
         LocalDate lastUsedDate,
-        boolean requiresReview
+        boolean requiresReview,
+        @Valid ExtractedValue<String> level
 ) {
+
+        public ParsedSkill(
+            ExtractedValue<String> name,
+            ExtractedValue<String> group,
+            List<ExtractedValue<String>> evidence,
+            UUID canonicalSkillId,
+            String canonicalName,
+            BigDecimal yearsOfExperience,
+            LocalDate lastUsedDate,
+            boolean requiresReview
+        ) {
+        this(name, group, evidence, canonicalSkillId, canonicalName, yearsOfExperience,
+            lastUsedDate, requiresReview, null);
+        }
 
     public ParsedSkill(
             ExtractedValue<String> name,

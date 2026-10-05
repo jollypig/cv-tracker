@@ -57,6 +57,44 @@ class OllamaCvAiExtractorTest {
     }
 
     @Test
+    void decodesSuppliedSkillMetadataUsingTheGeneratedSchema() {
+        ChatModel chatModel = mock(ChatModel.class);
+        ChatResponse response = mock(ChatResponse.class);
+        Generation generation = mock(Generation.class);
+        AssistantMessage message = mock(AssistantMessage.class);
+        when(chatModel.call(any(Prompt.class))).thenReturn(response);
+        when(response.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(message);
+        when(message.getText()).thenReturn("""
+                {"personalData":null,"professionalSummary":null,"employment":[],"projects":[],
+                "education":[],"languages":[],"skills":[{
+                "name":{"value":"Java","confidence":1,"sourceText":"Java"},
+                "group":{"value":"Backend","confidence":1,"sourceText":"Backend"},
+                "level":{"value":"Advanced","confidence":1,"sourceText":"Advanced"},
+                "yearsOfExperience":5,"lastUsedDate":"2024-06-30",
+                "canonicalSkillId":null,"canonicalName":null,"requiresReview":false,
+                "evidence":[{"value":"Java - Advanced - 5 years - last used 2024-06-30",
+                "confidence":1,"sourceText":"Java - Advanced - 5 years - last used 2024-06-30"}]
+                }],"warnings":[]}
+                """);
+
+        ParsedCv result = extractor(chatModel).extract(new NormalizedCvDocument(List.of()));
+
+        assertThat(result.skills()).singleElement().satisfies(skill -> {
+            assertThat(skill.name().value()).isEqualTo("Java");
+            assertThat(skill.group().value()).isEqualTo("Backend");
+            assertThat(skill.level()).isEqualTo(new ExtractedValue<>("Advanced", 1.0, "Advanced"));
+            assertThat(skill.yearsOfExperience()).isEqualByComparingTo("5");
+            assertThat(skill.lastUsedDate()).hasToString("2024-06-30");
+                assertThat(skill.evidence()).anySatisfy(evidence ->
+                    assertThat(evidence.sourceText()).contains("Advanced - 5 years"));
+        });
+        org.mockito.ArgumentCaptor<Prompt> promptCaptor = org.mockito.ArgumentCaptor.forClass(Prompt.class);
+        org.mockito.Mockito.verify(chatModel).call(promptCaptor.capture());
+        assertThat(promptCaptor.getValue().getInstructions().get(0).getText()).contains("\"level\" : {");
+    }
+
+    @Test
     void extractsFromFirstNonBlankGenerationWhenPrimaryGenerationIsEmpty() {
         ChatModel chatModel = mock(ChatModel.class);
         ChatResponse response = mock(ChatResponse.class);
@@ -213,7 +251,16 @@ class OllamaCvAiExtractorTest {
         String extractionPrompt = promptCaptor.getAllValues().get(1).getInstructions().get(0).getText();
         assertThat(extractionPrompt).contains("Do not treat a person's name, job title, employer, or location as a skill")
                 .contains("name must be an object with value, confidence, and sourceText; evidence must be an array")
-                .contains("Do not repeat JSON property names");
+            .contains("Do not repeat JSON property names")
+            .contains("Extract ALL explicitly provided information that fits the schema")
+            .contains("skills: name, group, level, yearsOfExperience, lastUsedDate, and evidence when supplied")
+            .contains("do not infer level from seniority, years of experience, or a job title")
+            .contains("Do not calculate it from dates")
+            .contains("when the context means last/end")
+            .contains("when the context means start/beginning or gives no direction")
+            .contains("Every non-null ExtractedValue must be an object with value, confidence, and sourceText")
+            .contains("projectDescription, startDate, endDate, position, responsibilities")
+            .contains("institution, degree, fieldOfStudy, startDate, endDate, and description");
     }
 
         @Test
