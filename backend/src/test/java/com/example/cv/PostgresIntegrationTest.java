@@ -136,6 +136,62 @@ class PostgresIntegrationTest {
     }
 
     @Test
+    void deletesImportedCvAndPreservesImportHistory() {
+        UUID personId = UUID.randomUUID();
+        UUID importId = UUID.randomUUID();
+        jdbcTemplate.update("insert into person (id, first_name, last_name) values (?, ?, ?)",
+            personId, "Ada", "Lovelace");
+        var created = cvService.create(personId,
+            new CvRequest("Imported", null, "en", CvStatus.DRAFT, null));
+        entityManager.flush();
+        jdbcTemplate.update("""
+            insert into cv_document_import
+                (id, file_name, media_type, file_size, status, result_json, cv_id, created_at, updated_at)
+            values (?, 'cv.pdf', 'application/pdf', 100, 'APPROVED', '{}', ?, now(), now())
+            """, importId, created.id());
+
+        cvService.delete(created.id());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(jdbcTemplate.queryForObject("select count(*) from cv where id = ?", Integer.class,
+            created.id())).isZero();
+        var history = jdbcTemplate.queryForMap(
+            "select cv_id, status, result_json from cv_document_import where id = ?", importId);
+        assertThat(history.get("cv_id")).isNull();
+        assertThat(history.get("status")).isEqualTo("APPROVED");
+        assertThat(history.get("result_json")).isEqualTo("{}");
+    }
+
+    @Test
+    void deletesPersonWithImportedCvAndPreservesImportHistory() {
+        UUID personId = UUID.randomUUID();
+        UUID importId = UUID.randomUUID();
+        jdbcTemplate.update("insert into person (id, first_name, last_name) values (?, ?, ?)",
+            personId, "Ada", "Lovelace");
+        var created = cvService.create(personId,
+            new CvRequest("Imported", null, "en", CvStatus.DRAFT, null));
+        entityManager.flush();
+        jdbcTemplate.update("""
+            insert into cv_document_import
+                (id, file_name, media_type, file_size, status, cv_id, created_at, updated_at)
+            values (?, 'cv.pdf', 'application/pdf', 100, 'APPROVED', ?, now(), now())
+            """, importId, created.id());
+        entityManager.clear();
+
+        personService.delete(personId);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(jdbcTemplate.queryForObject("select count(*) from person where id = ?", Integer.class,
+            personId)).isZero();
+        assertThat(jdbcTemplate.queryForObject("select count(*) from cv where id = ?", Integer.class,
+            created.id())).isZero();
+        assertThat(jdbcTemplate.queryForMap("select cv_id from cv_document_import where id = ?", importId))
+            .containsEntry("cv_id", null);
+    }
+
+    @Test
     void exposesStatusAndProtectsPersonApiOverHttp() {
         var status = restTemplate.getForEntity("/api/v1/status", String.class);
         var persons = restTemplate.getForEntity("/api/v1/persons", String.class);
