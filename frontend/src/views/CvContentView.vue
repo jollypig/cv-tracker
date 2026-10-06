@@ -385,22 +385,32 @@
         <v-expansion-panel value="certifications">
           <v-expansion-panel-title>{{ translate('editor.certifications') }} <span class="panel-count">{{ content.certifications.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
-            <div v-for="(certification, index) in content.certifications" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>{{ certification.name || translate('editor.certificationNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveCertificationUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.certifications, index, -1)" />
-                <v-btn :disabled="index === content.certifications.length - 1" :aria-label="translate('editor.moveCertificationDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.certifications, index, 1)" />
-                <v-btn :aria-label="translate('editor.removeCertification', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.certifications, index)" />
-              </div></div>
-              <div class="content-field-grid">
-                <v-text-field v-model="certification.name" :label="translate('editor.certification')" variant="outlined" :rules="[requiredRule]" />
-                <v-text-field v-model="certification.issuer" :label="translate('editor.issuer')" variant="outlined" />
-                <v-text-field v-model="certification.issueDate" :label="translate('editor.issueDate')" type="date" variant="outlined" />
-                <v-text-field v-model="certification.expiryDate" :label="translate('editor.expiryDate')" type="date" variant="outlined" :rules="[() => dateOrderRule(certification.issueDate, certification.expiryDate)]" />
-                <v-text-field v-model="certification.credentialId" :label="translate('editor.credentialId')" variant="outlined" />
-                <v-text-field v-model="certification.credentialUrl" :label="translate('editor.credentialUrl')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
-              </div>
-              <v-textarea v-model="certification.description" :label="translate('editor.description')" variant="outlined" rows="3" auto-grow />
-            </div>
+            <v-expansion-panels v-model="expandedCertifications" multiple class="certification-entry-panels">
+              <v-expansion-panel v-for="(certification, index) in content.certifications" :key="index" :value="index">
+                <v-expansion-panel-title>
+                  {{ certification.name || translate('editor.certificationNumber', { number: index + 1 }) }}
+                  <template #actions>
+                    <div class="entry-actions" @click.stop>
+                      <v-btn :disabled="index === 0" :aria-label="translate('editor.moveCertificationUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.certifications, index, -1)" />
+                      <v-btn :disabled="index === content.certifications.length - 1" :aria-label="translate('editor.moveCertificationDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.certifications, index, 1)" />
+                      <v-btn :aria-label="translate('editor.removeCertification', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.certifications, index)" />
+                      <v-icon icon="mdi-chevron-down" aria-hidden="true" />
+                    </div>
+                  </template>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <div class="content-field-grid">
+                    <v-text-field v-model="certification.name" :label="translate('editor.certification')" variant="outlined" :rules="[requiredRule]" />
+                    <v-text-field v-model="certification.issuer" :label="translate('editor.issuer')" variant="outlined" />
+                    <v-text-field v-model="certification.issueDate" :label="translate('editor.issueDate')" type="date" variant="outlined" />
+                    <v-text-field v-model="certification.expiryDate" :label="translate('editor.expiryDate')" type="date" variant="outlined" :rules="[() => dateOrderRule(certification.issueDate, certification.expiryDate)]" />
+                    <v-text-field v-model="certification.credentialId" :label="translate('editor.credentialId')" variant="outlined" />
+                    <v-text-field v-model="certification.credentialUrl" :label="translate('editor.credentialUrl')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
+                  </div>
+                  <v-textarea v-model="certification.description" :label="translate('editor.description')" variant="outlined" rows="3" auto-grow />
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addCertification">{{ translate('editor.addCertification') }}</v-btn>
           </v-expansion-panel-text>
         </v-expansion-panel>
@@ -539,6 +549,7 @@ const degreeOptions = computed(() => [
 const detailedLanguages = reactive(new Set<CvLanguage>())
 const expandedSkillGroups = ref<number[]>([])
 const expandedSkillEntries = ref<Record<number, number[]>>({})
+const expandedCertifications = ref<number[]>([])
 const content = reactive<CvContent>(emptyContent())
 const projectSkillOptions = computed(() => content.skillGroups.flatMap((group, groupIndex) =>
   group.skills.flatMap((skill, skillIndex) => skill.name.trim() ? [{
@@ -880,6 +891,7 @@ function addProject() {
 function addCertification() {
   content.certifications.push({ name: '', description: '', issuer: '', issueDate: null, expiryDate: null,
     credentialId: '', credentialUrl: '', sortOrder: content.certifications.length })
+  expandedCertifications.value = [...expandedCertifications.value, content.certifications.length - 1]
 }
 
 function addCustomSection() {
