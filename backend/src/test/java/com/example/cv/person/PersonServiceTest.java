@@ -1,12 +1,15 @@
 package com.example.cv.person;
 
 import com.example.cv.auth.AuthenticatedUser;
+import com.example.cv.storage.FileStorage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -17,7 +20,9 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +31,9 @@ class PersonServiceTest {
 
     @Mock
     private PersonRepository personRepository;
+
+    @Mock
+    private FileStorage storage;
 
     @InjectMocks
     private PersonService personService;
@@ -97,5 +105,22 @@ class PersonServiceTest {
         when(personRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(ResponseStatusException.class, () -> personService.findById(id));
+    }
+
+    @Test
+    void uploadsPhotoAndPersistsGeneratedStorageKey() {
+        UUID id = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        Person person = new Person("Ada", "Lovelace");
+        ReflectionTestUtils.setField(person, "id", id);
+        when(personRepository.findByIdAndOwner_Id(id, ownerId)).thenReturn(Optional.of(person));
+        when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        MockMultipartFile image = new MockMultipartFile("file", "profile.png", "image/png", new byte[]{1, 2, 3});
+
+        PersonResponse response = personService.uploadPhoto(id, image, ownerId);
+
+        assertTrue(response.photoStorageKey().endsWith(".png"));
+        assertEquals(response.photoStorageKey(), person.getPhotoStorageKey());
+        verify(storage).upload(eq(response.photoStorageKey()), any(java.io.InputStream.class), eq("image/png"));
     }
 }

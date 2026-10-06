@@ -97,6 +97,17 @@ class CvHtmlRendererTest {
     }
 
     @Test
+    void omitsProfilePhotoWhenSnapshotContainsOne() {
+        CvVersionSnapshot.PersonProfile person = new CvVersionSnapshot.PersonProfile(
+                "Jane", "Doe", "Engineer", "Riga", List.of(), "persons/jane/photo.png");
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
+                content(null, List.of()), person);
+
+        assertThat(renderer.render(snapshot, "modern"))
+                .doesNotContain("<img", "photo.png");
+    }
+
+    @Test
     void omitsHiddenSkillsAndGroupsWithoutPrintableSkills() {
         CvContent content = new CvContent(null, List.of(), List.of(), List.of(
                 new CvContent.SkillGroup("Backend", 0, List.of(

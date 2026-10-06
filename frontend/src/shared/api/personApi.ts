@@ -22,6 +22,20 @@ const personApi = {
     return response.data
   },
 
+  async uploadPhoto(id: string, file: File): Promise<Person> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await apiClient.post<Person>(`/persons/${id}/photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  },
+
+  async getPhoto(id: string): Promise<Blob> {
+    const response = await apiClient.get<Blob>(`/persons/${id}/photo`, { responseType: 'blob' })
+    return response.data
+  },
+
   async remove(id: string): Promise<void> {
     await apiClient.delete(`/persons/${id}`)
   },

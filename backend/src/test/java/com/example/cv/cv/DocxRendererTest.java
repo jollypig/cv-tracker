@@ -14,6 +14,17 @@ class DocxRendererTest {
     private final DocxRenderer renderer = new DocxRenderer();
 
     @Test
+    void omitsProfilePhotoFromDocumentWhenSnapshotContainsOne() throws Exception {
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Backend CV", null, "en", CvStatus.ACTIVE,
+                new CvContent(null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
+                new CvVersionSnapshot.PersonProfile("Jane", "Doe", "Engineer", "Riga", List.of(), "persons/jane/photo.png"));
+
+        try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(renderer.render(snapshot)))) {
+            assertThat(document.getAllPictures()).isEmpty();
+        }
+        }
+
+    @Test
     void hidesSkillLevelsWhenDisabledGlobally() throws Exception {
         CvContent content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
                 List.of(new CvContent.Skill("Java", "Advanced", 0, true)))), List.of(), List.of(), List.of(), List.of(),

@@ -23,9 +23,16 @@ public record CvVersionSnapshot(
             String lastName,
             String position,
             String location,
-            java.util.List<Contact> contacts) {
+                        java.util.List<Contact> contacts,
+                        String photoStorageKey) {
+
+                public PersonProfile(String firstName, String lastName, String position, String location,
+                                List<Contact> contacts) {
+                        this(firstName, lastName, position, location, contacts, null);
+                }
     }
 
     public record Contact(String type, String value, int sortOrder) {
     }
+
 }

@@ -1,13 +1,17 @@
 package com.example.cv.person;
 
 import com.example.cv.auth.AuthenticatedUser;
+import com.example.cv.storage.FileStorage;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -15,9 +19,11 @@ import java.util.UUID;
 public class PersonService {
 
     private final PersonRepository personRepository;
+    private final FileStorage storage;
 
-    public PersonService(PersonRepository personRepository) {
+    public PersonService(PersonRepository personRepository, FileStorage storage) {
         this.personRepository = personRepository;
+        this.storage = storage;
     }
 
     @Transactional(readOnly = true)
@@ -82,6 +88,46 @@ public class PersonService {
         personRepository.delete(getOwnedPerson(id, ownerId));
     }
 
+    public PersonResponse uploadPhoto(UUID id, MultipartFile file, UUID ownerId) {
+        Person person = getOwnedPerson(id, ownerId);
+        if (file == null || file.isEmpty() || file.getSize() > 5 * 1024 * 1024) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo must be between 1 byte and 5 MB");
+        }
+
+        String contentType = file.getContentType();
+        String extension = "image/png".equalsIgnoreCase(contentType) ? "png"
+                : "image/jpeg".equalsIgnoreCase(contentType) ? "jpg" : null;
+        if (extension == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Photo must be a JPEG or PNG image");
+        }
+
+        String storageKey = "persons/" + id + "/" + UUID.randomUUID() + "." + extension;
+        try (var input = file.getInputStream()) {
+            storage.upload(storageKey, input, contentType.toLowerCase(Locale.ROOT));
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not read uploaded photo", exception);
+        }
+
+        person.setPhotoStorageKey(storageKey);
+        Person savedPerson = personRepository.save(person);
+        return toResponse(savedPerson);
+    }
+
+    @Transactional(readOnly = true)
+    public PersonPhoto getPhoto(UUID id, UUID ownerId) {
+        Person person = getOwnedPerson(id, ownerId);
+        String storageKey = person.getPhotoStorageKey();
+        if (storageKey == null || !isPhotoKeyForPerson(storageKey, id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Person photo not found");
+        }
+        try (var content = storage.download(storageKey)) {
+            String contentType = storageKey.endsWith(".png") ? "image/png" : "image/jpeg";
+            return new PersonPhoto(content.readAllBytes(), contentType);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not read stored photo", exception);
+        }
+    }
+
     private Person getPerson(UUID id) {
         return personRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Person not found"));
@@ -99,7 +145,6 @@ public class PersonService {
         person.setMaritalStatus(blankToNull(request.maritalStatus()));
         person.setMilitaryStatus(blankToNull(request.militaryStatus()));
         person.setLocation(blankToNull(request.location()));
-        person.setPhotoStorageKey(blankToNull(request.photoStorageKey()));
         List<PersonContact> contacts = request.contacts() == null ? List.of() : request.contacts().stream()
                 .map(contact -> new PersonContact(
                         contact.type().name(), contact.value().trim(), contact.primary(), contact.sortOrder()))
@@ -123,5 +168,9 @@ public class PersonService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private boolean isPhotoKeyForPerson(String storageKey, UUID personId) {
+        return storageKey.matches("persons/" + personId + "/[0-9a-fA-F-]{36}\\.(jpg|png)");
     }
 }

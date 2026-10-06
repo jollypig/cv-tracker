@@ -70,6 +70,10 @@ h1 { margin: 8px 0 5px; font-size: 31px; font-weight: 700; }
 .form-section-heading { margin-bottom: 16px; }
 .form-section-heading h2 { margin: 0 0 4px; font-size: 17px; font-weight: 700; }
 .form-section-heading p { margin: 0; color: #78847e; font-size: 12px; }
+.person-photo-field { display: flex; align-items: center; gap: 20px; margin-bottom: 18px; }
+.person-photo-actions { display: grid; justify-items: start; gap: 8px; }
+.field-hint { color: #78847e; font-size: 12px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .contacts-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .contacts-empty { padding: 16px 0; color: #87968e; font-size: 13px; }
 .contact-row { display: grid; grid-template-columns: minmax(135px, .7fr) minmax(180px, 1.5fr) auto 40px; align-items: start; gap: 12px; padding-top: 12px; }

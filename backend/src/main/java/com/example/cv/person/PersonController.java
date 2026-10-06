@@ -6,6 +6,9 @@ import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +43,18 @@ public class PersonController {
     @GetMapping("/{id}")
     public PersonResponse findById(@PathVariable UUID id, @AuthenticationPrincipal OidcUser principal) {
         return personService.findById(id, authenticatedUsers.synchronize(principal).getId());
+    }
+
+    @GetMapping(value = "/{id}/photo", produces = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE})
+    public ResponseEntity<byte[]> getPhoto(@PathVariable UUID id, @AuthenticationPrincipal OidcUser principal) {
+        PersonPhoto photo = personService.getPhoto(id, authenticatedUsers.synchronize(principal).getId());
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(photo.contentType())).body(photo.content());
+    }
+
+    @PostMapping(value = "/{id}/photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PersonResponse uploadPhoto(@PathVariable UUID id, @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal OidcUser principal) {
+        return personService.uploadPhoto(id, file, authenticatedUsers.synchronize(principal).getId());
     }
 
     @PostMapping

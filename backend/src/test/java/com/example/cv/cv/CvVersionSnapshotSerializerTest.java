@@ -31,6 +31,7 @@ class CvVersionSnapshotSerializerTest {
         Person person = new Person("Jane", "Doe");
         person.setPosition("Engineer");
         person.setLocation("Riga");
+        person.setPhotoStorageKey("persons/person-id/photo.png");
         person.setContacts(List.of(new PersonContact("EMAIL", "jane@example.test", true, 0)));
         Cv cv = new Cv(person, "Resume", "en", CvStatus.DRAFT);
         CvContent content = new CvContent(null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
@@ -41,6 +42,7 @@ class CvVersionSnapshotSerializerTest {
 
         assertThat(snapshot.person().firstName()).isEqualTo("Jane");
         assertThat(snapshot.person().position()).isEqualTo("Engineer");
+        assertThat(snapshot.person().photoStorageKey()).isEqualTo("persons/person-id/photo.png");
         assertThat(snapshot.person().contacts()).containsExactly(
                 new CvVersionSnapshot.Contact("EMAIL", "jane@example.test", 0));
     }

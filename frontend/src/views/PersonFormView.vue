@@ -20,6 +20,17 @@
           <h2 id="profile-section-title">{{ translate('personForm.profile') }}</h2>
           <p>{{ translate('personForm.requiredHint') }}</p>
         </div>
+        <div class="person-photo-field">
+          <v-avatar size="112" color="surface-variant">
+            <v-img v-if="photoPreview" :src="photoPreview" :alt="translate('personForm.photo')" cover />
+            <v-icon v-else icon="mdi-account" size="48" />
+          </v-avatar>
+          <div class="person-photo-actions">
+            <input ref="photoInput" class="visually-hidden" type="file" accept="image/jpeg,image/png" @change="selectPhoto">
+            <v-btn prepend-icon="mdi-camera-outline" variant="tonal" @click="photoInput?.click()">{{ translate('personForm.choosePhoto') }}</v-btn>
+            <span class="field-hint">{{ translate('personForm.photoHint') }}</span>
+          </div>
+        </div>
         <v-row>
           <v-col cols="12" sm="6">
             <v-text-field
@@ -106,9 +117,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePersonStore } from '../shared/stores/personStore'
+import personApi from '../shared/api/personApi'
 import type { ContactType, PersonContactInput } from '../shared/api/personTypes'
 import { translate } from '../shared/i18n'
 
@@ -119,6 +131,11 @@ const isEditing = computed(() => typeof route.params.id === 'string')
 const loadingPerson = ref(false)
 const saving = ref(false)
 const error = ref('')
+const photoInput = ref<HTMLInputElement | null>(null)
+const selectedPhoto = ref<File | null>(null)
+const photoPreview = ref('')
+const photoStorageKey = ref<string | null>(null)
+let photoObjectUrl: string | null = null
 const form = reactive({
   firstName: '', lastName: '', dateOfBirth: '', position: '',
   gender: '', maritalStatus: '', militaryStatus: '', location: '',
@@ -170,6 +187,14 @@ onMounted(async () => {
     form.maritalStatus = person.maritalStatus ?? ''
     form.militaryStatus = person.militaryStatus ?? ''
     form.location = person.location ?? ''
+    photoStorageKey.value = person.photoStorageKey
+    if (person.photoStorageKey) {
+      try {
+        setPhotoPreview(URL.createObjectURL(await personApi.getPhoto(person.id)))
+      } catch {
+        photoStorageKey.value = person.photoStorageKey
+      }
+    }
     contacts.value = person.contacts.map((contact) => ({
       key: nextContactKey++,
       type: contact.type,
@@ -183,6 +208,24 @@ onMounted(async () => {
     loadingPerson.value = false
   }
 })
+
+onBeforeUnmount(() => {
+  if (photoObjectUrl) URL.revokeObjectURL(photoObjectUrl)
+})
+
+function setPhotoPreview(url: string) {
+  if (photoObjectUrl) URL.revokeObjectURL(photoObjectUrl)
+  photoObjectUrl = url
+  photoPreview.value = url
+}
+
+function selectPhoto(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  ;(event.target as HTMLInputElement).value = ''
+  if (!file) return
+  selectedPhoto.value = file
+  setPhotoPreview(URL.createObjectURL(file))
+}
 
 function required(value: string) {
   return Boolean(value?.trim()) || translate('personForm.required')
@@ -219,15 +262,27 @@ async function savePerson() {
     maritalStatus: form.maritalStatus || null,
     militaryStatus: form.militaryStatus || null,
     location: form.location.trim() || null,
-    photoStorageKey: null,
+    photoStorageKey: photoStorageKey.value,
     contacts: contacts.value.map(({ key: _key, ...contact }) => contact),
   }
 
   try {
-    if (isEditing.value) {
-      await store.updatePerson(String(route.params.id), input)
+    const editing = isEditing.value
+    let personId: string
+    if (editing) {
+      personId = String(route.params.id)
+      await store.updatePerson(personId, input)
     } else {
-      await store.createPerson(input)
+      const person = await store.createPerson(input)
+      personId = person.id
+      if (selectedPhoto.value) {
+        await router.replace(`/people/${personId}/edit`)
+      }
+    }
+    if (selectedPhoto.value) {
+      const person = await store.uploadPersonPhoto(personId, selectedPhoto.value)
+      photoStorageKey.value = person.photoStorageKey
+      selectedPhoto.value = null
     }
     await router.push('/')
   } catch (cause) {

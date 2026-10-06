@@ -24,7 +24,7 @@ public class CvVersionSnapshotSerializer {
                 .sorted(Comparator.comparingInt(contact -> contact.getSortOrder()))
                 .map(contact -> new CvVersionSnapshot.Contact(
                     contact.getType(), contact.getValue(), contact.getSortOrder()))
-                .toList());
+                .toList(), person.getPhotoStorageKey());
         return objectMapper.valueToTree(new CvVersionSnapshot(cv.getTemplateId(), cv.getName(),
             cv.getDescription(), cv.getLanguage(), cv.getStatus(), content, profile,
             cv.getTags().stream().sorted().toList()));
@@ -33,4 +33,5 @@ public class CvVersionSnapshotSerializer {
     public CvVersionSnapshot deserialize(JsonNode snapshot) {
         return objectMapper.convertValue(snapshot, CvVersionSnapshot.class);
     }
+
 }
