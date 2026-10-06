@@ -52,6 +52,17 @@ Database settings can be overridden with `DATABASE_URL`, `DATABASE_USERNAME`, an
 
 CV import uses a local Ollama server by default. Start Ollama bound to loopback and pull the configured model (`ollama pull llama3.2`) before using extraction. Configure `OLLAMA_BASE_URL` (default `http://127.0.0.1:11434`), `OLLAMA_MODEL` (default `llama3.2`), `OLLAMA_MODEL_VERSION` (default `unknown`; an optional model tag or digest stored with import diagnostics), and `CV_AI_REQUEST_TIMEOUT` (default `60s`) as needed. `CV_AI_PROVIDER` defaults to `ollama`. In deployments, keep Ollama on a private application network and do not publish its API port to the public interface.
 
+### Parse CVs with Claude
+
+Set `CV_AI_PROVIDER=anthropic` and supply `ANTHROPIC_API_KEY` through the backend environment, secret manager, or ignored `.env` file. Restart the backend after changing providers. Ollama is not required when Anthropic is selected; it remains the default otherwise. Selecting Anthropic without a key fails startup with a configuration error.
+
+- `ANTHROPIC_MODEL`: Claude model ID; defaults to `claude-sonnet-4-5`.
+- `ANTHROPIC_MAX_TOKENS`: maximum output tokens per request; defaults to `8192`. Increase this for long CVs if output is truncated.
+- `CV_AI_MODEL_VERSION`: optional model version recorded in import diagnostics. For Ollama, `OLLAMA_MODEL_VERSION` remains supported as a fallback.
+- `CV_AI_REQUEST_TIMEOUT`: connection and read timeout per model request; defaults to `60s` for both providers.
+
+Both providers use the same section detection, structured extraction, validation, and review workflow. Claude sends normalized CV content to Anthropic's hosted API and may incur usage charges. Confirm that you have permission to send personal data to that service. Keep the API key server-side and never commit it.
+
 Uploaded source files are processed for the duration of the import request and are not persisted. Spring's multipart handling removes its temporary upload parts when the request completes; only import metadata and the reviewable parsed draft are retained. Import metadata and drafts are account-owned, and import failures expose only safe, generic descriptions rather than parser/provider exception details.
 
 ## Production image
@@ -61,6 +72,19 @@ Build the backend image from the repository root with `docker build -t cv-manage
 The unauthenticated `/actuator/prometheus` scrape endpoint should only be reachable on a trusted monitoring network. GitHub Actions runs backend tests, frontend tests and build, Playwright browser tests, and a Docker image build for pushes and pull requests.
 
 ## Skill experience and project evidence
+
+### Merge content from other CVs
+
+In the CV content editor, choose **More actions > Merge from other CVs**, select one or more source CVs, and click **Merge**. The editor saves its current draft first. All selected sources must belong to the signed-in account; they remain unchanged. The backend merges all selected sources in one transaction.
+
+- Existing CV metadata, summary, person details, output settings, section settings, and custom sections stay unchanged.
+- Employment positions match by company and start date. Existing position fields stay unchanged; projects within each matching position are added only when the project name and customer company are unique.
+- Positions sort by start date and projects by `periodFrom`, newest first, with missing dates last. Standalone projects match by name because they have no company field.
+- Skill groups match by name; new skills are added to their corresponding group only if their names are unique across the target CV. Existing skill details, levels, and visibility stay unchanged. Imported project links are mapped to the target projects.
+- Certificates and languages match by name. Education matches by institution, start date, and end date, including missing dates.
+- All name comparisons ignore surrounding whitespace and case. Sources are processed in selection order, so the first source wins collisions between new entries. Repeating a merge adds no duplicates.
+
+API: `POST /api/v1/cvs/{cvId}/content/merge` with `{"sourceCvIds":["source-cv-uuid"]}` returns the saved merged content. The existing 100-entry limit for each collection also applies to merges.
 
 Skills support entered years of experience, optional years actively used, started-from and last-used dates (either `YYYY` or `YYYY-MM-DD`), frequency (`daily`, `occasionally`, `rarely`), status (`active`, `learning`, `maintaining`, `deprecated`), and linked projects with one-line outcomes. Project links use stable keys retained across content saves, versions, and copies. Standalone projects have period dates and a current-project flag; employment projects use their existing period dates.
 

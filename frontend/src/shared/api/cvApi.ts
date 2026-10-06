@@ -1,5 +1,5 @@
 import apiClient from './axios'
-import type { Cv, CvContent, CvInput, CvShareLink, CvShareStatus, CvTemplate, CvVersion, CvVersionDetail, CvVersionDiff, CvVersionSnapshot } from './cvTypes'
+import type { Cv, CvContent, CvDocumentImportApproval, CvDocumentImportResponse, CvInput, CvShareLink, CvShareStatus, CvTemplate, CvVersion, CvVersionDetail, CvVersionDiff, CvVersionSnapshot } from './cvTypes'
 
 const cvApi = {
   async list(personId?: string): Promise<Cv[]> {
@@ -21,6 +21,21 @@ const cvApi = {
 
   async importSnapshot(personId: string, snapshot: CvVersionSnapshot): Promise<Cv> {
     const response = await apiClient.post<Cv>(`/persons/${personId}/cvs/import`, snapshot)
+    return response.data
+  },
+
+  async startDocumentImport(file: File): Promise<CvDocumentImportResponse> {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await apiClient.post<CvDocumentImportResponse>('/cvs/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 900_000,
+    })
+    return response.data
+  },
+
+  async approveDocumentImport(importId: string, approval: CvDocumentImportApproval): Promise<CvDocumentImportResponse> {
+    const response = await apiClient.post<CvDocumentImportResponse>(`/cvs/import/${importId}/approve`, approval)
     return response.data
   },
 
@@ -60,6 +75,11 @@ const cvApi = {
 
   async saveContent(id: string, content: CvContent): Promise<CvContent> {
     const response = await apiClient.put<CvContent>(`/cvs/${id}/content`, content)
+    return response.data
+  },
+
+  async mergeContent(id: string, sourceCvIds: string[]): Promise<CvContent> {
+    const response = await apiClient.post<CvContent>(`/cvs/${id}/content/merge`, { sourceCvIds })
     return response.data
   },
 

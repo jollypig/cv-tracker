@@ -32,10 +32,16 @@ export const usePersonStore = defineStore('people', () => {
     return person
   }
 
+  async function uploadPersonPhoto(id: string, file: File) {
+    const person = await personApi.uploadPhoto(id, file)
+    people.value = people.value.map((current) => current.id === id ? person : current)
+    return person
+  }
+
   async function deletePerson(id: string) {
     await personApi.remove(id)
     people.value = people.value.filter((person) => person.id !== id)
   }
 
-  return { people, loading, fetchPeople, fetchPerson, createPerson, updatePerson, deletePerson }
+  return { people, loading, fetchPeople, fetchPerson, createPerson, updatePerson, uploadPersonPhoto, deletePerson }
 })

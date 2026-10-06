@@ -20,10 +20,11 @@ public class DocxRenderer {
             CvVersionSnapshot.PersonProfile person = snapshot.person();
             String fullName = person == null ? "" : join(person.firstName(), person.lastName());
             addText(document, fullName.isBlank() ? snapshot.name() : fullName, 24, true, "183B56");
-            if (person != null) {
+            if (person != null && !Boolean.FALSE.equals(person.showContacts())) {
                 addText(document, person.position(), 12, false, "56636E");
                 List<String> contacts = safe(person.contacts()).stream()
                         .sorted(Comparator.comparingInt(CvVersionSnapshot.Contact::sortOrder))
+                    .filter(contact -> !Boolean.FALSE.equals(contact.showContact()))
                         .map(CvVersionSnapshot.Contact::value).filter(DocxRenderer::notBlank).toList();
                 if (notBlank(person.location())) {
                     contacts = new java.util.ArrayList<>(contacts);
@@ -94,7 +95,8 @@ public class DocxRenderer {
                 if (!groups.isEmpty()) {
                     addHeading(document, "Skills");
                     groups.forEach(group -> addText(document, group.name() + ": " + String.join(", ", group.skills().stream()
-                            .map(skill -> notBlank(skill.level()) ? skill.name() + " (" + skill.level() + ")" : skill.name())
+                                .map(skill -> content.includeSkillLevelsInOutput() && notBlank(skill.level())
+                                    ? skill.name() + " (" + skill.level() + ")" : skill.name())
                             .toList()), 10, false, "202A35"));
                 }
             }

@@ -53,6 +53,32 @@ class ParsedCvToContentMapperTest {
     }
 
     @Test
+        void preservesSuppliedSkillAttributesThroughNormalizationAndApproval() {
+                ParsedSkill skill = new ParsedSkill(value("Java"), value("Backend"), List.of(value("Java - Advanced - 5 years")),
+                                null, null, new java.math.BigDecimal("5"), java.time.LocalDate.of(2024, 6, 30), true,
+                                value("Advanced"));
+                ParsedCv draft = new ParsedCv(null, null, List.of(), List.of(), List.of(), List.of(), List.of(skill));
+
+                ParsedCv normalized = ParsedCvNormalizer.normalize(draft, java.time.LocalDate.of(2025, 1, 1));
+                assertThat(normalized.skills()).singleElement().satisfies(parsed -> {
+                        assertThat(parsed.level()).isEqualTo(skill.level());
+                        assertThat(parsed.yearsOfExperience()).isEqualByComparingTo("5");
+                        assertThat(parsed.lastUsedDate()).isEqualTo(skill.lastUsedDate());
+                        assertThat(parsed.requiresReview()).isTrue();
+                });
+                var content = mapper.toContent(normalized);
+
+                assertThat(content.skillGroups()).singleElement().satisfies(group -> {
+                        assertThat(group.name()).isEqualTo("Backend");
+                        assertThat(group.skills()).singleElement().satisfies(mapped -> {
+                                assertThat(mapped.level()).isEqualTo("Advanced");
+                                assertThat(mapped.details().yearsOfExperience()).isEqualByComparingTo("5");
+                                assertThat(mapped.details().lastUsed()).isEqualTo("2024-06-30");
+                        });
+                });
+        }
+
+        @Test
     void rejectsApprovalWhenRequiredDraftFieldsAreMissing() {
         ParsedCv draft = new ParsedCv(null, null,
                 List.of(new ParsedEmployment(null, value("Engineer"), null, null, null, null, null, List.of())),

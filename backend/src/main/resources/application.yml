@@ -10,6 +10,12 @@ spring:
         options:
           model: ${OLLAMA_MODEL:llama3.2}
           temperature: 0
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      chat:
+        options:
+          model: ${ANTHROPIC_MODEL:claude-sonnet-4-5}
+          max-tokens: ${ANTHROPIC_MAX_TOKENS:8192}
   config:
     import: "optional:file:./.env[.properties],optional:file:./backend/.env[.properties]"
   profiles:
@@ -80,4 +86,4 @@ cv:
   ai:
     provider: ${CV_AI_PROVIDER:ollama}
     request-timeout: ${CV_AI_REQUEST_TIMEOUT:60s}
-    model-version: ${OLLAMA_MODEL_VERSION:unknown}
+    model-version: ${CV_AI_MODEL_VERSION:${OLLAMA_MODEL_VERSION:unknown}}

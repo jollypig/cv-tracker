@@ -1,0 +1,1 @@
+ALTER TABLE person ADD COLUMN show_contacts boolean NOT NULL DEFAULT true;

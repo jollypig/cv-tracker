@@ -132,8 +132,25 @@ final class ParsedCvNormalizer {
             List<ParsedProject> projects
     ) {
         Map<String, SkillBuilder> merged = new LinkedHashMap<>();
-        extracted.forEach(skill -> addSkill(merged, skill.name(), skill.group(), skill.evidence(),
-            skill.canonicalName()));
+        extracted.forEach(skill -> {
+            SkillBuilder builder = addSkill(merged, skill.name(), skill.group(), skill.evidence(),
+                    skill.canonicalName());
+            if (builder != null) {
+                boolean hasSourceEvidence = skill.evidence().stream().anyMatch(evidence ->
+                        evidence.sourceText() != null && !evidence.sourceText().isBlank());
+                if (builder.level == null) {
+                    builder.level = skill.level();
+                }
+                if (builder.yearsOfExperience == null && hasSourceEvidence) {
+                    builder.yearsOfExperience = skill.yearsOfExperience();
+                }
+                if (builder.lastUsedDate == null && hasSourceEvidence) {
+                    builder.lastUsedDate = skill.lastUsedDate();
+                }
+                builder.requiresReview |= skill.requiresReview() || !hasSourceEvidence
+                        && (skill.yearsOfExperience() != null || skill.lastUsedDate() != null);
+            }
+        });
         for (ParsedProject project : allProjects(employment, projects)) {
             for (ExtractedValue<String> technology : project.technologiesAndTools()) {
                 addSkill(merged, technology, null, List.of(technology), null);
@@ -149,7 +166,7 @@ final class ParsedCvNormalizer {
         return merged.values().stream().map(builder -> builder.toParsedSkill()).toList();
     }
 
-    private static void addSkill(
+    private static SkillBuilder addSkill(
             Map<String, SkillBuilder> merged,
             ExtractedValue<String> name,
             ExtractedValue<String> group,
@@ -157,7 +174,7 @@ final class ParsedCvNormalizer {
                 String canonicalSuggestion
     ) {
         if (name == null || name.value().isBlank()) {
-            return;
+            return null;
         }
         SkillCatalog.Entry exactMatch = SkillCatalog.find(name.value()).orElse(null);
         SkillCatalog.Entry suggestedMatch = exactMatch == null && canonicalSuggestion != null
@@ -180,6 +197,7 @@ final class ParsedCvNormalizer {
         if (name.sourceText() != null) {
             builder.addEvidence(name);
         }
+        return builder;
     }
 
     private static ParsedSkill calculateExperience(
@@ -228,8 +246,10 @@ final class ParsedCvNormalizer {
                 .divide(BigDecimal.valueOf(365.2425), 2, RoundingMode.HALF_UP);
         LocalDate lastUsed = merged.stream().map(Period::end).max(Comparator.naturalOrder()).orElse(null);
         return new ParsedSkill(skill.name(), skill.group(), skill.evidence(),
-                catalog == null ? null : catalog.id(), catalog == null ? null : catalog.canonicalName(), years,
-            lastUsed, catalog == null || skill.requiresReview());
+            catalog == null ? null : catalog.id(), catalog == null ? null : catalog.canonicalName(),
+            skill.yearsOfExperience() == null ? years : skill.yearsOfExperience(),
+            skill.lastUsedDate() == null ? lastUsed : skill.lastUsedDate(),
+            catalog == null || skill.requiresReview(), skill.level());
     }
 
     private static boolean mentionsSkill(ParsedSkill skill, ParsedProject project) {
@@ -404,6 +424,10 @@ final class ParsedCvNormalizer {
 
         private ExtractedValue<String> name;
         private ExtractedValue<String> group;
+        private ExtractedValue<String> level;
+        private BigDecimal yearsOfExperience;
+        private LocalDate lastUsedDate;
+        private boolean requiresReview;
         private final SkillCatalog.Entry catalog;
         private boolean aiSuggested;
         private final Map<String, ExtractedValue<String>> evidence = new LinkedHashMap<>();
@@ -424,7 +448,7 @@ final class ParsedCvNormalizer {
         private ParsedSkill toParsedSkill() {
             return new ParsedSkill(name, group, List.copyOf(evidence.values()),
                     catalog == null ? null : catalog.id(), catalog == null ? null : catalog.canonicalName(),
-                    null, null, catalog == null || aiSuggested);
+                    yearsOfExperience, lastUsedDate, catalog == null || aiSuggested || requiresReview, level);
         }
     }
 }

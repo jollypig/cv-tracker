@@ -6,7 +6,7 @@
         <h2>{{ person.firstName }} {{ person.lastName }}</h2>
         <p v-if="person.position && variant !== 'minimal'" class="document-position">{{ person.position }}</p>
       </div>
-      <div v-if="variant !== 'minimal'" class="document-contacts">
+      <div v-if="variant !== 'minimal' && sortedContacts.length > 0" class="document-contacts">
         <span v-for="contact in sortedContacts" :key="contact.id" :title="contact.type">{{ contact.value }}</span>
       </div>
     </header>
@@ -14,8 +14,10 @@
     <div class="document-body">
       <aside v-if="variant === 'minimal'" class="document-rail">
         <p v-if="person.position" class="document-position">{{ person.position }}</p>
-        <h3>Contact</h3>
-        <span v-for="contact in sortedContacts" :key="contact.id" :title="contact.type">{{ contact.value }}</span>
+        <template v-if="sortedContacts.length > 0">
+          <h3>Contact</h3>
+          <span v-for="contact in sortedContacts" :key="contact.id" :title="contact.type">{{ contact.value }}</span>
+        </template>
       </aside>
       <CvPreviewSections :content="content" :variant="variant" />
     </div>
@@ -37,7 +39,9 @@ const props = defineProps<{
   variant: 'modern' | 'classic' | 'minimal'
 }>()
 
-const sortedContacts = computed(() => [...props.person.contacts].sort((left, right) => left.sortOrder - right.sortOrder))
+const sortedContacts = computed(() => [...props.person.contacts]
+  .filter((contact) => contact.showContact !== false)
+  .sort((left, right) => left.sortOrder - right.sortOrder))
 </script>
 
 <style scoped>
@@ -52,7 +56,7 @@ const sortedContacts = computed(() => [...props.person.contacts].sort((left, rig
 .document-body { padding-top: 21px; }
 .document-footer { margin-top: 20px; color: #88948c; font-size: 8px; text-align: right; text-transform: uppercase; }
 .cv-document--classic { color: #282828; font-family: Georgia, 'Times New Roman', serif; }
-.cv-document--classic .document-header { display: block; border-bottom: 1px solid #696969; text-align: center; }
+.cv-document--classic .document-header { align-items: center; flex-direction: column; border-bottom: 1px solid #696969; text-align: center; }
 .cv-document--classic .document-eyebrow { color: #646464; }
 .cv-document--classic .document-title h2 { color: #222; font: 700 28px/1.2 Georgia, 'Times New Roman', serif; }
 .cv-document--classic .document-position { color: #555; font-family: Georgia, 'Times New Roman', serif; }

@@ -37,7 +37,6 @@
       <v-text-field v-model="link.outcome" :label="translate('skillDetails.outcome')" maxlength="1000" variant="outlined" density="compact" />
       <v-btn icon="mdi-link-off" :aria-label="translate('skillDetails.unlink')" variant="text" size="small" @click="skill.details.linkedProjects.splice(index, 1)" />
     </div>
-    <v-checkbox v-model="skill.details.includeInOutput" :label="translate('skillDetails.includeOutput')" density="compact" hide-details />
   </div>
 </template>
 

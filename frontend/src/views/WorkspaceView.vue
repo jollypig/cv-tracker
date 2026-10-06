@@ -7,6 +7,7 @@
         <p>{{ translate(isPersonView ? 'workspace.personDescription' : 'workspace.libraryDescription') }}</p>
       </div>
       <div class="workspace-heading-actions">
+        <v-btn variant="outlined" prepend-icon="mdi-file-upload-outline" @click="openDocumentImport">{{ translate('workspace.importDocument') }}</v-btn>
         <v-btn variant="outlined" prepend-icon="mdi-code-json" @click="openImport">{{ translate('workspace.importJson') }}</v-btn>
         <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" :to="createRoute">{{ translate('workspace.createCv') }}</v-btn>
       </div>
@@ -170,6 +171,136 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="documentImportDialog" max-width="760">
+      <v-card>
+        <v-card-title class="dialog-title">{{ translate('workspace.importDocumentTitle') }}</v-card-title>
+        <v-card-text>
+          <v-select
+            v-if="!personId"
+            v-model="documentPersonId"
+            :items="personOptions"
+            item-title="name"
+            item-value="id"
+            :label="translate('workspace.personLabel')"
+            variant="outlined"
+            :loading="personStore.loading"
+          />
+          <v-file-input
+            v-model="documentFile"
+            accept=".pdf,.html,.htm,application/pdf,text/html,application/xhtml+xml"
+            :label="translate('workspace.documentFile')"
+            prepend-icon="mdi-file-document-outline"
+            show-size
+            variant="outlined"
+          />
+          <v-alert v-if="documentError" class="mb-4" type="error" variant="tonal">
+            {{ documentError }}
+          </v-alert>
+          <v-btn
+            v-if="!documentImportResponse || documentImportResponse.status === 'FAILED'"
+            color="primary"
+            prepend-icon="mdi-text-box-search-outline"
+            :loading="documentImporting"
+            :disabled="!documentFileValue || !(personId || documentPersonId)"
+            @click="uploadDocument"
+          >
+            {{ translate('workspace.analyzeDocument') }}
+          </v-btn>
+
+          <template v-if="documentImportResponse?.status === 'NEEDS_REVIEW' && documentImportResponse.result">
+            <v-alert v-for="(warning, index) in documentImportResponse.result.warnings" :key="index" class="mb-2" type="warning" variant="tonal">
+              {{ warning }}
+            </v-alert>
+            <section class="document-import-preview">
+              <h3>{{ translate('workspace.extractedDetails') }}</h3>
+              <div class="document-import-grid">
+                <div v-if="valueOf(documentImportResponse.result.personalData?.firstName) || valueOf(documentImportResponse.result.personalData?.lastName)">
+                  <strong>{{ translate('personForm.firstName') }} / {{ translate('personForm.lastName') }}</strong>
+                  <span>{{ [valueOf(documentImportResponse.result.personalData?.firstName), valueOf(documentImportResponse.result.personalData?.lastName)].filter(Boolean).join(' ') }}</span>
+                </div>
+                <div v-if="valueOf(documentImportResponse.result.personalData?.email)">
+                  <strong>{{ translate('personForm.email') }}</strong>
+                  <span>{{ valueOf(documentImportResponse.result.personalData?.email) }}</span>
+                </div>
+                <div v-if="valueOf(documentImportResponse.result.personalData?.phone)">
+                  <strong>{{ translate('personForm.phone') }}</strong>
+                  <span>{{ valueOf(documentImportResponse.result.personalData?.phone) }}</span>
+                </div>
+                <div v-if="valueOf(documentImportResponse.result.personalData?.location)">
+                  <strong>{{ translate('personForm.location') }}</strong>
+                  <span>{{ valueOf(documentImportResponse.result.personalData?.location) }}</span>
+                </div>
+              </div>
+              <div v-if="valueOf(documentImportResponse.result.professionalSummary)" class="document-import-section">
+                <h4>{{ translate('workspace.summary') }}</h4>
+                <p>{{ valueOf(documentImportResponse.result.professionalSummary) }}</p>
+              </div>
+              <div v-if="documentImportResponse.result.employment.length" class="document-import-section">
+                <h4>{{ translate('workspace.experience') }} ({{ documentImportResponse.result.employment.length }})</h4>
+                <div v-for="(entry, index) in documentImportResponse.result.employment" :key="index" class="document-import-item">
+                  <strong>{{ [valueOf(entry.position), valueOf(entry.company)].filter(Boolean).join(' · ') || translate('workspace.untitledEntry') }}</strong>
+                  <span>{{ [valueOf(entry.startDate), valueOf(entry.endDate), valueOf(entry.location)].filter(Boolean).join(' · ') }}</span>
+                </div>
+              </div>
+              <div v-if="documentImportResponse.result.education.length" class="document-import-section">
+                <h4>{{ translate('workspace.education') }} ({{ documentImportResponse.result.education.length }})</h4>
+                <div v-for="(entry, index) in documentImportResponse.result.education" :key="index" class="document-import-item">
+                  <strong>{{ [valueOf(entry.degree), valueOf(entry.fieldOfStudy), valueOf(entry.institution)].filter(Boolean).join(' · ') || translate('workspace.untitledEntry') }}</strong>
+                  <span>{{ [valueOf(entry.startDate), valueOf(entry.endDate)].filter(Boolean).join(' – ') }}</span>
+                </div>
+              </div>
+              <div v-if="documentImportResponse.result.projects.length" class="document-import-section">
+                <h4>{{ translate('workspace.projects') }} ({{ documentImportResponse.result.projects.length }})</h4>
+                <div v-for="(entry, index) in documentImportResponse.result.projects" :key="index" class="document-import-item">
+                  <strong>{{ valueOf(entry.projectName) || translate('workspace.untitledEntry') }}</strong>
+                  <span>{{ valueOf(entry.projectDescription) }}</span>
+                </div>
+              </div>
+              <div v-if="documentImportResponse.result.skills.length" class="document-import-section">
+                <h4>{{ translate('workspace.skills') }} ({{ documentImportResponse.result.skills.length }})</h4>
+                <div class="cv-tag-list">
+                  <v-chip v-for="(skill, index) in documentImportResponse.result.skills" :key="index" size="small" variant="outlined">
+                    {{ valueOf(skill.name) || skill.canonicalName }}
+                  </v-chip>
+                </div>
+              </div>
+              <div v-if="documentImportResponse.result.languages.length" class="document-import-section">
+                <h4>{{ translate('workspace.languages') }} ({{ documentImportResponse.result.languages.length }})</h4>
+                <div class="cv-tag-list">
+                  <v-chip v-for="(entry, index) in documentImportResponse.result.languages" :key="index" size="small" variant="outlined">
+                    {{ [valueOf(entry.name), valueOf(entry.proficiency)].filter(Boolean).join(' · ') }}
+                  </v-chip>
+                </div>
+              </div>
+            </section>
+
+            <v-divider class="my-4" />
+            <h3 class="mb-4">{{ translate('workspace.saveImportedCv') }}</h3>
+            <v-text-field v-model="documentCvName" :label="translate('cvForm.name')" maxlength="255" variant="outlined" />
+            <div class="document-import-grid">
+              <v-text-field v-model="documentLanguage" :label="translate('workspace.language')" maxlength="10" variant="outlined" />
+              <v-select v-model="documentStatus" :items="documentStatusOptions" :label="translate('workspace.status')" variant="outlined" />
+            </div>
+            <v-combobox v-model="documentTags" :label="translate('workspace.tags')" multiple chips closable-chips variant="outlined" />
+          </template>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" :disabled="documentImporting || documentApproving" @click="documentImportDialog = false">{{ translate('workspace.cancel') }}</v-btn>
+          <v-btn
+            v-if="documentImportResponse?.status === 'NEEDS_REVIEW'"
+            color="primary"
+            prepend-icon="mdi-check"
+            :loading="documentApproving"
+            :disabled="!documentCvName.trim() || !documentLanguage.trim() || !(personId || documentPersonId)"
+            @click="approveDocumentImport"
+          >
+            {{ translate('workspace.createImportedCv') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </main>
 </template>
 
@@ -179,7 +310,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import cvApi from '../shared/api/cvApi'
 import { useCvStore } from '../shared/stores/cvStore'
 import { usePersonStore } from '../shared/stores/personStore'
-import type { Cv, CvStatus, CvVersionSnapshot } from '../shared/api/cvTypes'
+import type { Cv, CvDocumentImportResponse, CvStatus, CvVersionSnapshot, ExtractedValue } from '../shared/api/cvTypes'
 import { matchesCvSearch } from '../shared/utils/cvSearch'
 import { locale, translate } from '../shared/i18n'
 
@@ -213,6 +344,17 @@ const importDialog = ref(false)
 const importing = ref(false)
 const importPersonId = ref('')
 const importFile = ref<File | File[] | null>(null)
+const documentImportDialog = ref(false)
+const documentImporting = ref(false)
+const documentApproving = ref(false)
+const documentPersonId = ref('')
+const documentFile = ref<File | File[] | null>(null)
+const documentImportResponse = ref<CvDocumentImportResponse | null>(null)
+const documentError = ref('')
+const documentCvName = ref('')
+const documentLanguage = ref('en')
+const documentStatus = ref<CvStatus>('DRAFT')
+const documentTags = ref<string[]>([])
 const selectedCv = ref<Cv | null>(null)
 const cvToDuplicate = ref<Cv | null>(null)
 const personOptions = computed(() => personStore.people.map((person) => ({
@@ -220,6 +362,10 @@ const personOptions = computed(() => personStore.people.map((person) => ({
   name: `${person.firstName} ${person.lastName}`,
 })))
 const canImport = computed(() => Boolean(importFile.value && (personId.value || importPersonId.value)))
+const documentStatusOptions = computed(() => (['DRAFT', 'ACTIVE', 'ARCHIVED'] as CvStatus[]).map((status) => ({
+  title: translate(`cvForm.${status.toLowerCase()}`),
+  value: status,
+})))
 const headers = computed(() => [
   { title: translate('workspace.cv'), key: 'name' },
   ...(!isPersonView.value ? [{ title: translate('workspace.person'), key: 'personName' }] : []),
@@ -235,6 +381,11 @@ const duplicatePersonOptions = computed(() => personStore.people.map((person) =>
 })))
 
 watch(personId, () => loadCvs(), { immediate: true })
+
+watch(documentFile, () => {
+  documentImportResponse.value = null
+  documentCvName.value = ''
+})
 
 async function loadCvs() {
   error.value = ''
@@ -325,6 +476,78 @@ async function openImport() {
     }
   }
   importDialog.value = true
+}
+
+async function openDocumentImport() {
+  error.value = ''
+  documentError.value = ''
+  documentFile.value = null
+  documentImportResponse.value = null
+  documentCvName.value = ''
+  documentLanguage.value = 'en'
+  documentStatus.value = 'DRAFT'
+  documentTags.value = []
+  documentPersonId.value = personId.value ?? ''
+  if (!personId.value) {
+    try {
+      await personStore.fetchPeople()
+      documentPersonId.value = personOptions.value[0]?.id ?? ''
+    } catch (cause) {
+      error.value = cause instanceof Error ? cause.message : translate('workspace.loadPeopleError')
+      return
+    }
+  }
+  documentImportDialog.value = true
+}
+
+const documentFileValue = computed(() => Array.isArray(documentFile.value) ? documentFile.value[0] : documentFile.value)
+
+function valueOf(value: ExtractedValue<string> | null | undefined) {
+  return value?.value?.trim() ?? ''
+}
+
+async function uploadDocument() {
+  if (!documentFileValue.value) return
+  documentImporting.value = true
+  documentError.value = ''
+  try {
+    const response = await cvApi.startDocumentImport(documentFileValue.value)
+    documentImportResponse.value = response
+    if (response.status === 'FAILED') {
+      documentError.value = response.errorMessage || translate('workspace.documentImportError')
+    } else {
+      documentCvName.value = response.fileName.replace(/\.(pdf|html?)$/i, '')
+    }
+  } catch (cause) {
+    documentError.value = cause instanceof Error ? cause.message : translate('workspace.documentImportError')
+  } finally {
+    documentImporting.value = false
+  }
+}
+
+async function approveDocumentImport() {
+  const importId = documentImportResponse.value?.importId
+  const destinationPersonId = personId.value ?? documentPersonId.value
+  if (!importId || !destinationPersonId || !documentCvName.value.trim()) return
+  documentApproving.value = true
+  documentError.value = ''
+  try {
+    const response = await cvApi.approveDocumentImport(importId, {
+      personId: destinationPersonId,
+      name: documentCvName.value.trim(),
+      language: documentLanguage.value.trim(),
+      status: documentStatus.value,
+      tags: documentTags.value,
+    })
+    if (!response.cvId) throw new Error(translate('workspace.documentImportError'))
+    await store.fetchCvs(personId.value)
+    documentImportDialog.value = false
+    await router.push(`/cvs/${response.cvId}/content`)
+  } catch (cause) {
+    documentError.value = cause instanceof Error ? cause.message : translate('workspace.documentImportError')
+  } finally {
+    documentApproving.value = false
+  }
 }
 
 async function confirmImport() {

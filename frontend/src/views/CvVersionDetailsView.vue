@@ -68,7 +68,7 @@
           <v-expansion-panel-text>
             <article v-for="(group, index) in snapshot.content.skillGroups" :key="index" class="snapshot-entry">
               <h3>{{ group.name }}</h3>
-              <p>{{ group.skills.map((skill) => skill.level ? `${skill.name} (${skill.level})` : skill.name).join(', ') }}</p>
+              <p>{{ group.skills.map((skill) => snapshot?.content.includeSkillLevelsInOutput && skill.level ? `${skill.name} (${skill.level})` : skill.name).join(', ') }}</p>
             </article>
           </v-expansion-panel-text>
         </v-expansion-panel>

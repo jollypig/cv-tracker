@@ -60,6 +60,12 @@ public class Cv {
     @Column(columnDefinition = "text")
     private String summary;
 
+    @Column(name = "include_skill_details_in_output", nullable = false)
+    private boolean includeSkillDetailsInOutput;
+
+    @Column(name = "include_skill_levels_in_output", nullable = false)
+    private boolean includeSkillLevelsInOutput = true;
+
     @ElementCollection
     @CollectionTable(name = "cv_tag", joinColumns = @JoinColumn(name = "cv_id"))
     @Column(name = "tag", nullable = false, length = 50)
@@ -133,6 +139,10 @@ public class Cv {
     public void setCurrentVersionId(UUID currentVersionId) { this.currentVersionId = currentVersionId; }
     public String getSummary() { return summary; }
     public void setSummary(String summary) { this.summary = summary; }
+    public boolean isIncludeSkillDetailsInOutput() { return includeSkillDetailsInOutput; }
+    public void setIncludeSkillDetailsInOutput(boolean includeSkillDetailsInOutput) { this.includeSkillDetailsInOutput = includeSkillDetailsInOutput; }
+    public boolean isIncludeSkillLevelsInOutput() { return includeSkillLevelsInOutput; }
+    public void setIncludeSkillLevelsInOutput(boolean includeSkillLevelsInOutput) { this.includeSkillLevelsInOutput = includeSkillLevelsInOutput; }
     public Set<String> getTags() { return tags; }
     public List<CvExperience> getExperiences() { return experiences; }
     public List<CvEducation> getEducation() { return education; }

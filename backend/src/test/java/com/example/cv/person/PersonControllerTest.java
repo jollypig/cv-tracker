@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockMultipartFile;
 import com.example.cv.auth.AuthenticatedUser;
 import com.example.cv.auth.AuthenticatedUserService;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -116,6 +118,25 @@ class PersonControllerTest {
         mockMvc.perform(delete("/api/v1/persons/{id}", id))
                 .andExpect(status().isNoContent());
         verify(personService).delete(id, ownerId);
+    }
+
+    @Test
+    void readsAndUploadsAnOwnedProfilePhoto() throws Exception {
+        UUID id = UUID.randomUUID();
+        when(personService.getPhoto(id, ownerId)).thenReturn(new PersonPhoto(new byte[]{1, 2, 3}, "image/png"));
+        when(personService.uploadPhoto(eq(id), any(), eq(ownerId))).thenReturn(person(id));
+
+        mockMvc.perform(get("/api/v1/persons/{id}/photo", id))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .contentType("image/png"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .bytes(new byte[]{1, 2, 3}));
+
+        MockMultipartFile image = new MockMultipartFile("file", "profile.png", "image/png", new byte[]{1, 2});
+        mockMvc.perform(multipart("/api/v1/persons/{id}/photo", id).file(image))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
         @Test

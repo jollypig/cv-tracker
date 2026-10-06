@@ -14,16 +14,27 @@ class CvHtmlRendererTest {
     void rendersOptInCalculatedMetadataAndEscapesProjectOutcomes() {
         var details = new CvSkillDetails(new java.math.BigDecimal("2"), new java.math.BigDecimal("1"),
                 "2016", "2010", "occasionally", "maintaining",
-                List.of(new CvSkillDetails.ProjectLink("project", "Shipped <fast> & safely")), true);
+                List.of(new CvSkillDetails.ProjectLink("project", "Shipped <fast> & safely")), false);
         var content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
                 List.of(new CvContent.Skill("Java", "Advanced", 0, true, details)))), List.of(),
                 List.of(new CvContent.Project("Platform", null, null, null, null, 0, "project",
                         java.time.LocalDate.of(2020, 1, 1), java.time.LocalDate.of(2024, 1, 1), false)),
-                List.of(), List.of(), List.of(new CvContent.Section(CvSectionType.SKILLS, true, 0)));
+                List.of(), List.of(), List.of(new CvContent.Section(CvSectionType.SKILLS, true, 0)), true, true);
         assertThat(renderer.render(snapshot(content), "modern"))
                 .contains("Total experience: 4 years", "Last used: 2024-01-01", "Actively used: 1 years",
                         "occasionally", "maintaining", "Platform: Shipped &lt;fast&gt; &amp; safely")
                 .doesNotContain("<fast>");
+    }
+
+    @Test
+    void hidesSkillLevelsWhenDisabledGlobally() {
+        CvContent content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
+                List.of(new CvContent.Skill("Java", "Advanced", 0, true)))), List.of(), List.of(), List.of(), List.of(),
+                List.of(new CvContent.Section(CvSectionType.SKILLS, true, 0)), false, false);
+
+        assertThat(renderer.render(snapshot(content), "modern"))
+                .contains("Java")
+                .doesNotContain("Advanced");
     }
 
     @Test
@@ -83,6 +94,44 @@ class CvHtmlRendererTest {
         String html = renderer.render(snapshot(content), "modern");
 
         assertThat(html).contains("Spring", "Skills: Java").doesNotContain("Skills: Java, Secret tool");
+    }
+
+    @Test
+    void omitsProfilePhotoWhenSnapshotContainsOne() {
+        CvVersionSnapshot.PersonProfile person = new CvVersionSnapshot.PersonProfile(
+                "Jane", "Doe", "Engineer", "Riga", List.of(), "persons/jane/photo.png");
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
+                content(null, List.of()), person);
+
+        assertThat(renderer.render(snapshot, "modern"))
+                .doesNotContain("<img", "photo.png");
+    }
+
+    @Test
+    void hidesContactsAndLocationWhenDisabledInSnapshot() {
+        CvVersionSnapshot.PersonProfile person = new CvVersionSnapshot.PersonProfile(
+                "Jane", "Doe", "Engineer", "Riga",
+                List.of(new CvVersionSnapshot.Contact("EMAIL", "jane@example.com", 0)), null, false);
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
+                content(null, List.of()), person);
+
+        assertThat(renderer.render(snapshot, "modern"))
+                .contains("Jane Doe", "Engineer")
+                .doesNotContain("Riga", "jane@example.com");
+    }
+
+    @Test
+    void hidesOnlyContactsMarkedHidden() {
+        CvVersionSnapshot.PersonProfile person = new CvVersionSnapshot.PersonProfile(
+                "Jane", "Doe", "Engineer", "Riga", List.of(
+                        new CvVersionSnapshot.Contact("EMAIL", "hidden@example.com", 0, false),
+                        new CvVersionSnapshot.Contact("PHONE", "+371 20000000", 1, true)), null, true);
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
+                content(null, List.of()), person);
+
+        assertThat(renderer.render(snapshot, "modern"))
+                .contains("Riga", "+371 20000000")
+                .doesNotContain("hidden@example.com");
     }
 
     @Test

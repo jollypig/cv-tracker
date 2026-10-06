@@ -19,7 +19,24 @@ public record CvContent(
         @NotNull @Size(max = 100) List<@Valid Project> projects,
         @NotNull @Size(max = 100) List<@Valid Certification> certifications,
         @NotNull @Size(max = 100) List<@Valid CustomSection> customSections,
-        @NotNull @Size(max = 8) List<@Valid Section> sections) {
+        @NotNull @Size(max = 8) List<@Valid Section> sections,
+        boolean includeSkillDetailsInOutput,
+        boolean includeSkillLevelsInOutput) {
+
+        public CvContent(String summary, List<Experience> experiences, List<Education> education,
+                         List<SkillGroup> skillGroups, List<Language> languages, List<Project> projects,
+                         List<Certification> certifications, List<CustomSection> customSections,
+                         List<Section> sections) {
+                this(summary, experiences, education, skillGroups, languages, projects, certifications,
+                        customSections, sections, hasLegacySkillOutputOptIn(skillGroups), true);
+        }
+
+        private static boolean hasLegacySkillOutputOptIn(List<SkillGroup> skillGroups) {
+                return skillGroups != null && skillGroups.stream().filter(java.util.Objects::nonNull)
+                        .flatMap(group -> group.skills() == null ? java.util.stream.Stream.empty() : group.skills().stream())
+                        .filter(java.util.Objects::nonNull)
+                        .anyMatch(skill -> skill.details() != null && skill.details().includeInOutput());
+        }
 
         public List<CvSkillDetails.ProjectPeriod> skillProjectPeriods() {
                 List<CvSkillDetails.ProjectPeriod> periods = new java.util.ArrayList<>();

@@ -73,7 +73,7 @@ function localToday() {
 
 export function skillOutput(skill: CvSkill, content: CvContent): string[] {
   const details = skill.details
-  if (!details?.includeInOutput) return []
+  if (!content.includeSkillDetailsInOutput || !details) return []
   const calculated = calculateSkill(skill, content)
   const values: string[] = []
   if (calculated.yearsOfExperience !== null) values.push(`Years of experience: ${calculated.yearsOfExperience}`)
