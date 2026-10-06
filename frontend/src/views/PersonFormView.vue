@@ -79,7 +79,6 @@
           </div>
           <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addContact">{{ translate('personForm.addContact') }}</v-btn>
         </div>
-
         <div v-if="contacts.length === 0" class="contacts-empty">{{ translate('personForm.noContacts') }}</div>
         <div v-for="(contact, index) in contacts" :key="contact.key" class="contact-row">
           <v-select
@@ -98,6 +97,7 @@
             required
           />
           <v-checkbox v-model="contact.primary" hide-details :label="translate('personForm.primary')" />
+          <v-checkbox v-model="contact.showContact" hide-details :label="translate('personForm.showContactInCv')" />
           <v-tooltip :text="translate('personForm.removeContact')">
             <template #activator="{ props }">
               <v-btn v-bind="props" :aria-label="translate('personForm.removeContactNumber', { number: index + 1 })" class="remove-contact" color="error" icon="mdi-close" variant="text" @click="removeContact(index)" />
@@ -201,6 +201,7 @@ onMounted(async () => {
       value: contact.value,
       primary: contact.primary,
       sortOrder: contact.sortOrder,
+      showContact: contact.showContact !== false,
     }))
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : translate('personForm.loadError')
@@ -242,6 +243,7 @@ function addContact() {
     value: '',
     primary: contacts.value.length === 0,
     sortOrder: contacts.value.length,
+    showContact: true,
   })
 }
 

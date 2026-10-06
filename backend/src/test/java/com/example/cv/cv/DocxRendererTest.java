@@ -24,6 +24,21 @@ class DocxRendererTest {
         }
         }
 
+        @Test
+        void hidesContactsAndLocationWhenDisabledInSnapshot() throws Exception {
+                CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Backend CV", null, "en", CvStatus.ACTIVE,
+                                new CvContent(null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
+                                new CvVersionSnapshot.PersonProfile("Jane", "Doe", "Engineer", "Riga",
+                                                List.of(new CvVersionSnapshot.Contact("EMAIL", "jane@example.com", 0)), null, false));
+
+                try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(renderer.render(snapshot)))) {
+                        String output = String.join(" ", document.getParagraphs().stream()
+                                        .map(paragraph -> paragraph.getText()).toList());
+
+                            assertThat(output).contains("Jane Doe").doesNotContain("Riga", "jane@example.com");
+                }
+        }
+
     @Test
     void hidesSkillLevelsWhenDisabledGlobally() throws Exception {
         CvContent content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
@@ -39,6 +54,23 @@ class DocxRendererTest {
             assertThat(output).contains("Java").doesNotContain("Advanced");
         }
     }
+
+        @Test
+        void hidesOnlyContactsMarkedHidden() throws Exception {
+                CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Backend CV", null, "en", CvStatus.ACTIVE,
+                                new CvContent(null, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
+                                new CvVersionSnapshot.PersonProfile("Jane", "Doe", "Engineer", "Riga", List.of(
+                                                new CvVersionSnapshot.Contact("EMAIL", "hidden@example.com", 0, false),
+                                                new CvVersionSnapshot.Contact("PHONE", "+371 20000000", 1, true)), null, true));
+
+                try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(renderer.render(snapshot)))) {
+                        String output = String.join(" ", document.getParagraphs().stream()
+                                        .map(paragraph -> paragraph.getText()).toList());
+
+                        assertThat(output).contains("Jane Doe", "Riga", "+371 20000000")
+                                        .doesNotContain("hidden@example.com");
+                }
+        }
 
     @Test
     void rendersVisibleSectionsInConfiguredOrder() throws Exception {

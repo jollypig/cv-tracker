@@ -36,14 +36,22 @@ public class PersonContact {
     @Column(name = "sort_order", nullable = false)
     private int sortOrder;
 
+    @Column(name = "show_contact", nullable = false)
+    private boolean showContact = true;
+
     protected PersonContact() {
     }
 
     public PersonContact(String type, String value, boolean primary, int sortOrder) {
+        this(type, value, primary, sortOrder, true);
+    }
+
+    public PersonContact(String type, String value, boolean primary, int sortOrder, boolean showContact) {
         this.type = type;
         this.value = value;
         this.primary = primary;
         this.sortOrder = sortOrder;
+        this.showContact = showContact;
     }
 
     public UUID getId() { return id; }
@@ -57,4 +65,6 @@ public class PersonContact {
     public void setPrimary(boolean primary) { this.primary = primary; }
     public int getSortOrder() { return sortOrder; }
     public void setSortOrder(int sortOrder) { this.sortOrder = sortOrder; }
+    public boolean isShowContact() { return showContact; }
+    public void setShowContact(boolean showContact) { this.showContact = showContact; }
 }

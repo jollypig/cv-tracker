@@ -7,5 +7,10 @@ public record PersonContactResponse(
         ContactType type,
         String value,
         boolean primary,
-        int sortOrder) {
+                int sortOrder,
+                boolean showContact) {
+
+        public PersonContactResponse(UUID id, ContactType type, String value, boolean primary, int sortOrder) {
+                this(id, type, value, primary, sortOrder, true);
+        }
 }

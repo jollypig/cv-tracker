@@ -85,18 +85,19 @@ class PersonServiceTest {
     }
 
     @Test
-    void updateReplacesThePersonContactList() {
+    void updateReplacesThePersonContactListAndContactVisibilityPreference() {
         UUID id = UUID.randomUUID();
         Person person = new Person("Ada", "Lovelace");
         when(personRepository.findById(id)).thenReturn(Optional.of(person));
         when(personRepository.save(any(Person.class))).thenAnswer(invocation -> invocation.getArgument(0));
         PersonRequest request = new PersonRequest("Augusta", "King", null, null,
-            null, null, null, null, null, List.of());
+            null, null, null, null, null,
+            List.of(new PersonContactRequest(ContactType.EMAIL, "augusta@example.com", true, 0, false)));
 
         PersonResponse response = personService.update(id, request);
 
         assertEquals("Augusta", response.firstName());
-        assertEquals(List.of(), response.contacts());
+        assertEquals(false, response.contacts().get(0).showContact());
     }
 
     @Test

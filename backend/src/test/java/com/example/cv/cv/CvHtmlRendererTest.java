@@ -108,6 +108,33 @@ class CvHtmlRendererTest {
     }
 
     @Test
+    void hidesContactsAndLocationWhenDisabledInSnapshot() {
+        CvVersionSnapshot.PersonProfile person = new CvVersionSnapshot.PersonProfile(
+                "Jane", "Doe", "Engineer", "Riga",
+                List.of(new CvVersionSnapshot.Contact("EMAIL", "jane@example.com", 0)), null, false);
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
+                content(null, List.of()), person);
+
+        assertThat(renderer.render(snapshot, "modern"))
+                .contains("Jane Doe", "Engineer")
+                .doesNotContain("Riga", "jane@example.com");
+    }
+
+    @Test
+    void hidesOnlyContactsMarkedHidden() {
+        CvVersionSnapshot.PersonProfile person = new CvVersionSnapshot.PersonProfile(
+                "Jane", "Doe", "Engineer", "Riga", List.of(
+                        new CvVersionSnapshot.Contact("EMAIL", "hidden@example.com", 0, false),
+                        new CvVersionSnapshot.Contact("PHONE", "+371 20000000", 1, true)), null, true);
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Resume", null, "en", CvStatus.DRAFT,
+                content(null, List.of()), person);
+
+        assertThat(renderer.render(snapshot, "modern"))
+                .contains("Riga", "+371 20000000")
+                .doesNotContain("hidden@example.com");
+    }
+
+    @Test
     void omitsHiddenSkillsAndGroupsWithoutPrintableSkills() {
         CvContent content = new CvContent(null, List.of(), List.of(), List.of(
                 new CvContent.SkillGroup("Backend", 0, List.of(

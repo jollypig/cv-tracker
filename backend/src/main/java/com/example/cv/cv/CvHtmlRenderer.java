@@ -34,9 +34,10 @@ public class CvHtmlRenderer {
         if (person != null && notBlank(person.position())) {
             html.append("<p class=\"subtitle\">").append(escape(person.position())).append("</p>");
         }
-        if (person != null) {
+        if (person != null && !Boolean.FALSE.equals(person.showContacts())) {
             List<String> contactDetails = person.contacts() == null ? List.of() : person.contacts().stream()
                     .sorted(Comparator.comparingInt(CvVersionSnapshot.Contact::sortOrder))
+                    .filter(contact -> !Boolean.FALSE.equals(contact.showContact()))
                     .map(CvVersionSnapshot.Contact::value).filter(CvHtmlRenderer::notBlank).toList();
             if (notBlank(person.location())) {
                 contactDetails = new java.util.ArrayList<>(contactDetails);

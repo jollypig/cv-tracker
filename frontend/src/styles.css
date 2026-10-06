@@ -76,7 +76,7 @@ h1 { margin: 8px 0 5px; font-size: 31px; font-weight: 700; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 .contacts-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .contacts-empty { padding: 16px 0; color: #87968e; font-size: 13px; }
-.contact-row { display: grid; grid-template-columns: minmax(135px, .7fr) minmax(180px, 1.5fr) auto 40px; align-items: start; gap: 12px; padding-top: 12px; }
+.contact-row { display: grid; grid-template-columns: minmax(125px, .7fr) minmax(170px, 1.5fr) auto auto 40px; align-items: start; gap: 12px; padding-top: 12px; }
 .contact-type-field { min-width: 0; }
 .remove-contact { margin-top: 4px; }
 .form-actions { display: flex; justify-content: flex-end; gap: 8px; padding: 22px 0; }

@@ -147,7 +147,8 @@ public class PersonService {
         person.setLocation(blankToNull(request.location()));
         List<PersonContact> contacts = request.contacts() == null ? List.of() : request.contacts().stream()
                 .map(contact -> new PersonContact(
-                        contact.type().name(), contact.value().trim(), contact.primary(), contact.sortOrder()))
+                contact.type().name(), contact.value().trim(), contact.primary(), contact.sortOrder(),
+                contact.showContact() == null || contact.showContact()))
                 .toList();
         person.setContacts(contacts);
     }
@@ -157,7 +158,7 @@ public class PersonService {
                 .sorted(Comparator.comparingInt(PersonContact::getSortOrder))
                 .map(contact -> new PersonContactResponse(
                         contact.getId(), ContactType.valueOf(contact.getType()), contact.getValue(),
-                        contact.isPrimary(), contact.getSortOrder()))
+                    contact.isPrimary(), contact.getSortOrder(), contact.isShowContact()))
                 .toList();
         return new PersonResponse(person.getId(), person.getFirstName(), person.getLastName(),
             person.getDateOfBirth(), person.getPosition(), person.getGender(),

@@ -23,8 +23,8 @@ public class CvVersionSnapshotSerializer {
             person.getContacts().stream()
                 .sorted(Comparator.comparingInt(contact -> contact.getSortOrder()))
                 .map(contact -> new CvVersionSnapshot.Contact(
-                    contact.getType(), contact.getValue(), contact.getSortOrder()))
-                .toList(), person.getPhotoStorageKey());
+                    contact.getType(), contact.getValue(), contact.getSortOrder(), contact.isShowContact()))
+                .toList(), person.getPhotoStorageKey(), true);
         return objectMapper.valueToTree(new CvVersionSnapshot(cv.getTemplateId(), cv.getName(),
             cv.getDescription(), cv.getLanguage(), cv.getStatus(), content, profile,
             cv.getTags().stream().sorted().toList()));

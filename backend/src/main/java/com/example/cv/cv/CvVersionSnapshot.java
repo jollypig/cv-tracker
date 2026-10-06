@@ -24,15 +24,24 @@ public record CvVersionSnapshot(
             String position,
             String location,
                         java.util.List<Contact> contacts,
-                        String photoStorageKey) {
+                        String photoStorageKey,
+                        Boolean showContacts) {
 
                 public PersonProfile(String firstName, String lastName, String position, String location,
                                 List<Contact> contacts) {
-                        this(firstName, lastName, position, location, contacts, null);
+                        this(firstName, lastName, position, location, contacts, null, true);
+                }
+
+                public PersonProfile(String firstName, String lastName, String position, String location,
+                                List<Contact> contacts, String photoStorageKey) {
+                        this(firstName, lastName, position, location, contacts, photoStorageKey, true);
                 }
     }
 
-    public record Contact(String type, String value, int sortOrder) {
+        public record Contact(String type, String value, int sortOrder, Boolean showContact) {
+                public Contact(String type, String value, int sortOrder) {
+                        this(type, value, sortOrder, true);
+                }
     }
 
 }

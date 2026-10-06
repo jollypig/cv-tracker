@@ -6,6 +6,7 @@ export interface PersonContact {
   value: string
   primary: boolean
   sortOrder: number
+  showContact: boolean
 }
 
 export interface PersonContactInput {
@@ -13,6 +14,7 @@ export interface PersonContactInput {
   value: string
   primary: boolean
   sortOrder: number
+  showContact: boolean
 }
 
 export interface Person {

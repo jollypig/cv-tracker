@@ -9,5 +9,10 @@ public record PersonContactRequest(
         @NotNull ContactType type,
         @NotBlank @Size(max = 500) String value,
         boolean primary,
-        @PositiveOrZero int sortOrder) {
+                @PositiveOrZero int sortOrder,
+                Boolean showContact) {
+
+        public PersonContactRequest(ContactType type, String value, boolean primary, int sortOrder) {
+                this(type, value, primary, sortOrder, true);
+        }
 }
