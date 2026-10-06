@@ -130,13 +130,24 @@
         <v-expansion-panel value="experience">
           <v-expansion-panel-title>{{ translate('editor.experience') }} <span class="panel-count">{{ content.experiences.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
-            <div v-for="(experience, index) in content.experiences" :key="index" class="editor-entry">
-              <div class="entry-heading"><h3>{{ translate('editor.positionNumber', { number: index + 1 }) }}</h3><div class="entry-actions">
-                <v-btn :disabled="index === 0" :aria-label="translate('editor.moveExperienceUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.experiences, index, -1)" />
-                <v-btn :disabled="index === content.experiences.length - 1" :aria-label="translate('editor.moveExperienceDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.experiences, index, 1)" />
-                <v-btn :aria-label="translate('editor.removePosition', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.experiences, index)" />
-              </div></div>
-              <div class="content-field-grid">
+            <div v-for="(experience, index) in content.experiences" :key="index" class="experience-entry-row">
+              <v-expansion-panels multiple class="experience-entry-panels">
+                <v-expansion-panel>
+                  <v-expansion-panel-title>
+                    <span class="experience-entry-title">
+                      <span v-if="experience.company">{{ experience.company }}</span>
+                      <span class="muted-cell">{{ experience.position || translate('editor.positionNumber', { number: index + 1 }) }}</span>
+                    </span>
+                    <template #actions>
+                      <div class="entry-actions" @click.stop>
+                        <v-btn :disabled="index === 0" :aria-label="translate('editor.moveExperienceUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(content.experiences, index, -1)" />
+                        <v-btn :disabled="index === content.experiences.length - 1" :aria-label="translate('editor.moveExperienceDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(content.experiences, index, 1)" />
+                        <v-btn :aria-label="translate('editor.removePosition', { number: index + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(content.experiences, index)" />
+                      </div>
+                    </template>
+                  </v-expansion-panel-title>
+                  <v-expansion-panel-text>
+                    <div class="content-field-grid">
                 <v-text-field v-model="experience.company" :label="translate('editor.company')" variant="outlined" :rules="[requiredRule]" />
                 <v-text-field v-model="experience.position" :label="translate('editor.position')" variant="outlined" :rules="[requiredRule]" />
                 <v-text-field v-model="experience.location" :label="translate('editor.location')" variant="outlined" />
@@ -145,13 +156,23 @@
                 <v-text-field v-model="experience.startDate" :label="translate('editor.startDate')" type="date" variant="outlined" />
                 <v-text-field v-model="experience.endDate" :label="translate('editor.endDate')" type="date" variant="outlined" :rules="[() => dateOrderRule(experience.startDate, experience.endDate)]" />
                 <v-checkbox v-model="experience.current" :label="translate('editor.currentWork')" hide-details />
-              </div>
-              <v-textarea v-model="experience.description" :label="translate('editor.description')" rows="3" variant="outlined" />
-              <div class="nested-editor">
-                <div class="entry-heading"><h4>{{ translate('editor.projectsAtPosition') }}</h4><v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience)">{{ translate('editor.addProject') }}</v-btn></div>
-                <div v-for="(project, projectIndex) in experience.projects" :key="projectIndex" class="nested-entry">
-                  <div class="entry-heading"><span>{{ translate('editor.projectNumber', { number: projectIndex + 1 }) }}</span><v-btn :aria-label="translate('editor.removeProject', { number: projectIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(experience.projects, projectIndex)" /></div>
-                  <div class="content-field-grid">
+                    </div>
+                    <v-textarea v-model="experience.description" :label="translate('editor.description')" rows="3" variant="outlined" />
+                    <div class="nested-editor">
+                      <div class="entry-heading"><h4>{{ translate('editor.projectsAtPosition') }}</h4><v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience)">{{ translate('editor.addProject') }}</v-btn></div>
+                      <div v-for="(project, projectIndex) in experience.projects" :key="projectIndex" class="experience-project-row">
+                        <v-expansion-panels multiple class="experience-project-panels">
+                          <v-expansion-panel>
+                            <v-expansion-panel-title>
+                              {{ project.projectName || translate('editor.projectNumber', { number: projectIndex + 1 }) }}
+                              <template #actions>
+                                <div class="entry-actions" @click.stop>
+                                  <v-btn :aria-label="translate('editor.removeProject', { number: projectIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(experience.projects, projectIndex)" />
+                                </div>
+                              </template>
+                            </v-expansion-panel-title>
+                            <v-expansion-panel-text>
+                              <div class="content-field-grid">
                     <v-checkbox
                         :model-value="project.showProjectName === false && project.showCustomerCompany === false"
                         class="project-visibility-toggle"
@@ -168,10 +189,10 @@
                     <v-text-field v-model="project.periodTo" :label="translate('editor.to')" type="date" variant="outlined" :rules="[() => dateOrderRule(project.periodFrom, project.periodTo)]" />
                     <v-text-field v-model.number="project.teamSize" :label="translate('editor.teamSize')" type="number" min="0" variant="outlined" />
                     <v-text-field v-model="project.externalLink" :label="translate('editor.externalLink')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
-                  </div>
-                  <v-textarea v-model="project.responsibilities" :label="translate('editor.responsibilities')" rows="2" variant="outlined" />
-                  <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
-                  <v-autocomplete
+                              </div>
+                              <v-textarea v-model="project.responsibilities" :label="translate('editor.responsibilities')" rows="2" variant="outlined" />
+                              <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
+                              <v-autocomplete
                     :model-value="linkedSkillIds(project)"
                     :items="projectSkillOptions"
                     item-title="title"
@@ -189,9 +210,15 @@
                     <template #item="{ props: itemProps, item }">
                       <v-list-item v-bind="itemProps" :subtitle="item.raw.group" />
                     </template>
-                  </v-autocomplete>
-                </div>
-              </div>
+                              </v-autocomplete>
+                            </v-expansion-panel-text>
+                          </v-expansion-panel>
+                        </v-expansion-panels>
+                      </div>
+                    </div>
+                  </v-expansion-panel-text>
+                </v-expansion-panel>
+              </v-expansion-panels>
             </div>
             <v-btn prepend-icon="mdi-plus" variant="tonal" @click="addExperience">{{ translate('editor.addExperience') }}</v-btn>
           </v-expansion-panel-text>
@@ -869,6 +896,10 @@ function saveLocalDraft() {
 .entry-heading h3, .entry-heading h4 { margin: 0; color: #28352f; font: 700 14px/1.4 'Manrope', sans-serif; }
 .entry-heading h4 { font-size: 13px; }
 .entry-actions { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
+.experience-entry-row, .experience-project-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px; }
+.experience-entry-panels, .experience-project-panels { min-width: 0; border: 1px solid #e8e9e3; border-radius: 4px; }
+.experience-entry-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.experience-project-row { border-top: 1px solid #e4e5de; }
 .content-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
 .project-description-field { grid-column: 1 / -1; }
 .project-visibility-toggle { grid-column: 1 / -1; }
