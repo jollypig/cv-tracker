@@ -52,6 +52,7 @@ const emit = defineEmits<{
 }>()
 
 const activeTemplate = computed(() => props.templates.find((template) => template.id === props.selectedTemplateId)
+  ?? props.templates.find((template) => template.templateKey === 'modern')
   ?? props.templates[0])
 const displayedTemplateId = computed(() => activeTemplate.value?.id ?? '')
 const templateComponent = computed(() => {
