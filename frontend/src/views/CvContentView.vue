@@ -14,12 +14,13 @@
           <v-list>
             <v-list-item :title="translate('editor.share')" prepend-icon="mdi-share-variant" :disabled="loading || !cv" @click="openShareDialog" />
             <v-list-item :title="translate('editor.duplicate')" prepend-icon="mdi-content-copy" @click="openDuplicateDialog" />
+            <v-list-item :title="translate('editor.merge')" prepend-icon="mdi-source-merge" :disabled="loading || saving || merging || !cv" @click="openMergeDialog" />
             <v-list-item :title="translate('editor.createLanguageVersion')" prepend-icon="mdi-translate" @click="openLanguageVersionDialog" />
           </v-list>
         </v-menu>
         <v-btn variant="text" prepend-icon="mdi-history" :to="`/cvs/${cvId}/versions`">{{ translate('editor.versions') }}</v-btn>
         <v-btn variant="text" prepend-icon="mdi-arrow-left" :to="`/cvs/${cvId}/edit`">{{ translate('editor.cvDetails') }}</v-btn>
-        <v-btn color="primary" :loading="saving" prepend-icon="mdi-content-save-outline" @click="saveContent">{{ translate('editor.save') }}</v-btn>
+        <v-btn color="primary" :loading="saving" :disabled="merging" prepend-icon="mdi-content-save-outline" @click="saveContent">{{ translate('editor.save') }}</v-btn>
       </div>
     </div>
 
@@ -33,6 +34,40 @@
       {{ translate(draftStatus) }}
     </v-alert>
     <v-progress-linear v-if="loading" class="form-loading" color="primary" indeterminate />
+
+    <v-alert v-if="merged" class="view-alert" type="success" variant="tonal" closable @click:close="merged = false">
+      {{ translate('editor.merged') }}
+    </v-alert>
+    <v-dialog v-model="mergeDialog" max-width="560" :persistent="merging">
+      <v-card>
+        <v-card-title class="dialog-title">{{ translate('editor.merge') }}</v-card-title>
+        <v-card-text>
+          <v-alert v-if="mergeError" type="error" variant="tonal" class="view-alert">{{ mergeError }}</v-alert>
+          <v-autocomplete
+            v-model="mergeSourceIds"
+            :items="mergeSources"
+            :item-title="(item: Cv) => `${item.name} (${item.personName}, ${item.language})`"
+            item-value="id"
+            :label="translate('editor.mergeSources')"
+            :no-data-text="translate('editor.mergeNoSources')"
+            :loading="loadingMergeSources"
+            :disabled="merging || loadingMergeSources"
+            variant="outlined"
+            multiple
+            chips
+            closable-chips
+            clearable
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn variant="text" :disabled="merging" @click="mergeDialog = false">{{ translate('editor.cancel') }}</v-btn>
+          <v-btn color="primary" prepend-icon="mdi-source-merge" :loading="merging" :disabled="loadingMergeSources || !mergeSourceIds.length" @click="mergeCvContent">
+            {{ translate('editor.mergeAction') }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="duplicateDialog" max-width="480">
       <v-card>
@@ -269,20 +304,29 @@
                 </v-expansion-panel-title>
                 <v-expansion-panel-text>
                   <v-text-field v-model="group.name" :label="translate('editor.groupName')" variant="outlined" :rules="[requiredRule]" />
-                  <div v-for="(skill, skillIndex) in group.skills" :key="skillIndex" class="skill-item">
-                    <div class="content-field-grid skill-entry">
-                      <v-text-field v-model="skill.name" :label="translate('editor.skill')" variant="outlined" :rules="[requiredRule]" />
-                      <v-select v-model="skill.level" :items="skillLevels" item-title="title" item-value="value" :label="translate('editor.level')" variant="outlined" />
-                      <div class="entry-actions">
-                        <v-btn :disabled="skillIndex === 0" :aria-label="translate('editor.moveSkillUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
-                        <v-btn :disabled="skillIndex === group.skills.length - 1" :aria-label="translate('editor.moveSkillDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
-                        <v-btn :aria-label="translate('editor.removeSkill', { number: skillIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
-                      </div>
-                    </div>
-                    <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details :label="translate('editor.includeOutput')" />
-                    <SkillDetailsEditor :skill="skill" :content="content" />
-                  </div>
-                  <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group)">{{ translate('editor.addSkill') }}</v-btn>
+                  <v-expansion-panels v-model="expandedSkillEntries[groupIndex]" multiple class="skill-entry-panels">
+                    <v-expansion-panel v-for="(skill, skillIndex) in group.skills" :key="skillIndex" :value="skillIndex">
+                      <v-expansion-panel-title>
+                        {{ skill.name || `${translate('editor.skill')} ${skillIndex + 1}` }}
+                        <template #actions>
+                          <div class="entry-actions" @click.stop>
+                            <v-btn :disabled="skillIndex === 0" :aria-label="translate('editor.moveSkillUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(group.skills, skillIndex, -1)" />
+                            <v-btn :disabled="skillIndex === group.skills.length - 1" :aria-label="translate('editor.moveSkillDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(group.skills, skillIndex, 1)" />
+                            <v-btn :aria-label="translate('editor.removeSkill', { number: skillIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(group.skills, skillIndex)" />
+                          </div>
+                        </template>
+                      </v-expansion-panel-title>
+                      <v-expansion-panel-text>
+                        <div class="content-field-grid skill-entry">
+                          <v-text-field v-model="skill.name" :label="translate('editor.skill')" variant="outlined" :rules="[requiredRule]" />
+                          <v-select v-model="skill.level" :items="skillLevels" item-title="title" item-value="value" :label="translate('editor.level')" variant="outlined" />
+                        </div>
+                        <v-checkbox v-model="skill.visible" class="skill-visibility" density="compact" hide-details :label="translate('editor.includeOutput')" />
+                        <SkillDetailsEditor :skill="skill" :content="content" />
+                      </v-expansion-panel-text>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
+                  <v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addSkill(group, groupIndex)">{{ translate('editor.addSkill') }}</v-btn>
                 </v-expansion-panel-text>
               </v-expansion-panel>
             </v-expansion-panels>
@@ -425,6 +469,13 @@ const error = ref('')
 const saved = ref(false)
 const moreActionsOpen = ref(false)
 const duplicateDialog = ref(false)
+const mergeDialog = ref(false)
+const mergeSources = ref<Cv[]>([])
+const mergeSourceIds = ref<string[]>([])
+const loadingMergeSources = ref(false)
+const merging = ref(false)
+const merged = ref(false)
+const mergeError = ref('')
 const shareDialog = ref(false)
 const shareEnabled = ref(false)
 const shareViewCount = ref(0)
@@ -487,6 +538,7 @@ const degreeOptions = computed(() => [
 ].map(([key, value]) => ({ title: translate(key!), value: value! })))
 const detailedLanguages = reactive(new Set<CvLanguage>())
 const expandedSkillGroups = ref<number[]>([])
+const expandedSkillEntries = ref<Record<number, number[]>>({})
 const content = reactive<CvContent>(emptyContent())
 const projectSkillOptions = computed(() => content.skillGroups.flatMap((group, groupIndex) =>
   group.skills.flatMap((skill, skillIndex) => skill.name.trim() ? [{
@@ -526,6 +578,48 @@ function openDuplicateDialog() {
   duplicateAsLanguageVersion.value = false
   duplicateName.value = `${cv.value?.name ?? 'CV'} (Copy)`
   duplicateDialog.value = true
+}
+
+async function openMergeDialog() {
+  moreActionsOpen.value = false
+  mergeSourceIds.value = []
+  mergeSources.value = []
+  mergeError.value = ''
+  mergeDialog.value = true
+  loadingMergeSources.value = true
+  try {
+    mergeSources.value = (await cvApi.list()).filter((item) => item.id !== cvId)
+  } catch {
+    mergeError.value = translate('editor.mergeLoadError')
+  } finally {
+    loadingMergeSources.value = false
+  }
+}
+
+async function mergeCvContent() {
+  if (merging.value || !mergeSourceIds.value.length) return
+  merging.value = true
+  mergeError.value = ''
+  merged.value = false
+  try {
+    if (!await saveContent()) {
+      mergeError.value = error.value || translate('editor.mergeValidationError')
+      return
+    }
+    const mergedContent = await cvApi.mergeContent(cvId, mergeSourceIds.value)
+    draftTracking.value = false
+    Object.assign(content, mergedContent)
+    initializeSkillDetails()
+    await nextTick()
+    draftTracking.value = true
+    merged.value = true
+    saved.value = false
+    mergeDialog.value = false
+  } catch {
+    mergeError.value = translate('editor.mergeError')
+  } finally {
+    merging.value = false
+  }
 }
 
 async function openShareDialog() {
@@ -742,8 +836,10 @@ function addSkillGroup() {
   expandedSkillGroups.value = [...expandedSkillGroups.value, groupIndex]
 }
 
-function addSkill(group: CvSkillGroup) {
+function addSkill(group: CvSkillGroup, groupIndex: number) {
+  const skillIndex = group.skills.length
   group.skills.push({ name: '', level: '', sortOrder: group.skills.length, visible: true, details: emptySkillDetails() })
+  expandedSkillEntries.value[groupIndex] = [...(expandedSkillEntries.value[groupIndex] ?? []), skillIndex]
 }
 
 function initializeSkillDetails() {
@@ -897,7 +993,9 @@ function saveLocalDraft() {
 .entry-heading h4 { font-size: 13px; }
 .entry-actions { display: flex; align-items: center; justify-content: flex-end; flex: 0 0 auto; }
 .experience-entry-row, .experience-project-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px; }
-.experience-entry-panels, .experience-project-panels { min-width: 0; border: 1px solid #e8e9e3; border-radius: 4px; }
+.experience-entry-panels, .experience-project-panels, .skill-entry-panels { min-width: 0; border: 1px solid #e8e9e3; border-radius: 4px; }
+.skill-entry-panels :deep(.v-expansion-panel-title) { min-height: 44px; font-size: 13px; }
+.skill-entry-panels :deep(.v-expansion-panel-text__wrapper) { padding: 16px 16px 8px; }
 .experience-entry-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
 .experience-project-row { border-top: 1px solid #e4e5de; }
 .content-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }

@@ -1,5 +1,7 @@
 package com.example.cv.cv;
 
+import com.example.cv.auth.AuthenticatedUserService;
+import com.example.cv.auth.AuthenticatedUser;
 import com.example.cv.common.GlobalExceptionHandler;
 import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -32,6 +35,37 @@ class CvContentControllerTest {
 
     @MockitoBean
     private CvContentService contentService;
+
+    @MockitoBean
+    private AuthenticatedUserService authenticatedUsers;
+
+    @Test
+    void mergesSelectedSourcesForAuthenticatedOwner() throws Exception {
+        UUID cvId = UUID.randomUUID();
+        UUID sourceId = UUID.randomUUID();
+        UUID ownerId = UUID.randomUUID();
+        AuthenticatedUser owner = org.mockito.Mockito.mock(AuthenticatedUser.class);
+        when(owner.getId()).thenReturn(ownerId);
+        when(authenticatedUsers.synchronize(any())).thenReturn(owner);
+        CvContent content = new CvContent("Preserved", List.of(), List.of(), List.of(), List.of(),
+                List.of(), List.of(), List.of(), List.of());
+        when(contentService.merge(cvId, List.of(sourceId), ownerId)).thenReturn(content);
+        mockMvc.perform(post("/api/v1/cvs/{cvId}/content/merge", cvId)
+                        .contentType("application/json")
+                        .content("{\"sourceCvIds\":[\"" + sourceId + "\"]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.summary").value("Preserved"));
+        verify(contentService).merge(cvId, List.of(sourceId), ownerId);
+    }
+
+    @Test
+    void rejectsEmptyOrInvalidMergeSources() throws Exception {
+        for (String request : List.of("{}", "{\"sourceCvIds\":[]}", "{\"sourceCvIds\":[null]}",
+                "{\"sourceCvIds\":[\"invalid\"]}")) {
+            mockMvc.perform(post("/api/v1/cvs/{cvId}/content/merge", UUID.randomUUID())
+                            .contentType("application/json").content(request))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 
     @Test
     void acceptsAndReturnsStructuredContent() throws Exception {

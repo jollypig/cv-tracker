@@ -47,6 +47,155 @@ public class CvContentService {
     }
 
     private CvExperience experience(Cv cv, CvContent.Experience input) {
+        return experience(cv, input, true);
+    }
+
+    public CvContent merge(UUID cvId, List<UUID> sourceCvIds, UUID ownerId) {
+        if (!cvRepository.existsByIdAndPerson_Owner_Id(cvId, ownerId)
+                || sourceCvIds.stream().anyMatch(id -> !cvRepository.existsByIdAndPerson_Owner_Id(id, ownerId))) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "CV not found");
+        }
+        Cv target = getCv(cvId);
+        List<CvContent> sources = sourceCvIds.stream().distinct().filter(id -> !id.equals(cvId))
+                .map(id -> toContent(getCv(id))).toList();
+        Set<String> skillNames = new java.util.HashSet<>();
+        target.getSkillGroups().forEach(group -> group.getSkills().forEach(skill -> skillNames.add(nameKey(skill.getName()))));
+        for (CvContent source : sources) {
+            Map<String, String> projectKeys = new java.util.HashMap<>();
+            for (CvContent.Experience input : source.experiences()) {
+                CvExperience existing = target.getExperiences().stream()
+                        .filter(item -> nameKey(item.getCompany()).equals(nameKey(input.company()))
+                                && java.util.Objects.equals(item.getStartDate(), input.startDate()))
+                        .findFirst().orElse(null);
+                if (existing == null) {
+                    existing = experience(target, input, false);
+                    target.getExperiences().add(existing);
+                }
+                for (CvContent.ExperienceProject project : input.projects()) {
+                    CvExperienceProject targetProject = existing.getProjects().stream().filter(item ->
+                            nameKey(item.getProjectName()).equals(nameKey(project.projectName()))
+                                    && nameKey(item.getCompany()).equals(nameKey(project.company())))
+                            .findFirst().orElse(null);
+                    if (targetProject == null) {
+                        targetProject = experienceProject(existing, project);
+                        targetProject.setProjectKey(UUID.randomUUID().toString());
+                        existing.getProjects().add(targetProject);
+                    }
+                    mapProjectKey(projectKeys, project.projectKey(), targetProject.getProjectKey());
+                }
+            }
+            for (CvContent.Project input : source.projects()) {
+                CvProject targetProject = target.getProjects().stream()
+                        .filter(item -> nameKey(item.getName()).equals(nameKey(input.name())))
+                        .findFirst().orElse(null);
+                if (targetProject == null) {
+                    targetProject = project(target, input);
+                    targetProject.setProjectKey(UUID.randomUUID().toString());
+                    target.getProjects().add(targetProject);
+                }
+                mapProjectKey(projectKeys, input.projectKey(), targetProject.getProjectKey());
+            }
+            for (CvContent.SkillGroup input : source.skillGroups()) {
+                CvSkillGroup group = target.getSkillGroups().stream()
+                        .filter(item -> nameKey(item.getName()).equals(nameKey(input.name())))
+                        .findFirst().orElse(null);
+                if (group == null) {
+                    group = new CvSkillGroup(target, input.name());
+                    group.setSortOrder(nextOrder(target.getSkillGroups(), CvSkillGroup::getSortOrder));
+                    target.getSkillGroups().add(group);
+                }
+                for (CvContent.Skill inputSkill : input.skills()) {
+                    if (skillNames.add(nameKey(inputSkill.name()))) {
+                        CvSkill skill = new CvSkill(group, inputSkill.name());
+                        skill.setLevel(inputSkill.level());
+                        skill.setVisible(inputSkill.visible() == null || inputSkill.visible());
+                        skill.setDetails(mergeSkillDetails(inputSkill.details(), projectKeys));
+                        skill.setSortOrder(nextOrder(group.getSkills(), CvSkill::getSortOrder));
+                        group.getSkills().add(skill);
+                    }
+                }
+            }
+            appendUnique(target.getEducation(), source.education(),
+                    item -> java.util.Arrays.asList(nameKey(item.getInstitution()), item.getStartDate(), item.getEndDate()),
+                    item -> java.util.Arrays.asList(nameKey(item.institution()), item.startDate(), item.endDate()),
+                    item -> education(target, item), CvEducation::getSortOrder, CvEducation::setSortOrder);
+            appendUnique(target.getLanguages(), source.languages(), item -> nameKey(item.getLanguage()),
+                    item -> nameKey(item.language()), item -> language(target, item),
+                    CvLanguage::getSortOrder, CvLanguage::setSortOrder);
+            appendUnique(target.getCertifications(), source.certifications(), item -> nameKey(item.getName()),
+                    item -> nameKey(item.name()), item -> certification(target, item),
+                    CvCertification::getSortOrder, CvCertification::setSortOrder);
+        }
+        orderByDate(target.getExperiences(), CvExperience::getStartDate, CvExperience::setSortOrder);
+        target.getExperiences().forEach(item -> orderByDate(item.getProjects(),
+                CvExperienceProject::getPeriodFrom, CvExperienceProject::setSortOrder));
+        orderByDate(target.getProjects(), CvProject::getPeriodFrom, CvProject::setSortOrder);
+        checkMergeLimits(target);
+        cvRepository.save(target);
+        return toContent(target);
+    }
+
+    private void mapProjectKey(Map<String, String> keys, String source, String target) {
+        if (source != null && target != null) {
+            keys.put(source, target);
+        }
+    }
+
+    private CvSkillDetails mergeSkillDetails(CvSkillDetails details, Map<String, String> projectKeys) {
+        if (details == null) {
+            return null;
+        }
+        List<CvSkillDetails.ProjectLink> links = details.linkedProjects() == null ? null
+                : details.linkedProjects().stream().filter(link -> projectKeys.containsKey(link.projectKey()))
+                        .map(link -> new CvSkillDetails.ProjectLink(projectKeys.get(link.projectKey()), link.outcome()))
+                        .distinct().toList();
+        return new CvSkillDetails(details.yearsOfExperience(), details.yearsActivelyUsed(), details.lastUsed(),
+                details.startedFrom(), details.frequency(), details.status(), links, details.includeInOutput());
+    }
+
+    private void checkMergeLimits(Cv cv) {
+        boolean exceedsLimit = java.util.stream.Stream.of(cv.getExperiences(), cv.getEducation(), cv.getSkillGroups(),
+                cv.getLanguages(), cv.getProjects(), cv.getCertifications()).anyMatch(items -> items.size() > 100)
+                || cv.getExperiences().stream().anyMatch(item -> item.getProjects().size() > 100)
+                || cv.getSkillGroups().stream().anyMatch(item -> item.getSkills().size() > 100);
+        if (exceedsLimit) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Merged content exceeds the 100-entry section limit");
+        }
+    }
+
+    private String nameKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private <T> int nextOrder(List<T> values, ToIntFunction<T> order) {
+        return values.stream().mapToInt(order).max().orElse(-1) + 1;
+    }
+
+    private <T, I, K> void appendUnique(List<T> target, List<I> source,
+            java.util.function.Function<T, K> targetKey, java.util.function.Function<I, K> sourceKey,
+            java.util.function.Function<I, T> create, ToIntFunction<T> order,
+            java.util.function.ObjIntConsumer<T> setOrder) {
+        Set<K> keys = new java.util.HashSet<>();
+        target.forEach(item -> keys.add(targetKey.apply(item)));
+        for (I input : source) {
+            if (keys.add(sourceKey.apply(input))) {
+                T item = create.apply(input);
+                setOrder.accept(item, nextOrder(target, order));
+                target.add(item);
+            }
+        }
+    }
+
+    private <T> void orderByDate(List<T> values, java.util.function.Function<T, java.time.LocalDate> date,
+            java.util.function.ObjIntConsumer<T> setOrder) {
+        List<T> sorted = values.stream().sorted(Comparator.comparing(date,
+                Comparator.nullsLast(Comparator.reverseOrder()))).toList();
+        for (int index = 0; index < sorted.size(); index++) {
+            setOrder.accept(sorted.get(index), index);
+        }
+    }
+
+    private CvExperience experience(Cv cv, CvContent.Experience input, boolean includeProjects) {
         CvExperience entity = new CvExperience(cv, input.company().trim(), input.position().trim());
         entity.setLocation(blankToNull(input.location()));
         entity.setEmploymentType(input.employmentType());
@@ -56,7 +205,9 @@ public class CvContentService {
         entity.setCurrent(input.current());
         entity.setDescription(blankToNull(input.description()));
         entity.setSortOrder(input.sortOrder());
-        entity.replaceProjects(input.projects().stream().map(item -> experienceProject(entity, item)).toList());
+        if (includeProjects) {
+            entity.replaceProjects(input.projects().stream().map(item -> experienceProject(entity, item)).toList());
+        }
         return entity;
     }
 

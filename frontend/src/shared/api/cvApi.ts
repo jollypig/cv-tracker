@@ -78,6 +78,11 @@ const cvApi = {
     return response.data
   },
 
+  async mergeContent(id: string, sourceCvIds: string[]): Promise<CvContent> {
+    const response = await apiClient.post<CvContent>(`/cvs/${id}/content/merge`, { sourceCvIds })
+    return response.data
+  },
+
   async listVersions(id: string): Promise<CvVersion[]> {
     const response = await apiClient.get<CvVersion[]>(`/cvs/${id}/versions`)
     return response.data

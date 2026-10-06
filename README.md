@@ -73,6 +73,19 @@ The unauthenticated `/actuator/prometheus` scrape endpoint should only be reacha
 
 ## Skill experience and project evidence
 
+### Merge content from other CVs
+
+In the CV content editor, choose **More actions > Merge from other CVs**, select one or more source CVs, and click **Merge**. The editor saves its current draft first. All selected sources must belong to the signed-in account; they remain unchanged. The backend merges all selected sources in one transaction.
+
+- Existing CV metadata, summary, person details, output settings, section settings, and custom sections stay unchanged.
+- Employment positions match by company and start date. Existing position fields stay unchanged; projects within each matching position are added only when the project name and customer company are unique.
+- Positions sort by start date and projects by `periodFrom`, newest first, with missing dates last. Standalone projects match by name because they have no company field.
+- Skill groups match by name; new skills are added to their corresponding group only if their names are unique across the target CV. Existing skill details, levels, and visibility stay unchanged. Imported project links are mapped to the target projects.
+- Certificates and languages match by name. Education matches by institution, start date, and end date, including missing dates.
+- All name comparisons ignore surrounding whitespace and case. Sources are processed in selection order, so the first source wins collisions between new entries. Repeating a merge adds no duplicates.
+
+API: `POST /api/v1/cvs/{cvId}/content/merge` with `{"sourceCvIds":["source-cv-uuid"]}` returns the saved merged content. The existing 100-entry limit for each collection also applies to merges.
+
 Skills support entered years of experience, optional years actively used, started-from and last-used dates (either `YYYY` or `YYYY-MM-DD`), frequency (`daily`, `occasionally`, `rarely`), status (`active`, `learning`, `maintaining`, `deprecated`), and linked projects with one-line outcomes. Project links use stable keys retained across content saves, versions, and copies. Standalone projects have period dates and a current-project flag; employment projects use their existing period dates.
 
 - Calculated last used is the latest entered last-used date or linked project end. Current projects use today's date; an employment project without an end uses today only when its employment is current.
