@@ -112,9 +112,9 @@ public class DocxRenderer {
                             addProjectText(document, name, true, false);
                             addProjectText(document, compact(project.position(), company), false, true);
                             addProjectText(document, project.projectDescription(), false, false);
-                            addProjectText(document, project.responsibilities(), false, false);
-                            addProjectText(document, project.technologies(), false, true);
+                            addProjectText(document, notBlank(project.responsibilities()) ? "Responsibilities: " + project.responsibilities() : null, false, false);
                             addProjectText(document, outputFormatter.linkedSkills(project, content), false, true);
+                            addProjectText(document, project.technologies(), false, true);
                         });
                     });
                 }

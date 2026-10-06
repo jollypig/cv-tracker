@@ -14,7 +14,7 @@ class CvHtmlRendererTest {
     @org.junit.jupiter.params.provider.ValueSource(strings = {"classic", "minimal", "modern"})
     void exportsTheSamePrintableFieldsInPdfAndDocx(String templateKey) throws Exception {
         var project = new CvContent.ExperienceProject("Hidden customer", null, "Hidden project", "Nested description",
-                false, false, null, null, "Project lead", "Responsibilities", "Spring", null, null, 0, "nested");
+                false, false, null, null, "Project lead", "Built services", "Spring", null, null, 0, "nested");
         var experience = new CvContent.Experience("Employer", "Engineer", "Riga office", "Contract", "Remote",
                 java.time.LocalDate.of(2020, 1, 1), null, true, "Employment description", 0, List.of(project));
         var education = new CvContent.Education("University", "Masters", "Diploma work", "Computer science",
@@ -43,11 +43,15 @@ class CvHtmlRendererTest {
             String pdfText = new org.apache.pdfbox.text.PDFTextStripper().getText(pdfDocument);
             String docxText = extractor.getText();
             String[] expected = {"Jane Doe", "Riga", "Profile summary", "Contract", "Remote",
-                    "Nested description", "Project lead", "Responsibilities", "Skills: Java", "Diploma work",
+                    "Nested description", "Project lead", "Responsibilities: Built services", "Used: Java", "Diploma work",
                     "Years of experience: 2", "Total experience:", "Delivered outcome", "Reading: Excellent", "Writing: Good", "Speaking: Conversational",
                     "Standalone description", "https://example.com/project", "Credential ID", "Jan 2023 - Jan 2026", "Awards", "Award description"};
             assertThat(pdfText).contains(expected).doesNotContain("Backend CV", "BACKEND CV", "Hidden customer", "Hidden project", "hidden@example.com");
             assertThat(docxText).contains(expected).doesNotContain("Backend CV", "BACKEND CV", "Hidden customer", "Hidden project", "hidden@example.com");
+            assertThat(pdfText).doesNotContain("Skills: Java");
+            assertThat(docxText).doesNotContain("Skills: Java");
+            assertThat(pdfText.indexOf("Used: Java")).isLessThan(pdfText.indexOf("Spring"));
+            assertThat(docxText.indexOf("Used: Java")).isLessThan(docxText.indexOf("Spring"));
             assertThat(docx.getStyles().styleExist(templateKey)).isTrue();
             assertThat(docx.getTables()).hasSize("minimal".equals(templateKey) ? 1 : 0);
             List<org.apache.poi.xwpf.usermodel.XWPFParagraph> paragraphs = "minimal".equals(templateKey)
@@ -159,8 +163,8 @@ class CvHtmlRendererTest {
 
         String html = renderer.render(snapshot(content), "modern");
 
-        assertThat(html).contains("Spring", "Skills: Java", "Project &lt;description&gt;", "Technical lead")
-                .doesNotContain("Skills: Java, Secret tool");
+        assertThat(html).contains("Spring", "Used: Java", "Responsibilities: Built API", "Project &lt;description&gt;", "Technical lead")
+                .doesNotContain("Used: Java, Secret tool", "Skills: Java");
     }
 
     @Test

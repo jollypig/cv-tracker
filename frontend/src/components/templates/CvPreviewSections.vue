@@ -19,9 +19,9 @@
             <h5 v-if="project.showProjectName !== false">{{ project.projectName }}</h5>
             <p v-if="project.position || (project.showCustomerCompany !== false && project.company)" class="preview-meta">{{ [project.position, project.showCustomerCompany !== false ? project.company : null].filter(Boolean).join(' · ') }}</p>
             <p v-if="project.projectDescription">{{ project.projectDescription }}</p>
-            <p v-if="project.responsibilities">{{ project.responsibilities }}</p>
+            <p v-if="project.responsibilities">Responsibilities: {{ project.responsibilities }}</p>
+            <p v-if="linkedSkillNames(project).length" class="preview-meta">Used: {{ linkedSkillNames(project).join(', ') }}</p>
             <p v-if="project.technologies" class="preview-meta">{{ project.technologies }}</p>
-            <p v-if="linkedSkillNames(project).length" class="preview-meta">Skills: {{ linkedSkillNames(project).join(', ') }}</p>
           </div>
         </article>
       </section>

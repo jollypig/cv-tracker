@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import TemplateSelector from './TemplateSelector.vue'
 import CvPreview from './CvPreview.vue'
 import CvTemplateDocument from './CvTemplateDocument.vue'
+import { emptySkillDetails } from '../../shared/skillMetrics'
 import type { Cv, CvContent, CvTemplate } from '../../shared/api/cvTypes'
 import type { Person } from '../../shared/api/personTypes'
 
@@ -36,6 +37,23 @@ const VBtnStub = defineComponent({
 })
 
 describe('TemplateSelector', () => {
+  it.each(['classic', 'minimal', 'modern'] as const)('labels responsibilities and places used skills before technologies for %s', (variant) => {
+    const projectContent: CvContent = {
+      ...content,
+      experiences: [{ company: 'Employer', position: 'Engineer', location: null, employmentType: null,
+        employmentLocation: null, startDate: null, endDate: null, current: false, description: null, sortOrder: 0,
+        projects: [{ projectKey: 'platform', projectName: 'Platform', company: null, industries: null,
+          projectDescription: 'Project description', position: null, periodFrom: null, periodTo: null,
+          responsibilities: 'Built services', technologies: 'Spring', teamSize: null, externalLink: null, sortOrder: 0 }] }],
+      skillGroups: [{ name: 'Backend', sortOrder: 0, skills: [{ name: 'Java', level: null, sortOrder: 0,
+        details: { ...emptySkillDetails(), linkedProjects: [{ projectKey: 'platform', outcome: '' }] } }] }],
+    }
+    const wrapper = mount(CvTemplateDocument, { props: { cv, person, content: projectContent, variant } })
+    const lines = wrapper.get('.preview-nested-entry').findAll('p').map((paragraph) => paragraph.text())
+    expect(lines).toEqual(['Project description', 'Responsibilities: Built services', 'Used: Java', 'Spring'])
+    expect(wrapper.get('.preview-nested-entry').text()).not.toContain('Skills:')
+  })
+
   it.each(['classic', 'minimal', 'modern'] as const)('previews location and visible contacts for %s', (variant) => {
     const wrapper = mount(CvTemplateDocument, { props: { cv, person, content, variant } })
     expect(wrapper.classes()).toContain(`cv-document--${variant}`)

@@ -217,8 +217,9 @@ public class CvHtmlRenderer {
                 if (notBlank(projectName)) html.append("<h3>").append(escape(projectName)).append("</h3>");
                 html.append(projectMeta(compact(project.position(), customer)))
                     .append(optionalLine(project.projectDescription()))
-                    .append(optionalLine(project.responsibilities())).append(projectMeta(project.technologies()))
-                    .append(projectMeta(linkedSkills(project, content))).append("</div>");
+                    .append(optionalLine(notBlank(project.responsibilities()) ? "Responsibilities: " + project.responsibilities() : null))
+                    .append(projectMeta(linkedSkills(project, content)))
+                    .append(projectMeta(project.technologies())).append("</div>");
             });
             return html.toString();
             }
@@ -242,7 +243,7 @@ public class CvHtmlRenderer {
                 .filter(skill -> skill.details() != null && safe(skill.details().linkedProjects()).stream()
                         .anyMatch(link -> project.projectKey().equals(link.projectKey())))
                 .map(CvContent.Skill::name).distinct().toList();
-        return names.isEmpty() ? "" : "Skills: " + String.join(", ", names);
+        return names.isEmpty() ? "" : "Used: " + String.join(", ", names);
     }
 
     private void appendTextSection(StringBuilder html, String title, String text) {

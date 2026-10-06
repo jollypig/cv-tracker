@@ -226,7 +226,6 @@
                     <v-text-field v-model="project.externalLink" :label="translate('editor.externalLink')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
                               </div>
                               <v-textarea v-model="project.responsibilities" :label="translate('editor.responsibilities')" rows="2" variant="outlined" />
-                              <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
                               <v-autocomplete
                     :model-value="linkedSkillIds(project)"
                     :items="projectSkillOptions"
@@ -246,6 +245,7 @@
                       <v-list-item v-bind="itemProps" :subtitle="item.raw.group" />
                     </template>
                               </v-autocomplete>
+                              <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
                             </v-expansion-panel-text>
                           </v-expansion-panel>
                         </v-expansion-panels>
