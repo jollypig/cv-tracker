@@ -125,3 +125,7 @@ mvn -f backend/pom.xml spring-boot:run
 ```
 
 To run the S3/MinIO round-trip integration test, start MinIO as above, set the same `STORAGE_S3_*` variables, then run `mvn -f backend/pom.xml -Dtest=StorageIntegrationTest test`. The S3 integration test is skipped when `STORAGE_S3_ENDPOINT` is unset.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 only. See [LICENSE](LICENSE) for details.
