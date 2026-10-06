@@ -94,7 +94,8 @@ public class DocxRenderer {
                 if (!groups.isEmpty()) {
                     addHeading(document, "Skills");
                     groups.forEach(group -> addText(document, group.name() + ": " + String.join(", ", group.skills().stream()
-                            .map(skill -> notBlank(skill.level()) ? skill.name() + " (" + skill.level() + ")" : skill.name())
+                                .map(skill -> content.includeSkillLevelsInOutput() && notBlank(skill.level())
+                                    ? skill.name() + " (" + skill.level() + ")" : skill.name())
                             .toList()), 10, false, "202A35"));
                 }
             }

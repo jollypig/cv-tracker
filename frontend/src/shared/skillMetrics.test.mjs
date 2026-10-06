@@ -5,13 +5,14 @@ import { calculateSkill, emptySkillDetails, matchesSkillProject, selectSkillProj
 const emptyContent = () => ({ experiences: [], projects: [] })
 const skill = (details) => ({ name: 'Java', details: { ...emptySkillDetails(), ...details } })
 
-test('rounds calculated experience upward to whole years without modifying entered values', () => {
+test('rounds calculated experience upward and includes it when enabled for the CV', () => {
   const value = skill({ yearsOfExperience: 14.76, includeInOutput: true })
-  const result = calculateSkill(value, emptyContent(), '2026-10-04')
+  const content = { ...emptyContent(), includeSkillDetailsInOutput: true }
+  const result = calculateSkill(value, content, '2026-10-04')
   assert.equal(result.yearsOfExperience, 15)
   assert.equal(result.totalExperience, 15)
   assert.equal(value.details.yearsOfExperience, 14.76)
-  assert.match(skillOutput(value, emptyContent())[0], /Total experience: 15 years/)
+  assert.match(skillOutput(value, content)[0], /Total experience: 15 years/)
   const inferred = calculateSkill(skill({ startedFrom: '2010-01-01', lastUsed: '2024-10-04' }), emptyContent(), '2026-10-04')
   assert.equal(inferred.yearsOfExperience, 15)
   assert.equal(inferred.totalExperience, 15)
@@ -78,13 +79,17 @@ test('sums linked overlapping periods, ignores unlinked projects, and ends curre
   assert.equal(result.lastUsed, '2024-01-01')
 })
 
-test('output is opt-in and honors hidden project names', () => {
+test('CV-wide output setting controls all skill details and honors hidden project names', () => {
   const content = emptyContent()
   content.experiences = [{ company: 'Company', current: false, projects: [
     { projectKey: 'hidden', projectName: 'Confidential', showProjectName: false },
   ] }]
   const value = skill({ linkedProjects: [{ projectKey: 'hidden', outcome: 'Delivered the platform' }] })
+  content.includeSkillDetailsInOutput = false
   assert.deepEqual(skillOutput(value, content), [])
-  value.details.includeInOutput = true
+  content.includeSkillDetailsInOutput = true
   assert.deepEqual(skillOutput(value, content), ['Project: Delivered the platform'])
+  value.details.includeInOutput = true
+  content.includeSkillDetailsInOutput = false
+  assert.deepEqual(skillOutput(value, content), [])
 })

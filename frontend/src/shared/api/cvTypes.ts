@@ -35,6 +35,8 @@ export interface CvTemplate {
 
 export interface CvContent {
   summary: string | null
+  includeSkillDetailsInOutput: boolean
+  includeSkillLevelsInOutput: boolean
   experiences: CvExperience[]
   education: CvEducation[]
   skillGroups: CvSkillGroup[]

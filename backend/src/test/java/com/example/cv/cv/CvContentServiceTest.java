@@ -34,6 +34,7 @@ class CvContentServiceTest {
         assertThat(replaced.skillGroups().get(0).skills().get(0).details()).isEqualTo(details);
         assertThat(replaced.projects()).containsExactly(project);
         assertThat(replaced.skillProjectPeriods()).hasSize(1);
+        assertThat(replaced.includeSkillDetailsInOutput()).isTrue();
     }
 
     @Test
@@ -52,12 +53,16 @@ class CvContentServiceTest {
                         List.of(new CvContent.Skill("Java", "Advanced", 0, false),
                                 new CvContent.Skill("Kotlin", null, 1, null)))),
                 List.of(new CvContent.Language("English", "Fluent (C1)", "Advanced (B2)", "Intermediate (B1)", "Fluent (C1)", 0)), List.of(), List.of(),
-                List.of(), List.of(new CvContent.Section(CvSectionType.EXPERIENCE, true, 0)));
+                List.of(), List.of(new CvContent.Section(CvSectionType.EXPERIENCE, true, 0)), true, false);
 
         CvContent saved = service.replace(UUID.fromString("00000000-0000-0000-0000-000000000001"), content);
         CvContent fetched = service.get(UUID.fromString("00000000-0000-0000-0000-000000000001"));
 
         assertThat(saved.summary()).isEqualTo("Summary");
+        assertThat(saved.includeSkillDetailsInOutput()).isTrue();
+        assertThat(fetched.includeSkillDetailsInOutput()).isTrue();
+        assertThat(saved.includeSkillLevelsInOutput()).isFalse();
+        assertThat(fetched.includeSkillLevelsInOutput()).isFalse();
         assertThat(fetched.experiences()).hasSize(1);
         assertThat(fetched.experiences().get(0).employmentType()).isEqualTo("Contract");
         assertThat(fetched.experiences().get(0).employmentLocation()).isEqualTo("Hybrid");

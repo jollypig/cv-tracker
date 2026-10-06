@@ -14,6 +14,22 @@ class DocxRendererTest {
     private final DocxRenderer renderer = new DocxRenderer();
 
     @Test
+    void hidesSkillLevelsWhenDisabledGlobally() throws Exception {
+        CvContent content = new CvContent(null, List.of(), List.of(), List.of(new CvContent.SkillGroup("Backend", 0,
+                List.of(new CvContent.Skill("Java", "Advanced", 0, true)))), List.of(), List.of(), List.of(), List.of(),
+                List.of(new CvContent.Section(CvSectionType.SKILLS, true, 0)), false, false);
+        CvVersionSnapshot snapshot = new CvVersionSnapshot(null, "Backend CV", null, "en", CvStatus.ACTIVE, content,
+                new CvVersionSnapshot.PersonProfile("Jane", "Doe", "Engineer", "Riga", List.of()));
+
+        try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(renderer.render(snapshot)))) {
+            String output = String.join(" ", document.getParagraphs().stream()
+                    .map(paragraph -> paragraph.getText()).toList());
+
+            assertThat(output).contains("Java").doesNotContain("Advanced");
+        }
+    }
+
+    @Test
     void rendersVisibleSectionsInConfiguredOrder() throws Exception {
         CvContent.Experience experience = new CvContent.Experience("Example Corp", "Developer", "Riga", null, null,
                 LocalDate.of(2020, 1, 1), null, true, "Built services", 0, List.of());

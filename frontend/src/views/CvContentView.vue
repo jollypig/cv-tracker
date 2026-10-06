@@ -224,6 +224,8 @@
         <v-expansion-panel value="skills">
           <v-expansion-panel-title>{{ translate('editor.skillGroups') }} <span class="panel-count">{{ content.skillGroups.length }}</span></v-expansion-panel-title>
           <v-expansion-panel-text>
+            <v-checkbox v-model="content.includeSkillLevelsInOutput" :label="translate('skillDetails.includeLevel')" density="compact" hide-details />
+            <v-checkbox v-model="content.includeSkillDetailsInOutput" :label="translate('skillDetails.includeOutput')" density="compact" hide-details />
             <v-expansion-panels v-model="expandedSkillGroups" multiple class="skill-group-panels">
               <v-expansion-panel v-for="(group, groupIndex) in content.skillGroups" :key="groupIndex" :value="groupIndex">
                 <v-expansion-panel-title>
@@ -589,7 +591,8 @@ onBeforeUnmount(() => {
 
 function emptyContent(): CvContent {
   return {
-    summary: '', experiences: [], education: [], skillGroups: [], languages: [], projects: [],
+    summary: '', includeSkillDetailsInOutput: false, includeSkillLevelsInOutput: true,
+    experiences: [], education: [], skillGroups: [], languages: [], projects: [],
     certifications: [], customSections: [],
     sections: sectionDefinitions.map((section, sortOrder) => ({ type: section.type, visible: true, sortOrder })),
   }

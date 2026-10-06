@@ -32,6 +32,8 @@ public class CvContentService {
     public CvContent replace(UUID cvId, CvContent content) {
         Cv cv = getCv(cvId);
         cv.setSummary(content.summary());
+        cv.setIncludeSkillDetailsInOutput(content.includeSkillDetailsInOutput());
+        cv.setIncludeSkillLevelsInOutput(content.includeSkillLevelsInOutput());
         cv.replaceExperiences(content.experiences().stream().map(item -> experience(cv, item)).toList());
         cv.replaceEducation(content.education().stream().map(item -> education(cv, item)).toList());
         cv.replaceSkillGroups(content.skillGroups().stream().map(item -> skillGroup(cv, item)).toList());
@@ -201,7 +203,7 @@ public class CvContentService {
                         item.getSortOrder())).toList(),
                 ordered(cv.getCustomSections(), CvCustomSection::getSortOrder).stream().map(item -> new CvContent.CustomSection(item.getTitle(), item.getContent(),
                         item.getSortOrder())).toList(),
-                sections);
+                sections, cv.isIncludeSkillDetailsInOutput(), cv.isIncludeSkillLevelsInOutput());
     }
 
     private Cv getCv(UUID cvId) {

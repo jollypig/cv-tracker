@@ -113,7 +113,7 @@ public class CvHtmlRenderer {
                 .toList();
         appendEntries(html, "Skills", printableGroups, group ->
                 "<h3>" + escape(group.name()) + "</h3><p>" + escape(String.join(", ", group.skills().stream()
-                        .map(skill -> notBlank(skill.level())
+                        .map(skill -> content.includeSkillLevelsInOutput() && notBlank(skill.level())
                                 ? skill.name() + " (" + skill.level() + ")" : skill.name()).toList())) + "</p>"
                         + group.skills().stream().map(skill -> skillDetailsHtml(skill, content))
                                 .collect(java.util.stream.Collectors.joining()));
@@ -121,7 +121,7 @@ public class CvHtmlRenderer {
 
     private String skillDetailsHtml(CvContent.Skill skill, CvContent content) {
         CvSkillDetails details = skill.details();
-        if (details == null || !details.includeInOutput()) {
+        if (details == null || !content.includeSkillDetailsInOutput()) {
             return "";
         }
         var calculated = details.calculate(content.skillProjectPeriods(), java.time.LocalDate.now());
