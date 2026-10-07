@@ -20,6 +20,17 @@ class OpenHtmlToPdfRendererTest {
         assertThat(pdf).hasSizeGreaterThan(100);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"Noto Sans", "Noto Serif"})
+    void preservesBalticCharactersInPdfText(String fontFamily) throws Exception {
+        byte[] pdf = renderer.render("<html><head><style>body { font-family: '" + fontFamily + "'; }</style></head>"
+                + "<body><p>J\u016Brmala</p></body></html>");
+
+        try (PDDocument document = PDDocument.load(pdf)) {
+            assertThat(new PDFTextStripper().getText(document)).contains("J\u016Brmala");
+        }
+    }
+
     @Test
     void producesReadableMultiPageCvLayout() throws Exception {
         String summary = "A careful engineer with production experience. ".repeat(180);

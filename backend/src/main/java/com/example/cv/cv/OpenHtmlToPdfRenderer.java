@@ -12,6 +12,8 @@ public class OpenHtmlToPdfRenderer implements PdfRenderer {
     public byte[] render(String html) {
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
+            builder.useFont(() -> OpenHtmlToPdfRenderer.class.getResourceAsStream("/fonts/NotoSans-Regular.ttf"), "Noto Sans");
+            builder.useFont(() -> OpenHtmlToPdfRenderer.class.getResourceAsStream("/fonts/NotoSerif-Regular.ttf"), "Noto Serif");
             builder.withHtmlContent(html, null);
             builder.toStream(output);
             builder.run();

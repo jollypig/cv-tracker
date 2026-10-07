@@ -14,7 +14,7 @@ public class CvHtmlRenderer {
                 <!DOCTYPE html>
                 <html><head><meta charset="UTF-8"/><style>
                 @page { size: A4; margin: 18mm 16mm; }
-                body { font-family: sans-serif; color: #27362e; font-size: 10pt; line-height: 1.4; }
+                body { font-family: "Noto Sans", sans-serif; color: #27362e; font-size: 10pt; line-height: 1.4; }
                 h1 { font-size: 25pt; margin: 0; color: #20382e; }
                 h2 { font-size: 12pt; color: #315d4b; border-bottom: 1px solid #dce4dd; padding-bottom: 3px; margin: 18px 0 8px; }
                 h3 { font-size: 11pt; margin: 8px 0 2px; }
@@ -36,7 +36,7 @@ public class CvHtmlRenderer {
                 .project-entry h3 { font-size: 10pt; margin: 0 0 3px; }
                 .project-entry p { font-size: 9.5pt; margin: 3px 0; }
                 .project-entry .project-meta { font-size: 9pt; color: #66756b; font-style: italic; }
-                .classic { font-family: serif; color: #282828; }
+                .classic { font-family: "Noto Serif", serif; color: #282828; }
                 .classic header { display: block; text-align: center; border-bottom: 1px solid #696969; }
                 .classic .title, .classic .contact { display: block; width: 100%; text-align: center; }
                 .classic h1 { color: #222; }
