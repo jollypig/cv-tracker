@@ -1,12 +1,20 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import TemplateSelector from './TemplateSelector.vue'
 import CvPreview from './CvPreview.vue'
 import CvTemplateDocument from './CvTemplateDocument.vue'
 import { emptySkillDetails } from '../../shared/skillMetrics'
+import personApi from '../../shared/api/personApi'
 import type { Cv, CvContent, CvTemplate } from '../../shared/api/cvTypes'
 import type { Person } from '../../shared/api/personTypes'
+
+const NativeURL = URL
+
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 const templates: CvTemplate[] = [
   { id: 'modern-id', name: 'Modern', description: null, templateKey: 'modern', version: 1, active: true, createdAt: '' },
@@ -65,6 +73,30 @@ describe('TemplateSelector', () => {
     expect(wrapper.text()).not.toContain(cv.name)
     expect(wrapper.text()).not.toContain('hidden@example.com')
     if (variant === 'minimal') expect(wrapper.get('.document-rail').text()).toContain('Riga')
+  })
+
+  it.each(['classic', 'minimal', 'modern'] as const)('places the profile photo in the %s layout', async (variant) => {
+    const createObjectURL = vi.fn(() => 'blob:profile-photo')
+    vi.stubGlobal('URL', Object.assign(class extends NativeURL {}, { createObjectURL, revokeObjectURL: vi.fn() }))
+    vi.spyOn(personApi, 'getPhoto').mockResolvedValue(new Blob())
+    const wrapper = mount(CvTemplateDocument, {
+      props: { cv, person: { ...person, photoStorageKey: 'photo-key' }, content, variant },
+    })
+
+    await flushPromises()
+
+    const photo = wrapper.get('.document-photo')
+    expect(photo.attributes('src')).toBe('blob:profile-photo')
+    expect(photo.attributes('alt')).toBe('Jane Doe')
+    expect(personApi.getPhoto).toHaveBeenCalledWith(person.id)
+    if (variant === 'classic') {
+      expect(photo.element.compareDocumentPosition(wrapper.get('.document-title').element) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy()
+    } else if (variant === 'minimal') {
+      expect(wrapper.get('.document-rail .document-position').element.compareDocumentPosition(photo.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    } else {
+      expect(photo.element.compareDocumentPosition(wrapper.get('.document-title').element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+    wrapper.unmount()
   })
 
   it.each(['classic', 'minimal', 'modern'] as const)('does not use the CV name when the person name is blank for %s', (variant) => {
