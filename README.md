@@ -76,6 +76,8 @@ The unauthenticated `/actuator/prometheus` scrape endpoint should only be reacha
 
 ## Skill experience and project evidence
 
+In the CV content editor's **Experience** section, use the up/down arrows on a project's heading to reorder projects within that position. The top **Add project** button inserts a project first; the bottom button inserts it last. Newly added projects expand automatically for editing. Saving preserves the chosen order.
+
 ### Merge content from other CVs
 
 In the CV content editor, choose **More actions > Merge from other CVs**, select one or more source CVs, and click **Merge**. The editor saves its current draft first. All selected sources must belong to the signed-in account; they remain unchanged. The backend merges all selected sources in one transaction.
