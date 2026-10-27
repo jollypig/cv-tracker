@@ -6,7 +6,12 @@ import com.example.cv.cv.CvShareService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -15,7 +20,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.time.Duration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -36,6 +43,31 @@ class SecurityConfigurationTest {
 
     @MockitoBean
     private CvShareService shareService;
+
+    @Test
+    void sessionDefaultsToEightHoursOfInactivity() throws Exception {
+        MockEnvironment environment = sessionEnvironment();
+
+        ServerProperties properties = Binder.get(environment).bind("server", ServerProperties.class).get();
+
+        assertEquals(Duration.ofHours(8), properties.getServlet().getSession().getTimeout());
+    }
+
+    @Test
+    void sessionTimeoutCanBeOverridden() throws Exception {
+        MockEnvironment environment = sessionEnvironment().withProperty("SESSION_TIMEOUT", "90m");
+
+        ServerProperties properties = Binder.get(environment).bind("server", ServerProperties.class).get();
+
+        assertEquals(Duration.ofMinutes(90), properties.getServlet().getSession().getTimeout());
+    }
+
+    private MockEnvironment sessionEnvironment() throws Exception {
+        MockEnvironment environment = new MockEnvironment();
+        new YamlPropertySourceLoader().load("application", new ClassPathResource("application.yml"))
+                .forEach(environment.getPropertySources()::addLast);
+        return environment;
+    }
 
     @Test
     void apiRequiresAuthentication() throws Exception {

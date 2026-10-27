@@ -35,7 +35,7 @@ class DocxRendererTest {
                         String output = String.join(" ", document.getParagraphs().stream()
                                         .map(paragraph -> paragraph.getText()).toList());
 
-                            assertThat(output).contains("Jane Doe").doesNotContain("Riga", "jane@example.com");
+                            assertThat(output).contains("Jane Doe", "Engineer").doesNotContain("Riga", "jane@example.com");
                 }
         }
 

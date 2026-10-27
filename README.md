@@ -28,9 +28,12 @@ The API uses OIDC authorization-code login and a server-side session. Configure 
 - `OIDC_CLIENT_SECRET`: secret for confidential clients; optional for public clients.
 - `FRONTEND_URL`: frontend URL to open after provider login; defaults to `http://localhost:5173/`.
 - `CORS_ALLOWED_ORIGINS`: comma-separated frontend origins; defaults to local Vite ports 5173-5177.
+- `SESSION_TIMEOUT`: server-side session idle timeout; defaults to `8h`. Each API request renews the idle window. Set a shorter duration for shared-device deployments.
 - `SESSION_COOKIE_SAME_SITE` and `SESSION_COOKIE_SECURE`: cookie settings; use `none` and `true` for cross-site HTTPS deployments.
 
 Register `http://localhost:8080/login/oauth2/code/oidc` as the provider redirect URI. The frontend starts login at `/oauth2/authorization/oidc`; API requests use the session cookie and CSRF token cookie. Without OIDC configuration, protected API calls return `401` and the frontend indicates that sign-in is unavailable.
+
+Restart the backend after changing session settings and sign in again. Sessions are held in memory, so backend restarts or requests routed to another backend instance can require another login. OIDC access-token expiry does not itself end the application session. Keycloak's SSO idle/max limits control whether a new login flow can reuse the provider session without asking for a password; they are configured separately in the realm's session settings.
 
 ### Keycloak login theme
 
@@ -72,6 +75,8 @@ Build the backend image from the repository root with `docker build -t cv-manage
 The unauthenticated `/actuator/prometheus` scrape endpoint should only be reachable on a trusted monitoring network. GitHub Actions runs backend tests, frontend tests and build, Playwright browser tests, and a Docker image build for pushes and pull requests.
 
 ## Skill experience and project evidence
+
+In the CV content editor's **Experience** section, use the up/down arrows on a project's heading to reorder projects within that position. The top **Add project** button inserts a project first; the bottom button inserts it last. Newly added projects expand automatically for editing. Saving preserves the chosen order.
 
 ### Merge content from other CVs
 

@@ -88,6 +88,31 @@ class CvExportServiceTest {
         assertThat(service.download(response.id()).content()).containsExactly(PDF_BYTES);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"classic", "minimal", "modern"})
+    void passesTheSavedTemplateToBothExportRenderers(String templateKey) {
+        UUID templateId = UUID.randomUUID();
+        CvTemplate template = mock(CvTemplate.class);
+        when(template.getTemplateKey()).thenReturn(templateKey);
+        when(templates.findById(templateId)).thenReturn(Optional.of(template));
+        CvVersionSnapshot selected = new CvVersionSnapshot(templateId, snapshot.name(), null, "en", CvStatus.DRAFT,
+                snapshot.content(), snapshot.person());
+        CvVersionSnapshotSerializer serializer = mock(CvVersionSnapshotSerializer.class);
+        when(serializer.deserialize(any())).thenReturn(selected);
+        PdfRenderer pdf = mock(PdfRenderer.class);
+        when(pdf.render(any())).thenReturn(PDF_BYTES);
+        DocxRenderer docx = mock(DocxRenderer.class);
+        when(docx.render(selected, templateKey)).thenReturn(new byte[] {1, 2, 3});
+        CvExportService templatedService = new CvExportService(versions, exports, templates, serializer,
+                new CvHtmlRenderer(), pdf, docx, new LocalFileStorage(directory.toString()));
+
+        templatedService.exportPdf(VERSION_ID);
+        templatedService.exportDocx(VERSION_ID);
+
+        verify(pdf).render(org.mockito.ArgumentMatchers.contains("<body class=\"" + templateKey + "\""));
+        verify(docx).render(selected, templateKey);
+    }
+
     @Test
     void reportsMissingVersionBeforeCreatingAnExport() {
         UUID missingVersionId = UUID.randomUUID();

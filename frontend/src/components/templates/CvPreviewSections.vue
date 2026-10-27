@@ -19,9 +19,9 @@
             <h5 v-if="project.showProjectName !== false">{{ project.projectName }}</h5>
             <p v-if="project.position || (project.showCustomerCompany !== false && project.company)" class="preview-meta">{{ [project.position, project.showCustomerCompany !== false ? project.company : null].filter(Boolean).join(' · ') }}</p>
             <p v-if="project.projectDescription">{{ project.projectDescription }}</p>
-            <p v-if="project.responsibilities">{{ project.responsibilities }}</p>
+            <p v-if="project.responsibilities">Responsibilities: {{ project.responsibilities }}</p>
+            <p v-if="linkedSkillNames(project).length" class="preview-meta">Used: {{ linkedSkillNames(project).join(', ') }}</p>
             <p v-if="project.technologies" class="preview-meta">{{ project.technologies }}</p>
-            <p v-if="linkedSkillNames(project).length" class="preview-meta">Skills: {{ linkedSkillNames(project).join(', ') }}</p>
           </div>
         </article>
       </section>
@@ -103,8 +103,24 @@ const props = defineProps<{
   variant: 'modern' | 'classic' | 'minimal'
 }>()
 
-const orderedSections = computed(() => [...props.content.sections].sort((left, right) => left.sortOrder - right.sortOrder))
-const printableSkillGroups = computed(() => props.content.skillGroups
+function sorted<T extends { sortOrder: number }>(values: T[]) {
+  return [...values].sort((left, right) => left.sortOrder - right.sortOrder)
+}
+
+const content = computed(() => ({
+  ...props.content,
+  experiences: sorted(props.content.experiences).map((experience) => ({ ...experience, projects: sorted(experience.projects) })),
+  education: sorted(props.content.education),
+  skillGroups: sorted(props.content.skillGroups).map((group) => ({ ...group, skills: sorted(group.skills) })),
+  languages: sorted(props.content.languages),
+  projects: sorted(props.content.projects),
+  certifications: sorted(props.content.certifications),
+  customSections: sorted(props.content.customSections),
+}))
+const orderedSections = computed(() => props.content.sections.length ? sorted(props.content.sections)
+  : ['SUMMARY', 'EXPERIENCE', 'EDUCATION', 'SKILLS', 'LANGUAGES', 'PROJECTS', 'CERTIFICATIONS', 'CUSTOM']
+    .map((type, sortOrder) => ({ type, visible: true, sortOrder })))
+const printableSkillGroups = computed(() => content.value.skillGroups
   .map((group) => ({ ...group, skills: group.skills.filter((skill) => skill.visible !== false && skill.name.trim()) }))
   .filter((group) => group.skills.length > 0))
 
@@ -114,10 +130,10 @@ function hasExperience(experience: CvExperience) {
 
 function linkedSkillNames(project: CvExperienceProject) {
   if (!project.projectKey) return []
-  return props.content.skillGroups.flatMap((group) => group.skills
+  return [...new Set(content.value.skillGroups.flatMap((group) => group.skills
     .filter((skill) => skill.visible !== false && skill.name.trim()
       && skill.details?.linkedProjects.some((link) => link.projectKey === project.projectKey))
-    .map((skill) => skill.name))
+    .map((skill) => skill.name)))]
 }
 
 function languageSummary(language: CvLanguage) {
@@ -132,7 +148,7 @@ function languageSummary(language: CvLanguage) {
 function formatDate(value: string | null) {
   if (!value) return ''
   const date = new Date(`${value}T00:00:00`)
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' }).format(date)
+  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(date)
 }
 
 function period(start: string | null, end: string | null, current = false) {

@@ -43,8 +43,7 @@ public class CvExportService {
         CvVersion version = versionRepository.findById(versionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV version not found"));
         CvVersionSnapshot snapshot = snapshotSerializer.deserialize(version.getSnapshot());
-        String templateKey = snapshot.templateId() == null ? "modern"
-                : templateRepository.findById(snapshot.templateId()).map(CvTemplate::getTemplateKey).orElse("modern");
+        String templateKey = templateKey(snapshot);
         byte[] pdf = pdfRenderer.render(htmlRenderer.render(snapshot, templateKey));
         return saveExport(version, snapshot, pdf, "pdf", "application/pdf");
         }
@@ -53,7 +52,7 @@ public class CvExportService {
         CvVersion version = versionRepository.findById(versionId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "CV version not found"));
         CvVersionSnapshot snapshot = snapshotSerializer.deserialize(version.getSnapshot());
-        byte[] docx = docxRenderer.render(snapshot);
+        byte[] docx = docxRenderer.render(snapshot, templateKey(snapshot));
         return saveExport(version, snapshot, docx, "docx",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
         }
@@ -65,6 +64,11 @@ public class CvExportService {
         byte[] json = version.getSnapshot().toString().getBytes(StandardCharsets.UTF_8);
         return saveExport(version, snapshot, json, "json", "application/json");
         }
+
+    private String templateKey(CvVersionSnapshot snapshot) {
+        return snapshot.templateId() == null ? "modern"
+                : templateRepository.findById(snapshot.templateId()).map(CvTemplate::getTemplateKey).orElse("modern");
+    }
 
         private CvExportResponse saveExport(CvVersion version, CvVersionSnapshot snapshot, byte[] content,
             String extension, String contentType) {

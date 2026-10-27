@@ -194,14 +194,16 @@
                     </div>
                     <v-textarea v-model="experience.description" :label="translate('editor.description')" rows="3" variant="outlined" />
                     <div class="nested-editor">
-                      <div class="entry-heading"><h4>{{ translate('editor.projectsAtPosition') }}</h4><v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience)">{{ translate('editor.addProject') }}</v-btn></div>
-                      <div v-for="(project, projectIndex) in experience.projects" :key="projectIndex" class="experience-project-row">
-                        <v-expansion-panels multiple class="experience-project-panels">
+                      <div class="entry-heading"><h4>{{ translate('editor.projectsAtPosition') }}</h4><v-btn size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience, 'top')">{{ translate('editor.addProject') }}</v-btn></div>
+                      <div v-for="(project, projectIndex) in experience.projects" :key="project.projectKey ?? projectIndex" class="experience-project-row">
+                        <v-expansion-panels v-model="expandedExperienceProjects[project.projectKey ?? projectIndex]" multiple class="experience-project-panels">
                           <v-expansion-panel>
                             <v-expansion-panel-title>
                               {{ project.projectName || translate('editor.projectNumber', { number: projectIndex + 1 }) }}
                               <template #actions>
                                 <div class="entry-actions" @click.stop>
+                                  <v-btn :disabled="projectIndex === 0" :aria-label="translate('editor.moveProjectUp')" icon="mdi-arrow-up" size="small" variant="text" @click="moveItem(experience.projects, projectIndex, -1)" />
+                                  <v-btn :disabled="projectIndex === experience.projects.length - 1" :aria-label="translate('editor.moveProjectDown')" icon="mdi-arrow-down" size="small" variant="text" @click="moveItem(experience.projects, projectIndex, 1)" />
                                   <v-btn :aria-label="translate('editor.removeProject', { number: projectIndex + 1 })" color="error" icon="mdi-delete-outline" size="small" variant="text" @click="removeItem(experience.projects, projectIndex)" />
                                 </div>
                               </template>
@@ -226,7 +228,6 @@
                     <v-text-field v-model="project.externalLink" :label="translate('editor.externalLink')" type="url" variant="outlined" :rules="[optionalUrlRule]" />
                               </div>
                               <v-textarea v-model="project.responsibilities" :label="translate('editor.responsibilities')" rows="2" variant="outlined" />
-                              <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
                               <v-autocomplete
                     :model-value="linkedSkillIds(project)"
                     :items="projectSkillOptions"
@@ -246,10 +247,12 @@
                       <v-list-item v-bind="itemProps" :subtitle="item.raw.group" />
                     </template>
                               </v-autocomplete>
+                              <v-textarea v-model="project.technologies" :label="translate('editor.technologies')" rows="2" variant="outlined" />
                             </v-expansion-panel-text>
                           </v-expansion-panel>
                         </v-expansion-panels>
                       </div>
+                      <v-btn v-if="experience.projects.length" size="small" prepend-icon="mdi-plus" variant="text" @click="addExperienceProject(experience, 'bottom')">{{ translate('editor.addProject') }}</v-btn>
                     </div>
                   </v-expansion-panel-text>
                 </v-expansion-panel>
@@ -548,6 +551,7 @@ const degreeOptions = computed(() => [
 ].map(([key, value]) => ({ title: translate(key!), value: value! })))
 const detailedLanguages = reactive(new Set<CvLanguage>())
 const expandedSkillGroups = ref<number[]>([])
+const expandedExperienceProjects = ref<Record<string, number[]>>({})
 const expandedSkillEntries = ref<Record<number, number[]>>({})
 const expandedCertifications = ref<number[]>([])
 const content = reactive<CvContent>(emptyContent())
@@ -800,10 +804,14 @@ function addExperience() {
     current: false, description: '', sortOrder: content.experiences.length, projects: [] })
 }
 
-function addExperienceProject(experience: CvExperience) {
-  experience.projects.push({ projectKey: crypto.randomUUID(), company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
+function addExperienceProject(experience: CvExperience, placement: 'top' | 'bottom') {
+  const projectKey = crypto.randomUUID()
+  const project: CvExperienceProject = { projectKey, company: '', industries: '', projectName: '', projectDescription: '', showProjectName: true, showCustomerCompany: true,
     periodFrom: null, periodTo: null, position: '', responsibilities: '', technologies: '',
-    teamSize: null, externalLink: '', sortOrder: experience.projects.length })
+    teamSize: null, externalLink: '', sortOrder: experience.projects.length }
+  experience.projects.splice(placement === 'top' ? 0 : experience.projects.length, 0, project)
+  normalizeOrder(experience.projects)
+  expandedExperienceProjects.value[projectKey] = [0]
 }
 
 function linkedSkillIds(project: CvExperienceProject) {
